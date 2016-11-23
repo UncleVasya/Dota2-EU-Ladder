@@ -50,6 +50,7 @@ coverage.xml
 *.pot
 
 # Django stuff:
+*sqlite3
 *.log
 local_settings.py
 
@@ -87,3 +88,7 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+#IntelliJ Idea
+*.idea/
+
