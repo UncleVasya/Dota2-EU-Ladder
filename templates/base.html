@@ -1,0 +1,63 @@
+{% load staticfiles %}
+
+{% spaceless %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>{% block title %}Dota 2 EU Ladder{% endblock title %}</title>
+
+        <meta name="viewport" content="initial-scale=1.0, width=device-width"/>
+        <meta name="apple-mobile-web-app-capable" content="yes"/>
+        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+
+        {% block common_scripts %}
+            <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+            <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+            <script src="//cdnjs.cloudflare.com/ajax/libs/jquery-timeago/1.4.3/jquery.timeago.min.js"></script>
+        {% endblock common_scripts %}
+
+        {% block common_styles %}
+            <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet">
+            <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
+            <link href="{% static 'css/screen.css' %}" media="screen, projection" rel="stylesheet">
+        {% endblock common_styles %}
+
+        {% block page_scripts %}
+        {% endblock page_scripts %}
+
+        {% block page_styles %}
+        {% endblock page_styles %}
+    </head>
+
+    <body>
+        <div class="menu-primary">
+            <div class="container col-md-9">
+                <a class="menu-logo" href="">Dota 2 EU Ladder</a>
+                <nav class="menu-links">
+                    <ul>
+                        <li><a href="">Leaderboards</a></li>
+                        <li><a href="">Team balancing</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+        <div class="container container-main col-md-9">
+            {% block content %}
+            {% endblock content %}
+        </div>
+
+        <div class="container col-md-9">
+            <div class="footer-nav">
+                <nav>
+                    <ul>
+                        <li><a href="">Github</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </body>
+</html>
+{%  endspaceless %}
+

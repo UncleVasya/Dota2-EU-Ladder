@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Dota2_EU_Ladder.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "dota2_eu_ladder.settings")
 
 application = get_wsgi_application()

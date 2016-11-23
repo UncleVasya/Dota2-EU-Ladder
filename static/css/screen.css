@@ -1,0 +1,155 @@
+body{
+    background: #222B34 linear-gradient(#1C242D, #222B34) no-repeat;
+    color: white;
+    font-size: 14px;
+	font-family: "Lucida Grande", Tahoma, Verdana, Arial, FreeSans, sans-serif;
+    line-height: 1;
+	margin: 0;
+	padding: 0
+}
+
+a, a:visited, a:hover, a:active, a:focus {
+    color: white;
+    text-decoration: none;
+}
+
+ol, ul {
+    list-style: none;
+}
+
+.container-main {
+    min-height: 600px;
+}
+
+.menu-primary {
+    background: #242F39;
+    position: relative;
+    vertical-align: top;
+}
+
+.menu-logo {
+    background: #ED3B1C;
+    color: white;
+    display: inline-block;
+    font-family: Arial, FreeSans, sans-serif;
+    font-size: 20px;
+    height: 32px;
+    margin: 0 8px 0 0;
+    padding: 6px 8px;
+    text-transform: uppercase;
+    vertical-align: top;
+}
+
+.menu-primary .menu-links {
+    display: inline-block;
+}
+
+.menu-primary .menu-links ul {
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+}
+
+.menu-primary .menu-links ul li {
+    display: inline-block;
+}
+
+.menu-primary .menu-links ul li a {
+    display: block;
+    color: white;
+    height: 32px;
+    padding: 8px 12px 4px 12px;
+}
+
+.menu-primary .menu-links ul li a:hover {
+    background: #2E3740;
+    color: #ED3B1C;
+}
+
+div.footer-nav {
+    float: right;
+    margin: 18px 0 0 0;
+    position: relative;
+}
+
+.footer-nav ul li {
+    display: inline-block;
+}
+
+.footer-nav ul li a {
+    color: white;
+    padding: 6px 12px 6px 0;
+}
+
+.footer-nav ul li a:hover {
+    opacity: 0.6;
+}
+
+section footer nav ul li a:hover {
+    color: #FFF;
+}
+
+[data-link] {
+    cursor: pointer;
+}
+
+.container {
+    float: none;
+    margin: 0 auto;
+    max-width: 972px;
+}
+
+.sep {
+    color: #979797;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+section {
+    margin-top: 6px;
+    margin-bottom: 12px;
+}
+
+.cell-centered {
+    text-align: center;
+}
+
+nav.pagination {
+    margin: 12px 0;
+}
+
+nav.pagination span {
+    display: inline-block;
+    text-align: center;
+    margin: 5px 0 0;
+}
+
+nav.pagination span a {
+    height: 100%;
+    padding: 8px 10px;
+    display: block;
+}
+
+nav.pagination span a:hover{
+	background:#2E3740
+}
+
+nav.pagination .page-current {
+    color: #FFF;
+    background: #2E3740 none repeat scroll 0 0;
+    padding: 8px 10px;
+}
+
+.pagination-info {
+    float: right;
+    margin: 15px 4px 0 0;
+    color: #D9D9D9;
+}
+
+input, textarea {
+    color: black;
+    background-color: white;
+
+}

@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+
+{% block page_styles %}
+{#    <link rel="stylesheet" href="{% static 'games/css/base.css' %}">#}
+{% endblock page_styles %}
+
+{% block content %}
+
+<div class="page-overview">
+    <div class="page-overview-primary">
+        <div class="page-overview-title">
+            <h1> Team balancing</h1>
+        </div>
+    </div>
+</div>
+
+
+<section>
+<article>
+
+    <form action="/your-name/" method="post">
+        {% csrf_token %}
+
+        <table>
+            <thead>
+                <tr>
+                    <td>Player</td>
+                    <td>MMR</td>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for field in form %}
+                    {% cycle 'True' 'False' as odd silent %}
+
+                    {% if odd == 'True' %}
+                        <tr>
+                    {% endif %}
+
+                    <td>
+                        <div class="fieldWrapper">
+                            {{ field.errors }}
+                            {{ field }}
+                            {% if field.help_text %}
+                                <p class="help">{{ field.help_text|safe }}</p>
+                            {% endif %}
+                        </div>
+                    </td>
+
+
+                    {% if odd == 'False' %}
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <input type="submit" value="Balance" />
+    </form>
+
+
+</article>
+</section>
+
+{% endblock %}
+
