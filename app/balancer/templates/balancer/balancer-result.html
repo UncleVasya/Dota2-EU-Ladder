@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+
+{% block page_styles %}
+{#    <link rel="stylesheet" href="{% static 'games/css/base.css' %}">#}
+{% endblock page_styles %}
+
+{% block content %}
+
+<div class="page-overview">
+    <div class="page-overview-primary">
+        <div class="page-overview-title">
+            <h1> Team balancing</h1>
+        </div>
+    </div>
+</div>
+
+
+<section>
+<article>
+
+    {% with result.answers.0 as answer %}
+        {% for team in answer.teams %}
+            <br><br><br>
+            Team {{ forloop.counter }}: (Avg. {{ team.mmr }})
+            <br><br>
+            {% for player in team.players %}
+                <br>
+                {{ player.0 }}: {{ player.1 }}
+            {% endfor %}
+        {% endfor %}
+    {% endwith %}
+
+</article>
+</section>
+
+{% endblock %}
+

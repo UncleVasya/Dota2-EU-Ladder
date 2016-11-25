@@ -19,7 +19,7 @@
 <section>
 <article>
 
-    <form action="/your-name/" method="post">
+    <form action="{% url 'balancer:balancer-input' %}" method="post">
         {% csrf_token %}
 
         <table>
@@ -48,7 +48,6 @@
                         </div>
                     </td>
 
-
                     {% if odd == 'False' %}
                         </tr>
                     {% endif %}
@@ -56,9 +55,15 @@
             </tbody>
         </table>
 
+        <br><br>
         <input type="submit" value="Balance" />
     </form>
 
+    {% if form.non_field_errors %}
+        <br><br>
+        Errors:
+        {{ form.non_field_errors }}
+    {% endif %}
 
 </article>
 </section>
