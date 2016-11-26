@@ -1,0 +1,54 @@
+.mmr-diff {
+    font-size: 1.3em;
+    font-weight: 800;
+    line-height: 2em;
+    vertical-align: middle;
+    text-align: center;
+    text-shadow: 1px 1px 5px #000;
+    text-transform: uppercase;
+    margin-top: 12px;
+}
+
+.mmr-diff .team1 {
+    color: #92A525;
+}
+
+.mmr-diff .team2 {
+    color: #C23C2A;
+}
+
+.mmr-diff .draw {
+    color: #FBB829;
+}
+
+section.balancer-result.team1 header a {
+    color: #92A525;
+}
+
+section.balancer-result.team2 header a {
+    color: #C23C2A;
+}
+
+section.balancer-result.team2 header {
+    text-align: right;
+}
+
+section.balancer-result article {
+    display: flex;
+}
+
+.balancer-result-stats {
+    width: 100%;
+}
+
+.balancer-result-stats table > tbody > tr > td {
+    padding-left: 8px;
+}
+
+.color-bar .team1 {
+    background: #92A525;
+}
+
+.color-bar .team2 {
+    background: #C23C2A;
+}

@@ -153,3 +153,297 @@ input, textarea {
     background-color: white;
 
 }
+
+section a,
+section a:visited,
+section a:hover,
+section a:active,
+section a:focus {
+    color: #A9CF54;
+}
+
+section header {
+	font-size: 16px;
+	color: white;
+	position: relative;
+	padding: 6px 4px;
+	text-shadow: 1px 1px 2px black;
+	text-transform: uppercase;
+	font-weight: normal
+}
+
+section header small {
+    color: rgba(255,255,255,0.6);
+    font-size: 12px;
+    margin-left: 4px;
+    text-shadow: none;
+}
+
+section header .more {
+    float: right;
+    margin-top: 5px;
+    font-size: 12px;
+}
+
+section header .more a {
+    display: block;
+    color: white;
+    margin-left: 10px;
+}
+
+section footer {
+    margin: 0 0 12px 0;
+}
+
+section footer nav {
+    margin: 0 0 -12px;
+    padding: 0;
+}
+
+section footer nav ul {
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+}
+
+section footer nav ul li {
+    margin: 0 0 -3px -2px;
+    padding: 2px 2px 0;
+    display: inline-block;
+}
+
+section footer nav ul li a {
+    padding: 9px 7px 9px 7px;
+    margin-right: 10px;
+    text-shadow: none;
+    height: 38px;
+}
+
+section footer nav ul li.active a {
+    box-shadow: 0 -2px 2px rgba(10,10,10,0.4);
+    background: #242F39;
+}
+
+section footer nav ul li>a, section footer nav ul li div {
+    display: block;
+}
+
+section article {
+	box-shadow: 0 0 3px rgba(10,10,10,0.4);
+	border: 1px solid #242F39;
+	border-radius: 1px;
+	background: #242F39;
+	padding: 4px;
+	clear: right
+}
+
+/* Nothing uses this currently */
+section article p {
+	color: #cccccc;
+	padding: 4px
+}
+
+.table-borderless,
+.table-borderless tbody tr td,
+.table-borderless tbody tr th,
+.table-borderless thead tr th {
+    border: none;
+}
+
+.table-responsive {
+    overflow-y: hidden;
+}
+
+table {
+    font-size: 0.9em;
+}
+
+tbody tr {
+    padding: 5px 4px;
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.table>tbody>tr>td,
+.table>tbody>tr>th,
+.table>tfoot>tr>td,
+.table>tfoot>tr>th,
+.table>thead>tr>td,
+.table>thead>tr>th {
+    line-height: 15px;
+    padding: 5px 4px;
+    vertical-align: middle;
+}
+
+tbody tr:nth-child(2n) {
+	background-color:rgba(255,255,255,0.04)
+}
+
+tbody tr:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+.page-overview {
+    background: #2E3740;
+    position: relative;
+    padding: 8px;
+    box-shadow: 0 0 3px rgba(10,10,10,0.4);
+    border-radius: 1px;
+    margin: 13px 0 0 0;
+}
+
+.page-overview .avatar {
+    display: inline-block;
+    margin-right: 8px;
+    vertical-align: top;
+}
+
+.page-overview .avatar img {
+    width: 62px;
+    height: 62px;
+    display: block;
+}
+
+.page-overview-title {
+    display: inline-block;
+    vertical-align: top;
+}
+
+.page-overview-title h1 {
+    max-width: 400px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: white;
+    font-size: 24px;
+    line-height: inherit;
+    margin: 0;
+    padding: 2px;
+}
+
+.page-overview-title h1 small {
+    display: block;
+    color: #C4C4C4;
+    font-size: 16px;
+    margin-top: 4px;
+}
+
+.page-overview-title h1 small.country {
+    display: inline-block;
+}
+
+.page-overview-secondary {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    margin-top: 0;
+}
+
+.page-overview-secondary dl {
+    display: inline-block;
+    margin: 5px 12px 14px 0;
+    vertical-align: top;
+}
+
+.page-overview-secondary dl dd {
+    color: white;
+    font-size: 14px;
+}
+
+.page-overview-secondary dl dt {
+    color: rgba(255,255,255,0.6);
+    font-size: 12px;
+    font-weight: normal;
+    line-height: inherit;
+    margin-top: 4px;
+    text-transform: uppercase;
+}
+
+a.link-white,
+a.link-white:visited,
+a.link-white:hover,
+a.link-white:active,
+a.link-white:focus {
+    color: white;
+}
+
+.page-menu {
+    position: relative;
+    margin: 0 0 6px 0;
+}
+
+.page-menu .menu-links {
+    background: #2a323a;
+    display: block;
+}
+
+.page-menu .menu-links ul {
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+}
+
+.page-menu .menu-links ul li {
+    display: inline-block;
+}
+
+.page-menu .menu-links ul li a {
+    display: block;
+    border-bottom: 2px solid transparent;
+    color: #C4C4C4;
+    padding: 8px 8px;
+}
+
+.page-menu .menu-links ul li.active a {
+    background: #252d34;
+    color: white;
+    border-bottom: 2px solid #ED3B1C;
+}
+
+.page-menu .menu-links ul li a:hover {
+    background: #252d34;
+    color: white;
+}
+
+section header .more i {
+    font-size: 11px;
+}
+
+section header .more a:hover {
+    color: #A9CF54;
+}
+
+.subtext {
+    font-size: 11px;
+    font-weight: 200;
+    color: rgba(255,255,255,0.6);
+    padding-top: 2px;
+    min-height: 14px;
+    vertical-align: top;
+}
+
+table .avatar {
+    float: left;
+    display: inline-block;
+    margin-right: 7px;
+    vertical-align: top;
+}
+
+table .avatar img {
+    width: 30px;
+    height: 30px;
+    display: block;
+}
+
+.color-bar {
+    height: 4px;
+    margin-top: 3px;
+    width: 98%;
+    clear: both;
+}
+
+.color-bar div {
+    background: white;
+    display: inline-block;
+    height: 4px;
+    vertical-align: top;
+}

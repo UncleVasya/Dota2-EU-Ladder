@@ -29,3 +29,23 @@ class BalancerResult(DetailView):
     model = BalanceResult
     template_name = 'balancer/balancer-result.html'
     context_object_name = 'result'
+
+    def get_context_data(self, **kwargs):
+        context = super(BalancerResult, self).get_context_data(**kwargs)
+
+        result = context['result'] = context['result'].answers[0]
+
+        players = [p for team in result['teams'] for p in team['players']]
+        mmr_max = max([player[1] for player in players])
+
+        for team in result['teams']:
+            for i, player in enumerate(team['players']):
+                mmr_percent = float(player[1]) / mmr_max * 100
+                team['players'][i] = {
+                    'name': player[0],
+                    'mmr': player[1],
+                    'mmr_percent': mmr_percent
+                }
+                print player
+
+        return context

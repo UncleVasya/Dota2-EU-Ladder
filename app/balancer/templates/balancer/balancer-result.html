@@ -1,8 +1,10 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
 
+{% load filters %}
+
 {% block page_styles %}
-    <link rel="stylesheet" href="{% static 'balancer/css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'balancer/css/balancer.css' %}">
 {% endblock page_styles %}
 
 {% block content %}
@@ -18,61 +20,59 @@
         </div>
     </div>
 
-    {% with result.answers.0 as answer %}
-         <div class="match-result">
-            Difference:
-            {% if answer.mmr_diff == 0 %}
-                <span class="draw">
-            {% elif answer.teams.0.mmr > answer.teams.1.mmr %}
-                <span class="player1">
-            {% else %}
-                <span class="player2">
-            {% endif %}
-                {{ answer.mmr_diff }} MMR
-            </span>
-        </div>
+     <div class="mmr-diff">
+        Difference:
+        {% if result.mmr_diff == 0 %}
+            <span class="draw">
+        {% elif result.teams.0.mmr > answer.teams.1.mmr %}
+            <span class="team1">
+        {% else %}
+            <span class="team2">
+        {% endif %}
+            {{ result.mmr_diff }} MMR
+        </span>
+    </div>
 
-        <div class="row">
-        {% for team in answer.teams %}
-            <div class="col-md-6">
-                <section class="match-opponent player{{ forloop.counter }}">
-                    <header>
-                        <a>
-                            Team {{ forloop.counter }} (Avg. {{ team.mmr }})
-                        </a>
-                    </header>
-                    <article>
-                        <div class="table-responsive match-opponent-stats">
-                            <table class="table table-borderless">
-                                <thead>
-                                    <tr>
-                                        <th> Player </th>
-                                        <th> MMR </th>
-                                    </tr>
-                                </thead>
+    <div class="row">
+    {% for team in result.teams %}
+        <div class="col-md-6">
+            <section class="balancer-result team{{ forloop.counter }}">
+                <header>
+                    <a>
+                        Team {{ forloop.counter }} (Avg. {{ team.mmr }})
+                    </a>
+                </header>
+                <article>
+                    <div class="table-responsive balancer-result-stats">
+                        <table class="table table-borderless">
+                            <thead>
+                                <tr>
+                                    <th> Player </th>
+                                    <th> MMR </th>
+                                </tr>
+                            </thead>
 
-                                <tbody>
-                                {% for player in team.players %}
-                                    <tr>
-                                        <td class="col-md-3">{{ player.0 }}</td> {# name #}
-                                        <td class="col-md-2">{{ player.1 }}</td> {# MMR #}
-                                        <td>
-                                            <div class="color-bar">
-                                                <div class="player{{ forloop.counter }}" style="width: {{ opponent.bot.rank_percent }}%"></div>
-    {#                                            <div style="width:{{ opponent.bot.rank_percent|remaining }}%"></div>#}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </article>
-                </section>
-            </div>
-        {% endfor %}
+                            <tbody>
+                            {% for player in team.players %}
+                                <tr>
+                                    <td class="col-md-3">{{ player.name }}</td> {# name #}
+                                    <td class="col-md-2">{{ player.mmr }}</td> {# MMR #}
+                                    <td>
+                                        <div class="color-bar">
+                                            <div class="team{{ forloop.parentloop.counter }}" style="width: {{ player.mmr_percent }}%"></div>
+                                            <div style="width:{{ player.mmr_percent|remaining }}%"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+            </section>
         </div>
-    {% endwith %}
+    {% endfor %}
+    </div>
 
 {% endblock %}
 
