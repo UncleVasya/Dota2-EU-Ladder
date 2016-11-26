@@ -2,37 +2,77 @@
 {% load staticfiles %}
 
 {% block page_styles %}
-{#    <link rel="stylesheet" href="{% static 'games/css/base.css' %}">#}
+    <link rel="stylesheet" href="{% static 'balancer/css/base.css' %}">
 {% endblock page_styles %}
 
 {% block content %}
 
-<div class="page-overview">
-    <div class="page-overview-primary">
-        <div class="page-overview-title">
-            <h1> Team balancing</h1>
+    <div class="page-overview">
+        <div class="page-overview-primary">
+            <div class="page-overview-title">
+                <h1>
+                    Team balancing
+                    <small>Results</small>
+                </h1>
+            </div>
         </div>
     </div>
-</div>
-
-
-<section>
-<article>
 
     {% with result.answers.0 as answer %}
-        {% for team in answer.teams %}
-            <br><br><br>
-            Team {{ forloop.counter }}: (Avg. {{ team.mmr }})
-            <br><br>
-            {% for player in team.players %}
-                <br>
-                {{ player.0 }}: {{ player.1 }}
-            {% endfor %}
-        {% endfor %}
-    {% endwith %}
+         <div class="match-result">
+            Difference:
+            {% if answer.mmr_diff == 0 %}
+                <span class="draw">
+            {% elif answer.teams.0.mmr > answer.teams.1.mmr %}
+                <span class="player1">
+            {% else %}
+                <span class="player2">
+            {% endif %}
+                {{ answer.mmr_diff }} MMR
+            </span>
+        </div>
 
-</article>
-</section>
+        <div class="row">
+        {% for team in answer.teams %}
+            <div class="col-md-6">
+                <section class="match-opponent player{{ forloop.counter }}">
+                    <header>
+                        <a>
+                            Team {{ forloop.counter }} (Avg. {{ team.mmr }})
+                        </a>
+                    </header>
+                    <article>
+                        <div class="table-responsive match-opponent-stats">
+                            <table class="table table-borderless">
+                                <thead>
+                                    <tr>
+                                        <th> Player </th>
+                                        <th> MMR </th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                {% for player in team.players %}
+                                    <tr>
+                                        <td class="col-md-3">{{ player.0 }}</td> {# name #}
+                                        <td class="col-md-2">{{ player.1 }}</td> {# MMR #}
+                                        <td>
+                                            <div class="color-bar">
+                                                <div class="player{{ forloop.counter }}" style="width: {{ opponent.bot.rank_percent }}%"></div>
+    {#                                            <div style="width:{{ opponent.bot.rank_percent|remaining }}%"></div>#}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </article>
+                </section>
+            </div>
+        {% endfor %}
+        </div>
+    {% endwith %}
 
 {% endblock %}
 
