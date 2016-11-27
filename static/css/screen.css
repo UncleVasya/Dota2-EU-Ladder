@@ -148,10 +148,9 @@ nav.pagination .page-current {
     color: #D9D9D9;
 }
 
-input, textarea {
+input {
     color: black;
     background-color: white;
-
 }
 
 section a,

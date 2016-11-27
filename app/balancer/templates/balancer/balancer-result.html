@@ -4,16 +4,15 @@
 {% load filters %}
 
 {% block page_styles %}
-    <link rel="stylesheet" href="{% static 'balancer/css/balancer.css' %}">
+    <link href="{% static 'balancer/css/balancer-result.css' %}" rel="stylesheet">
 {% endblock page_styles %}
 
 {% block content %}
-
     <div class="page-overview">
         <div class="page-overview-primary">
             <div class="page-overview-title">
                 <h1>
-                    Team balancing
+                    Team balancer
                     <small>Results</small>
                 </h1>
             </div>
@@ -38,9 +37,7 @@
         <div class="col-md-6">
             <section class="balancer-result team{{ forloop.counter }}">
                 <header>
-                    <a>
-                        Team {{ forloop.counter }} (Avg. {{ team.mmr }})
-                    </a>
+                    <a> Team {{ forloop.counter }} (Avg. {{ team.mmr }}) </a>
                 </header>
                 <article>
                     <div class="table-responsive balancer-result-stats">
@@ -55,8 +52,8 @@
                             <tbody>
                             {% for player in team.players %}
                                 <tr>
-                                    <td class="col-md-3">{{ player.name }}</td> {# name #}
-                                    <td class="col-md-2">{{ player.mmr }}</td> {# MMR #}
+                                    <td class="col-md-3">{{ player.name }}</td>
+                                    <td class="col-md-2">{{ player.mmr }}</td>
                                     <td>
                                         <div class="color-bar">
                                             <div class="team{{ forloop.parentloop.counter }}" style="width: {{ player.mmr_percent }}%"></div>
@@ -73,6 +70,5 @@
         </div>
     {% endfor %}
     </div>
-
 {% endblock %}
 
