@@ -14,5 +14,5 @@ input[type='Submit'] {
     border: 1px solid #92BB35;
     background: rgba(10, 10, 10, 0.15) none repeat scroll 0 0;
     color: #92BB35;
-    text-shadow: 1px 1px 0px rgba(10, 10, 10, 0.4);
+    text-shadow: 1px 1px 0 rgba(10, 10, 10, 0.4);
 }

@@ -23,7 +23,7 @@
         Difference:
         {% if result.mmr_diff == 0 %}
             <span class="draw">
-        {% elif result.teams.0.mmr > answer.teams.1.mmr %}
+        {% elif result.teams.0.mmr > result.teams.1.mmr %}
             <span class="team1">
         {% else %}
             <span class="team2">

@@ -62,6 +62,10 @@ ol, ul {
 }
 
 .menu-primary .menu-links ul li a:hover {
+    color: #39CCCC
+}
+
+.menu-primary .menu-links ul li.active a {
     background: #2E3740;
     color: #ED3B1C;
 }
@@ -362,44 +366,6 @@ a.link-white:visited,
 a.link-white:hover,
 a.link-white:active,
 a.link-white:focus {
-    color: white;
-}
-
-.page-menu {
-    position: relative;
-    margin: 0 0 6px 0;
-}
-
-.page-menu .menu-links {
-    background: #2a323a;
-    display: block;
-}
-
-.page-menu .menu-links ul {
-    display: inline-block;
-    margin: 0;
-    padding: 0;
-}
-
-.page-menu .menu-links ul li {
-    display: inline-block;
-}
-
-.page-menu .menu-links ul li a {
-    display: block;
-    border-bottom: 2px solid transparent;
-    color: #C4C4C4;
-    padding: 8px 8px;
-}
-
-.page-menu .menu-links ul li.active a {
-    background: #252d34;
-    color: white;
-    border-bottom: 2px solid #ED3B1C;
-}
-
-.page-menu .menu-links ul li a:hover {
-    background: #252d34;
     color: white;
 }
 

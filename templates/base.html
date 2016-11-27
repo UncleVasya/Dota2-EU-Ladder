@@ -33,13 +33,22 @@
     <body>
         <div class="menu-primary">
             <div class="container col-md-9">
-                <a class="menu-logo" href="">Dota 2 EU Ladder</a>
+                {% url 'balancer:balancer-input' as url %}
+                <a class="menu-logo" href="{{ url }}"> Dota 2 EU Ladder </a>
+
+                {% with request.resolver_match.namespace as namespace %}
                 <nav class="menu-links">
                     <ul>
-                        <li><a href="">Leaderboards</a></li>
-                        <li><a href="">Team balancer</a></li>
+                        <li>
+                            {% url 'balancer:balancer-input' as url %}
+                            <a href="{{ url }}"> Leaderboards </a></li>
+
+                        <li class="{% if namespace == 'balancer' %}active{% endif %}">
+                            {% url 'balancer:balancer-input' as url %}
+                            <a href="{{ url }}"> Team balancer </a></li>
                     </ul>
                 </nav>
+                {% endwith %}
             </div>
         </div>
 
@@ -52,7 +61,8 @@
             <div class="footer-nav">
                 <nav>
                     <ul>
-                        <li><a href="">Github</a></li>
+                        <li>
+                            <a href="https://github.com/UncleVasya/Dota2-EU-Ladder">Github</a></li>
                     </ul>
                 </nav>
             </div>
