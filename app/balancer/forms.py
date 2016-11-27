@@ -14,6 +14,9 @@ class BalancerForm(forms.Form):
     def clean(self):
         cleaned_data = super(BalancerForm, self).clean()
 
+        if self.errors:
+            return cleaned_data
+
         # check for player duplicates
         players = [cleaned_data['player_%s' % i] for i in xrange(1, 11)]
         counts = Counter(players)

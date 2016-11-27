@@ -16,3 +16,7 @@ input[type='Submit'] {
     color: #92BB35;
     text-shadow: 1px 1px 0 rgba(10, 10, 10, 0.4);
 }
+
+.alert {
+    margin-bottom: 0;
+}

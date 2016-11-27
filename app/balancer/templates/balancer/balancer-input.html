@@ -43,13 +43,7 @@
                             {% endif %}
 
                             <td>
-                                <div class="field-wrapper">
-                                    {{ field.errors }}
-                                    {{ field }}
-                                    {% if field.help_text %}
-                                        <p class="help">{{ field.help_text|safe }}</p>
-                                    {% endif %}
-                                </div>
+                                <div class="field-wrapper"> {{ field }} </div>
                             </td>
 
                             {% if odd == 'False' %}
@@ -62,10 +56,24 @@
             <input type="submit" value="Balance"/>
         </form>
 
-        {% if form.non_field_errors %}
-            <br><br>
-            Errors:
-            {{ form.non_field_errors }}
+        {#  form errors #}
+        {% if form.errors %}
+            <div class="alert alert-danger">
+                <strong> Errors: </strong>
+                <br>
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger">
+                            <strong>{{ field.name }}:</strong> {{ error|escape }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <strong>{{ error|escape }}</strong>
+                    </div>
+                {% endfor %}
+            </div>
         {% endif %}
     </article>
 </section>
