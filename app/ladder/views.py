@@ -1,4 +1,5 @@
 from app.ladder.models import Player
+from dal import autocomplete
 from django.db.models import Max
 from django.views.generic import ListView
 
@@ -23,3 +24,7 @@ class PlayerList(ListView):
         })
 
         return context
+
+
+class PlayerAutocomplete(autocomplete.Select2QuerySetView):
+    model = Player

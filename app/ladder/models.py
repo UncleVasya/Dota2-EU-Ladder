@@ -14,6 +14,9 @@ class Player(models.Model):
     class Meta:
         ordering = ['rank']
 
+    def __unicode__(self):
+        return u'%s' % self.name
+
     def save(self, calc_ranks=True, *args, **kwargs):
         super(Player, self).save(*args, **kwargs)
 

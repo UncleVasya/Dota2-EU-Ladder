@@ -20,3 +20,21 @@ input[type='Submit'] {
 .alert {
     margin-bottom: 0;
 }
+
+/* fixes for django-autocomplete-light */
+.select2-container {
+    color: black;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__clear {
+    float: none;
+}
+
+
+table > tbody > tr:nth-child(5) > td {
+    padding-bottom: 10px;
+}
+
+table > tbody > tr:nth-child(6) > td {
+    padding-top: 10px;
+}

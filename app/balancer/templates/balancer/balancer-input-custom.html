@@ -1,10 +1,6 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
 
-{% block page_scripts %}
-    {{ form.media }} {# django-autocomplete-light stuff #}
-{% endblock page_scripts %}
-
 {% block page_styles %}
     <link href="{% static 'balancer/css/balancer-input.css' %}" rel="stylesheet">
 {% endblock page_styles %}
@@ -30,16 +26,30 @@
             {% csrf_token %}
 
             <div class="table-responsive">
-                <table class="table table-borderless">
-                    <tbody>
-                    {% for field in form %}
+                <table class="table table-borderless  ">
+                    <thead>
                         <tr>
-                            <td class="cell-centered col-xs-2">{{ forloop.counter }}</td>
+                            <th class="col-xs-7">Player</th>
+                            <th class="col-xs-5">MMR</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for field in form %}
+                            {% cycle 'True' 'False' as odd silent %}
+
+                            {% if odd == 'True' %}
+                                <tr>
+                            {% endif %}
+
                             <td>
                                 <div class="field-wrapper"> {{ field }} </div>
                             </td>
-                        </tr>
-                    {% endfor %}
+
+                            {% if odd == 'False' %}
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
@@ -67,6 +77,6 @@
         {% endif %}
     </article>
 </section>
-
+    
 {% endblock %}
 
