@@ -1,3 +1,10 @@
+from app.balancer.models import BalanceResult
 from django.contrib import admin
 
-# Register your models here.
+
+class BalanceResultAdmin(admin.ModelAdmin):
+    model = BalanceResult
+
+    list_display = ('id',)
+
+admin.site.register(BalanceResult, BalanceResultAdmin)
