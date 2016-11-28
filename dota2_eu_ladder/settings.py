@@ -78,10 +78,11 @@ WSGI_APPLICATION = 'dota2_eu_ladder.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.9/ref/settings/#databases
 
+DATABASE_DIR = os.environ.get('OPENSHIFT_DATA_DIR', BASE_DIR)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME': os.path.join(DATABASE_DIR, 'db.sqlite3'),
     }
 }
 
