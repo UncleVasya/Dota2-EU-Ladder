@@ -33,14 +33,14 @@
     <body>
         <div class="menu-primary">
             <div class="container col-md-9">
-                {% url 'balancer:balancer-input' as url %}
+                {% url 'index' as url %}
                 <a class="menu-logo" href="{{ url }}"> Dota 2 EU Ladder </a>
 
                 {% with request.resolver_match.namespace as namespace %}
                 <nav class="menu-links">
                     <ul>
                         <li>
-                            {% url 'balancer:balancer-input' as url %}
+                            {% url 'ladder:player-list' as url %}
                             <a href="{{ url }}"> Leaderboards </a></li>
 
                         <li class="{% if namespace == 'balancer' %}active{% endif %}">

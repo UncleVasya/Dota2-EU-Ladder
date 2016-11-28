@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+
+{% block page_scripts %}
+{#    <script src="{% static 'ladder/js/base.js' %}"></script>#}
+{% endblock page_scripts %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'ladder/css/ladder.css' %}">
+{% endblock page_styles %}
+
+{% block content %}
+
+<div class="page-overview">
+    <div class="page-overview-primary">
+        <div class="page-overview-title">
+            <h1> Leaderboards
+                <small>Overview</small>
+            </h1>
+        </div>
+    </div>
+</div>
+
+<section>
+<article>
+    <div class="table-responsive">
+        <table class="table table-borderless">
+            <thead>
+                <tr>
+                    <th class="cell-centered">Rank</th>
+                    <th class="col-xs-3">Player</th>
+                    <th class="col-xs-4">Score</th>
+                    <th class="col-xs-2">MMR</th>
+                    <th class="col-xs-2">Matches </th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for player in player_list %}
+                <tr class="player_row">
+                    <td class="cell-centered">
+                        {{ player.rank }}
+                    </td>
+                    <td>
+                        <div class="avatar">
+                            <a href="">
+                                <img src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/60/6009ebd5640bed7c75004558733d63493ff2eaf8_full.jpg">
+                            </a>
+                        </div>
+                        <a href=""> {{ player.name }} </a>
+                        <div class="subtext">
+                            {{ player.last_played }} 10 hours ago
+                        </div>
+                    </td>
+                    <td>
+                        {{ player.score }}
+                        <div class="color-bar">
+                            <div class="score" style="width: {{ player.score_percent }}%"></div>
+                        </div>
+                    </td>
+                    <td>
+                        {{ player.mmr }}
+                        <div class="color-bar">
+                            <div class="mmr" style="width: {{ player.mmr_percent }}%"></div>
+                        </div>
+                    </td>
+                    <td>
+                        {{ player.match_count }}
+                        <div class="color-bar">
+                            <div class="matches" style="width: 50{{ player.matches_percent }}%"></div>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</article>
+</section>
+{% endblock %}
