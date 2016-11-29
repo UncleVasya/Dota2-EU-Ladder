@@ -412,3 +412,18 @@ table .avatar img {
     height: 4px;
     vertical-align: top;
 }
+
+.button {
+    display: block;
+    margin: 16px auto;
+    border-radius: 0;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    line-height: 13px;
+    padding: 9px 13px;
+    text-transform: uppercase;
+    border: 1px solid #92BB35;
+    background: rgba(10, 10, 10, 0.15) none repeat scroll 0 0;
+    color: #92BB35;
+    text-shadow: 1px 1px 0 rgba(10, 10, 10, 0.4);
+}

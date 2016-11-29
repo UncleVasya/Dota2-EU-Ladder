@@ -3,6 +3,11 @@
 
 {% load filters %}
 
+{% block page_scripts %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.5.13/clipboard.min.js"></script>
+    <script src="{% static 'balancer/js/balancer-result.js' %}"></script>
+{% endblock page_scripts %}
+
 {% block page_styles %}
     <link href="{% static 'balancer/css/balancer-result.css' %}" rel="stylesheet">
 {% endblock page_styles %}
@@ -70,5 +75,27 @@
         </div>
     {% endfor %}
     </div>
+
+    {# text result for clipboard copy #}
+    <div id="clipboard">
+        {% for team in result.teams %}
+            <p>Team {{ forloop.counter }} (Avg. {{ team.mmr }}) </p>
+            <br>
+
+            {% for player in team.players %}
+                {{ player.name }}: {{ player.mmr }}
+                <br>
+
+            {% endfor %}
+            <br>
+        {% endfor %}
+
+        MMR difference: {{ result.mmr_diff }}
+        <br><br>
+        url: {{ request.build_absolute_uri }}
+    </div>
+
+    <button id="button-copy" class="button" data-clipboard-target="#clipboard"> Copy to Clipboard </button>
+
 {% endblock %}
 

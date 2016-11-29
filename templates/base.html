@@ -39,7 +39,7 @@
                 {% with request.resolver_match.namespace as namespace %}
                 <nav class="menu-links">
                     <ul>
-                        <li>
+                        <li class="{% if namespace == 'ladder' %}active{% endif %}">
                             {% url 'ladder:player-list' as url %}
                             <a href="{{ url }}"> Leaderboards </a></li>
 

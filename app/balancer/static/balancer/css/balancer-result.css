@@ -52,3 +52,9 @@ section.balancer-result article {
 .color-bar .team2 {
     background: #C23C2A;
 }
+
+#clipboard {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+}
