@@ -11,7 +11,7 @@
     color: black;
 }
 
-.select2-container--default .select2-selection--single .select2-selection__clear {
+td .select2-container--default .select2-selection--single .select2-selection__clear {
     float: none;
 }
 

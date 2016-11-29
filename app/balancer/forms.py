@@ -36,14 +36,11 @@ class BalancerForm(forms.Form):
         return cleaned_data
 
 
-class BalancerFormCustom(forms.Form):
+class BalancerCustomForm(forms.Form):
     def __init__(self, *args, **kwargs):
-        super(BalancerFormCustom, self).__init__(*args, **kwargs)
+        super(BalancerCustomForm, self).__init__(*args, **kwargs)
 
         for i in xrange(1, 11):
-            self.fields['player_%s' % i] = forms.ModelChoiceField(
-                queryset=Player.objects.all(),
-                widget=autocomplete.ModelSelect2(url='ladder:player-autocomplete')
-            )
+            self.fields['player_%s' % i] = forms.CharField(label='Player %s' % i)
             self.fields['MMR_%s' % i] = forms.IntegerField(label='MMR %s' % i, min_value=0, initial=0)
 

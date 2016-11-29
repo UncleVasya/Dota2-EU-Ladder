@@ -2,7 +2,7 @@
 {% load staticfiles %}
 
 {% block page_scripts %}
-    {{ form.media }} {# django-autocomplete-light stuff #}
+
 {% endblock page_scripts %}
 
 {% block page_styles %}
@@ -21,13 +21,32 @@
     </div>
 </div>
 
+<div class="page-menu">
+    {% url 'balancer:balancer-input' as balancer_url %}
+    {% url 'balancer:balancer-input-custom'  as balancer_custom_url %}
+
+    <nav class="menu-links">
+        {% with request.resolver_match.url_name as page %}
+        <ul>
+            <li class="{% if page == 'balancer-input' %}active{% endif %}">
+                <a href="{{ balancer_url }}">Ladder</a></li>
+
+            <li class="{% if page == 'balancer-input-custom' %}active{% endif %}">
+                <a href="{{ balancer_custom_url }}">Custom</a></li>
+        </ul>
+        {% endwith %}
+    </nav>
+</div>
+
 <section>
     <header>
         <a> Add players </a>
     </header>
     <article class="col-xs-5">
+        {% block balancer-content %}
         <form action="{% url 'balancer:balancer-input' %}" method="post">
             {% csrf_token %}
+            {{ form.media }} {# django-autocomplete-light stuff #}
 
             <div class="table-responsive">
                 <table class="table table-borderless">
@@ -45,6 +64,7 @@
             </div>
             <input type="submit" value="Balance" class="button"/>
         </form>
+        {% endblock balancer-content %}
 
         {#  form errors #}
         {% if form.errors %}

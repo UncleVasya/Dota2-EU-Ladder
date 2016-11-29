@@ -1,82 +1,38 @@
-{% extends 'base.html' %}
+{% extends 'balancer/balancer-input.html' %}
 {% load staticfiles %}
 
-{% block page_styles %}
-    <link href="{% static 'balancer/css/balancer-input.css' %}" rel="stylesheet">
-{% endblock page_styles %}
+{% block balancer-content %}
+<form action="{% url 'balancer:balancer-input-custom' %}" method="post">
+    {% csrf_token %}
 
-{% block content %}
+    <div class="table-responsive">
+        <table class="table table-borderless  ">
+            <thead>
+                <tr>
+                    <th class="col-xs-7">Player</th>
+                    <th class="col-xs-5">MMR</th>
+                </tr>
+            </thead>
 
-<div class="page-overview">
-    <div class="page-overview-primary">
-        <div class="page-overview-title">
-            <h1>
-                Team balancer
-            </h1>
-        </div>
-    </div>
-</div>
-
-<section>
-    <header>
-        <a> Add players </a>
-    </header>
-    <article class="col-xs-5">
-        <form action="{% url 'balancer:balancer-input' %}" method="post">
-            {% csrf_token %}
-
-            <div class="table-responsive">
-                <table class="table table-borderless  ">
-                    <thead>
-                        <tr>
-                            <th class="col-xs-7">Player</th>
-                            <th class="col-xs-5">MMR</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        {% for field in form %}
-                            {% cycle 'True' 'False' as odd silent %}
-
-                            {% if odd == 'True' %}
-                                <tr>
-                            {% endif %}
-
-                            <td>
-                                <div class="field-wrapper"> {{ field }} </div>
-                            </td>
-
-                            {% if odd == 'False' %}
-                                </tr>
-                            {% endif %}
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            <input type="submit" value="Balance"/>
-        </form>
-
-        {#  form errors #}
-        {% if form.errors %}
-            <div class="alert alert-danger">
-                <strong> Errors: </strong>
-                <br>
+            <tbody>
                 {% for field in form %}
-                    {% for error in field.errors %}
-                        <div class="alert alert-danger">
-                            <strong>{{ field.name }}:</strong> {{ error|escape }}
-                        </div>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        <strong>{{ error|escape }}</strong>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    </article>
-</section>
-    
-{% endblock %}
+                    {% cycle 'True' 'False' as odd silent %}
 
+                    {% if odd == 'True' %}
+                        <tr>
+                    {% endif %}
+
+                    <td>
+                        <div class="field-wrapper"> {{ field }} </div>
+                    </td>
+
+                    {% if odd == 'False' %}
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <input type="submit" value="Balance" class="button"/>
+</form>
+{% endblock balancer-content %}
