@@ -1,7 +1,9 @@
 from app.balancer.balancer import balance_teams
 from app.balancer.forms import BalancerForm, BalancerCustomForm
 from app.balancer.models import BalanceResult
+from django.core.paginator import PageNotAnInteger
 from django.core.urlresolvers import reverse
+from django.http import Http404
 from django.views.generic import FormView, DetailView
 from pure_pagination import Paginator
 
@@ -54,10 +56,13 @@ class BalancerResult(DetailView):
         context = super(BalancerResult, self).get_context_data(**kwargs)
 
         # paginate
-        page_num = int(self.request.GET.get('page', 1))
-        page = Paginator(context['result'].answers, 1, request=self.request).page(page_num)
+        page_num = self.request.GET.get('page', 1)
+        try:
+            page = Paginator(context['result'].answers, 1, request=self.request).page(page_num)
+        except PageNotAnInteger:
+            raise Http404
 
-        result = context['result'] = context['result'].answers[page_num-1]
+        result = context['result'] = page.object_list[0]
 
         players = [p for team in result['teams'] for p in team['players']]
         mmr_max = max([player[1] for player in players])
