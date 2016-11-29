@@ -1,0 +1,53 @@
+{% if page_obj.paginator.num_pages > 1 or force_numbers %}
+    <div class="pagination-info">
+        {{ page_obj.start_index }} - {{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+    </div>
+{% endif %}
+
+{% if page_obj.paginator.num_pages > 1 %}
+    <nav class="pagination">
+        {% if page_obj.has_previous %}
+            <span>
+                <a href="?{{ page_obj.first_page_number.querystring }}">
+                    &laquo; First
+                </a>
+            </span>
+            <span>
+                <a href="?{{ page_obj.previous_page_number.querystring }}">
+                    &lsaquo; Prev
+                </a>
+            </span>
+        {% endif %}
+
+        {% for page in page_obj.pages %}
+            {% if page %}
+                {% if page == page_obj.number %}
+                    <span class="page-current">
+                        {{ page }}
+                    </span>
+                {% else %}
+                    <span>
+                        <a href="?{{ page.querystring }}">
+                            {{ page }}
+                        </a>
+                    </span>
+                {% endif %}
+            {% else %}
+                ...
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <span>
+                <a href="?{{ page_obj.next_page_number.querystring }}">
+                    Next &rsaquo;
+                </a>
+            </span>
+            <span>
+                <a href="?{{ page_obj.last_page_number.querystring }}">
+                    Last &raquo;
+                </a>
+            </span>
+        {% endif %}
+    </nav>
+{% endif %}

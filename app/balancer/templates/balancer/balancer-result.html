@@ -24,6 +24,8 @@
         </div>
     </div>
 
+    {% include 'pagination.html' with page_obj=pagination %}
+
      <div class="mmr-diff">
         Difference:
         {% if result.mmr_diff == 0 %}
@@ -96,6 +98,8 @@
     </div>
 
     <button id="button-copy" class="button" data-clipboard-target="#clipboard"> Copy to Clipboard </button>
+
+    {% include 'pagination.html' with page_obj=pagination force_numbers=True %}
 
 {% endblock %}
 

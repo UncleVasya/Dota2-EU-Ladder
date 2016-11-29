@@ -2,3 +2,5 @@ Django==1.9
 jsonfield==1.0.3
 whitenoise==3.2.2
 django-autocomplete-light==3.2.1
+
+git+git://github.com/unclevasya/django-pure-pagination.git@disablable_margins

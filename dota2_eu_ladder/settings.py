@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'pure_pagination',
+
     'app.ladder',
     'app.balancer',
 ]
@@ -133,3 +135,10 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'static'),
 )
+
+PAGINATION_SETTINGS = {
+    'PAGE_RANGE_DISPLAYED': 8,
+    'MARGIN_PAGES_DISPLAYED': 0,
+
+    'SHOW_FIRST_PAGE_WHEN_INVALID': True,
+}

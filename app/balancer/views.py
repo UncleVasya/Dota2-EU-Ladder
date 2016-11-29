@@ -3,6 +3,7 @@ from app.balancer.forms import BalancerForm, BalancerCustomForm
 from app.balancer.models import BalanceResult
 from django.core.urlresolvers import reverse
 from django.views.generic import FormView, DetailView
+from pure_pagination import Paginator
 
 
 class BalancerInput(FormView):
@@ -52,7 +53,11 @@ class BalancerResult(DetailView):
     def get_context_data(self, **kwargs):
         context = super(BalancerResult, self).get_context_data(**kwargs)
 
-        result = context['result'] = context['result'].answers[0]
+        # paginate
+        page_num = int(self.request.GET.get('page', 1))
+        page = Paginator(context['result'].answers, 1, request=self.request).page(page_num)
+
+        result = context['result'] = context['result'].answers[page_num-1]
 
         players = [p for team in result['teams'] for p in team['players']]
         mmr_max = max([player[1] for player in players])
@@ -66,5 +71,9 @@ class BalancerResult(DetailView):
                     'mmr_percent': mmr_percent
                 }
                 print player
+
+        context.update({
+            'pagination': page,
+        })
 
         return context
