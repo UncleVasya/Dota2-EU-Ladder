@@ -1,7 +1,7 @@
 import itertools
 
 
-def balance_teams(players):
+def balance_teams(players, mmr_exponent=3):
     """
     Takes a list of 10 players and produces
     a list of suitable teams pairs.
@@ -35,10 +35,15 @@ def balance_teams(players):
     teams = list(itertools.combinations(players, team_players))
 
     # calc avg MMR for each team
+    # --------------------------
+    # Taking MMR exponent will make difference between high mmr players
+    # to have more impact than same difference between low mmr players
+    # (good for balancing).
     teams = [
         {
             'players': team,
-            'mmr': sum(player[1] for player in team) / team_players
+            'mmr': sum(player[1] for player in team) / team_players,
+            'mmr_exp': sum(player[1] ** mmr_exponent for player in team) / team_players
         }
         for team in teams
     ]
@@ -60,12 +65,13 @@ def balance_teams(players):
     answers = [
         {
             'teams': answer,
-            'mmr_diff': abs(answer[0]['mmr'] - answer[1]['mmr'])
+            'mmr_diff': abs(answer[0]['mmr'] - answer[1]['mmr']),
+            'mmr_diff_exp': abs(answer[0]['mmr_exp'] - answer[1]['mmr_exp'])
         }
         for answer in answers
     ]
 
     # sort answers by mmr difference
-    answers.sort(key=lambda x: x['mmr_diff'])
+    answers.sort(key=lambda x: x['mmr_diff_exp'])
 
     return answers

@@ -36,7 +36,8 @@ class BalancerInputCustom(FormView):
         mmrs = [form.cleaned_data['MMR_%s' % i] for i in xrange(1, 11)]
 
         # balance teams and save result
-        answers = balance_teams(zip(players, mmrs))
+        mmr_exponent = 3
+        answers = balance_teams(zip(players, mmrs), mmr_exponent)
         self.result = BalanceResult.objects.create(
             answers=answers
         )
@@ -64,12 +65,16 @@ class BalancerResult(DetailView):
 
         result = context['result'] = page.object_list[0]
 
+        # TODO: make a result.mmr_exponent DB field,
+        # TODO: make an Answer model
+        mmr_exponent = 3
+
         players = [p for team in result['teams'] for p in team['players']]
-        mmr_max = max([player[1] for player in players])
+        mmr_max = max([player[1] ** mmr_exponent for player in players])
 
         for team in result['teams']:
             for i, player in enumerate(team['players']):
-                mmr_percent = float(player[1]) / mmr_max * 100
+                mmr_percent = float(player[1] ** mmr_exponent) / mmr_max * 100
                 team['players'][i] = {
                     'name': player[0],
                     'mmr': player[1],
