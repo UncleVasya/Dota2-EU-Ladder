@@ -54,20 +54,9 @@ class MatchPlayer(models.Model):
     def save(self, *args, **kwargs):
         super(MatchPlayer, self).save(*args, **kwargs)
 
-        print 'MatchPlayer: %s' % self
-        print 'MatchPlayer.player: %s' % self.player
-        print 'MatchPlayer.team: %s' % self.team
-        print 'MathPlayer.match.winner: %s' % self.match.winner
-        print 'MatchPlayer.player.score: %s' % self.player.score
-
         if self.team == self.match.winner:
-            print 'Adding +1'
             self.player.score += 1
         else:
-            print 'Subtracting -1'
             self.player.score -= 1
 
         self.player.save()
-
-        print 'MatchPlayer.player.score: %s' % self.player.score
-        print '\n\n'

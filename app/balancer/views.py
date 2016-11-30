@@ -4,6 +4,7 @@ from app.balancer.models import BalanceResult
 from app.ladder.models import Player, Match, MatchPlayer
 from django.core.paginator import PageNotAnInteger
 from django.core.urlresolvers import reverse_lazy, reverse
+from django.db import transaction
 from django.http import Http404
 from django.views.generic import FormView, DetailView, RedirectView
 from pure_pagination import Paginator
@@ -95,25 +96,21 @@ class MatchCreate(RedirectView):
     url = reverse_lazy('ladder:player-list')
 
     def get_redirect_url(self, *args, **kwargs):
-        print kwargs['pk']
-        print kwargs['answer']
-
         answer = int(kwargs['answer'])
         answer = BalanceResult.objects.get(id=kwargs['pk']).answers[answer]
 
-        print answer
+        with transaction.atomic():
+            match = Match(winner=int(kwargs['winner']))
+            match.save()
 
-        match = Match(winner=int(kwargs['winner']))
-        match.save()
-
-        for i, team in enumerate(answer['teams']):
-            for player in team['players']:
-                name = player[0]
-                player = Player.objects.get(name=name)
-                MatchPlayer(
-                    match=match,
-                    player=player,
-                    team=i
-                ).save()
+            for i, team in enumerate(answer['teams']):
+                for player in team['players']:
+                    name = player[0]
+                    player = Player.objects.get(name=name)
+                    MatchPlayer(
+                        match=match,
+                        player=player,
+                        team=i
+                    ).save()
 
         return super(MatchCreate, self).get_redirect_url(*args, **kwargs)
