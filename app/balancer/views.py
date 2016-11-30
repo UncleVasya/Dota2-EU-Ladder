@@ -1,10 +1,11 @@
 from app.balancer.balancer import balance_teams
 from app.balancer.forms import BalancerForm, BalancerCustomForm
 from app.balancer.models import BalanceResult
+from app.ladder.models import Player, Match, MatchPlayer
 from django.core.paginator import PageNotAnInteger
-from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse_lazy, reverse
 from django.http import Http404
-from django.views.generic import FormView, DetailView
+from django.views.generic import FormView, DetailView, RedirectView
 from pure_pagination import Paginator
 
 
@@ -63,16 +64,16 @@ class BalancerResult(DetailView):
         except PageNotAnInteger:
             raise Http404
 
-        result = context['result'] = page.object_list[0]
+        answer = page.object_list[0]
 
         # TODO: make a result.mmr_exponent DB field,
         # TODO: make an Answer model
         mmr_exponent = 3
 
-        players = [p for team in result['teams'] for p in team['players']]
+        players = [p for team in answer['teams'] for p in team['players']]
         mmr_max = max([player[1] ** mmr_exponent for player in players])
 
-        for team in result['teams']:
+        for team in answer['teams']:
             for i, player in enumerate(team['players']):
                 mmr_percent = float(player[1] ** mmr_exponent) / mmr_max * 100
                 team['players'][i] = {
@@ -83,7 +84,36 @@ class BalancerResult(DetailView):
                 print player
 
         context.update({
+            'answer': answer,
             'pagination': page,
         })
 
         return context
+
+
+class MatchCreate(RedirectView):
+    url = reverse_lazy('ladder:player-list')
+
+    def get_redirect_url(self, *args, **kwargs):
+        print kwargs['pk']
+        print kwargs['answer']
+
+        answer = int(kwargs['answer'])
+        answer = BalanceResult.objects.get(id=kwargs['pk']).answers[answer]
+
+        print answer
+
+        match = Match(winner=int(kwargs['winner']))
+        match.save()
+
+        for i, team in enumerate(answer['teams']):
+            for player in team['players']:
+                name = player[0]
+                player = Player.objects.get(name=name)
+                MatchPlayer(
+                    match=match,
+                    player=player,
+                    team=i
+                ).save()
+
+        return super(MatchCreate, self).get_redirect_url(*args, **kwargs)

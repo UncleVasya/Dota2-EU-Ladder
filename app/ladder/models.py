@@ -1,5 +1,5 @@
 from __future__ import unicode_literals
-from collections import defaultdict, OrderedDict
+from collections import defaultdict
 
 from django.db import models
 
@@ -17,6 +17,7 @@ class Player(models.Model):
     def __unicode__(self):
         return u'%s' % self.name
 
+    # TODO: make model manager and move it there?
     def save(self, calc_ranks=True, *args, **kwargs):
         super(Player, self).save(*args, **kwargs)
 
@@ -29,9 +30,44 @@ class Player(models.Model):
             score_groups[player.score].append(player)
 
         score_groups = sorted(score_groups.items(), reverse=True)
-        print score_groups
 
         for rank, group in enumerate(score_groups):
             for player in group[1]:
                 player.rank = rank + 1
                 player.save(calc_ranks=False)
+
+
+class Match(models.Model):
+    players = models.ManyToManyField(Player, through='MatchPlayer')
+    winner = models.PositiveSmallIntegerField()
+    date = models.DateTimeField(auto_now_add=True)
+
+
+class MatchPlayer(models.Model):
+    match = models.ForeignKey(Match)
+    player = models.ForeignKey(Player)
+    team = models.PositiveSmallIntegerField()
+
+    class Meta:
+        unique_together = ('player', 'match')
+
+    def save(self, *args, **kwargs):
+        super(MatchPlayer, self).save(*args, **kwargs)
+
+        print 'MatchPlayer: %s' % self
+        print 'MatchPlayer.player: %s' % self.player
+        print 'MatchPlayer.team: %s' % self.team
+        print 'MathPlayer.match.winner: %s' % self.match.winner
+        print 'MatchPlayer.player.score: %s' % self.player.score
+
+        if self.team == self.match.winner:
+            print 'Adding +1'
+            self.player.score += 1
+        else:
+            print 'Subtracting -1'
+            self.player.score -= 1
+
+        self.player.save()
+
+        print 'MatchPlayer.player.score: %s' % self.player.score
+        print '\n\n'
