@@ -97,7 +97,11 @@ class MatchCreate(RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         answer = int(kwargs['answer'])
-        answer = BalanceResult.objects.get(id=kwargs['pk']).answers[answer]
+
+        try:
+            answer = BalanceResult.objects.get(id=kwargs['pk']).answers[answer]
+        except (BalanceResult.DoesNotExist, IndexError):
+            raise Http404
 
         with transaction.atomic():
             match = Match(winner=int(kwargs['winner']))
