@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/1.9/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.9/ref/settings/
 """
+from django.core.urlresolvers import reverse_lazy
 
 import os
 
@@ -26,6 +27,8 @@ SECRET_KEY = 'mw3%!kaud!x33oc72by2zs2j--x#6n=-6c_wiil+w9jpvd)s^6'
 DEBUG = True
 
 ALLOWED_HOSTS = []
+
+LOGIN_URL = reverse_lazy('admin:login')
 
 
 # Application definition

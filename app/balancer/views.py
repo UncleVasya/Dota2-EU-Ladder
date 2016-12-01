@@ -1,3 +1,5 @@
+from django.contrib.auth.mixins import PermissionRequiredMixin, LoginRequiredMixin
+from django.shortcuts import get_object_or_404
 from app.balancer.balancer import balance_teams
 from app.balancer.forms import BalancerForm, BalancerCustomForm
 from app.balancer.models import BalanceResult
@@ -92,8 +94,9 @@ class BalancerResult(DetailView):
         return context
 
 
-class MatchCreate(RedirectView):
+class MatchCreate(PermissionRequiredMixin, RedirectView):
     url = reverse_lazy('ladder:player-list')
+    permission_required = 'ladder.add_match'
 
     def get_redirect_url(self, *args, **kwargs):
         answer = int(kwargs['answer'])
