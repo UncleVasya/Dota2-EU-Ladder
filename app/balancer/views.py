@@ -1,13 +1,13 @@
 from django.contrib.auth.mixins import PermissionRequiredMixin
-from django.core.exceptions import SuspiciousOperation
+from app.balancer import models
 from app.balancer.balancer import balance_teams
 from app.balancer.forms import BalancerForm, BalancerCustomForm
-from app.balancer.models import BalanceResult
+from app.balancer.models import BalanceResult, BalanceAnswer
 from app.ladder.models import Player, Match, MatchPlayer
 from django.core.paginator import PageNotAnInteger
 from django.core.urlresolvers import reverse_lazy, reverse
 from django.db import transaction
-from django.http import Http404, HttpResponseNotAllowed, HttpResponseBadRequest
+from django.http import Http404, HttpResponseBadRequest
 from django.views.generic import FormView, DetailView, RedirectView
 from pure_pagination import Paginator
 
@@ -21,9 +21,13 @@ class BalancerInput(FormView):
 
         # balance teams and save result
         answers = balance_teams(players)
-        self.result = BalanceResult.objects.create(
-            answers=answers
-        )
+
+        self.result = models.BalanceResult.objects.create()
+        for answer in answers:
+            models.BalanceAnswer.objects.create(
+                answer=answer,
+                result=self.result
+            )
 
         return super(BalancerInput, self).form_valid(form)
 
@@ -40,11 +44,14 @@ class BalancerInputCustom(FormView):
         mmrs = [form.cleaned_data['MMR_%s' % i] for i in xrange(1, 11)]
 
         # balance teams and save result
-        mmr_exponent = 3
-        answers = balance_teams(zip(players, mmrs), mmr_exponent)
-        self.result = BalanceResult.objects.create(
-            answers=answers
-        )
+        answers = balance_teams(zip(players, mmrs))
+
+        self.result = BalanceResult.objects.create()
+        for answer in answers:
+            BalanceAnswer.objects.create(
+                answer=answer,
+                result=self.result
+            )
 
         return super(BalancerInputCustom, self).form_valid(form)
 
@@ -63,11 +70,12 @@ class BalancerResult(DetailView):
         # paginate
         page_num = self.request.GET.get('page', 1)
         try:
-            page = Paginator(context['result'].answers, 1, request=self.request).page(page_num)
+            answers = context['result'].answers.all()
+            page = Paginator(answers, 1, request=self.request).page(page_num)
         except PageNotAnInteger:
             raise Http404
 
-        answer = page.object_list[0]
+        answer = page.object_list[0].answer
 
         # TODO: make a result.mmr_exponent DB field,
         # TODO: make an Answer model
@@ -102,31 +110,40 @@ class MatchCreate(PermissionRequiredMixin, RedirectView):
         answer = int(kwargs['answer'])
 
         try:
-            answer = BalanceResult.objects.get(id=kwargs['pk']).answers[answer]
+            result = BalanceResult.objects.get(id=kwargs['pk'])
+            answer = result.answers.all()[answer]
         except (BalanceResult.DoesNotExist, IndexError):
+            return HttpResponseBadRequest(request)
+
+        if answer.match:
+            # we already created a match from this BalanceAnswer
             return HttpResponseBadRequest(request)
 
         # check that players from balance exist
         # (we don't allow CustomBalance results here)
-        players = [p[0] for t in answer['teams'] for p in t['players']]
+        players = [p[0] for t in answer.answer['teams'] for p in t['players']]
         players = Player.objects.filter(name__in=players)
 
         if len(players) < 10:
             return HttpResponseBadRequest(request)
 
         with transaction.atomic():
-            match = Match(winner=int(kwargs['winner']))
-            match.save()
+            match = Match.objects.create(winner=int(kwargs['winner']))
 
-            for i, team in enumerate(answer['teams']):
+            for i, team in enumerate(answer.answer['teams']):
                 for player in team['players']:
                     player = next(p for p in players if p.name == player[0])
-                    MatchPlayer(
+
+                    MatchPlayer.objects.create(
                         match=match,
                         player=player,
                         team=i
-                    ).save()
+                    )
+                    answer.save()
 
             Player.objects.update_ranks()
+
+            answer.match = match
+            answer.save()
 
         return super(MatchCreate, self).get(request, *args, **kwargs)
