@@ -20,8 +20,10 @@ class Player(models.Model):
         return u'%s' % self.name
 
     def save(self, *args, **kwargs):
-        # TODO: move this to clean_fields() later
-        # TODO: (can't do it atm, because of empty dota_id in test data)
+        # TODO: Move this to clean_fields() later
+        # TODO: (can't do it atm, because of empty dota_id in test data).
+        # TODO: Or even better move this to manager.update_scores()
+        # TODO  (this will allow us bulk_update in future)
         self.score = max(self.score, 0)
 
         super(Player, self).save(*args, **kwargs)
