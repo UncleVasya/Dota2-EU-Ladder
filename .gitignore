@@ -53,6 +53,7 @@ coverage.xml
 *sqlite3
 *.log
 local_settings.py
+staticfiles/
 
 # Flask stuff:
 instance/
@@ -80,6 +81,7 @@ celerybeat-schedule
 .env
 
 # virtualenv
+.virtualenv/
 venv/
 ENV/
 

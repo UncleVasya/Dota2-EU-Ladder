@@ -20,6 +20,7 @@ from django.contrib import admin
 
 from app.ladder import urls as ladder_urls
 from app.balancer import urls as balancer_urls
+from dota2_eu_ladder import settings
 
 
 urlpatterns = [
@@ -30,3 +31,9 @@ urlpatterns = [
 
     url(r'^admin/', admin.site.urls),
 ]
+
+if settings.DEBUG:
+    import debug_toolbar
+    urlpatterns += [
+        url(r'^__debug__/', include(debug_toolbar.urls)),
+    ]
