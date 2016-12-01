@@ -19,6 +19,13 @@ class Player(models.Model):
     def __unicode__(self):
         return u'%s' % self.name
 
+    def save(self, *args, **kwargs):
+        # TODO: move this to clean_fields() later
+        # TODO: (can't do it atm, because of empty dota_id in test data)
+        self.score = max(self.score, 0)
+
+        super(Player, self).save(*args, **kwargs)
+
 
 class Match(models.Model):
     players = models.ManyToManyField(Player, through='MatchPlayer')
