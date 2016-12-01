@@ -1,5 +1,5 @@
-from django.contrib.auth.mixins import PermissionRequiredMixin, LoginRequiredMixin
-from django.shortcuts import get_object_or_404
+from django.contrib.auth.mixins import PermissionRequiredMixin
+from django.core.exceptions import SuspiciousOperation
 from app.balancer.balancer import balance_teams
 from app.balancer.forms import BalancerForm, BalancerCustomForm
 from app.balancer.models import BalanceResult
@@ -7,7 +7,7 @@ from app.ladder.models import Player, Match, MatchPlayer
 from django.core.paginator import PageNotAnInteger
 from django.core.urlresolvers import reverse_lazy, reverse
 from django.db import transaction
-from django.http import Http404
+from django.http import Http404, HttpResponseNotAllowed, HttpResponseBadRequest
 from django.views.generic import FormView, DetailView, RedirectView
 from pure_pagination import Paginator
 
@@ -98,13 +98,21 @@ class MatchCreate(PermissionRequiredMixin, RedirectView):
     url = reverse_lazy('ladder:player-list')
     permission_required = 'ladder.add_match'
 
-    def get_redirect_url(self, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         answer = int(kwargs['answer'])
 
         try:
             answer = BalanceResult.objects.get(id=kwargs['pk']).answers[answer]
         except (BalanceResult.DoesNotExist, IndexError):
-            raise Http404
+            return HttpResponseBadRequest(request)
+
+        # check that players from balance exist
+        # (we don't allow CustomBalance results here)
+        players = [p[0] for t in answer['teams'] for p in t['players']]
+        players = Player.objects.filter(name__in=players)
+
+        if len(players) < 10:
+            return HttpResponseBadRequest(request)
 
         with transaction.atomic():
             match = Match(winner=int(kwargs['winner']))
@@ -112,8 +120,7 @@ class MatchCreate(PermissionRequiredMixin, RedirectView):
 
             for i, team in enumerate(answer['teams']):
                 for player in team['players']:
-                    name = player[0]
-                    player = Player.objects.get(name=name)
+                    player = next(p for p in players if p.name == player[0])
                     MatchPlayer(
                         match=match,
                         player=player,
@@ -122,4 +129,4 @@ class MatchCreate(PermissionRequiredMixin, RedirectView):
 
             Player.objects.update_ranks()
 
-        return super(MatchCreate, self).get_redirect_url(*args, **kwargs)
+        return super(MatchCreate, self).get(request, *args, **kwargs)
