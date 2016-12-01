@@ -113,4 +113,6 @@ class MatchCreate(RedirectView):
                         team=i
                     ).save()
 
+            Player.objects.update_ranks()
+
         return super(MatchCreate, self).get_redirect_url(*args, **kwargs)

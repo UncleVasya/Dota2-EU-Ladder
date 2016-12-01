@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
-from collections import defaultdict
 
 from django.db import models
+from dota2_eu_ladder.managers import PlayerManager
 
 
 class Player(models.Model):
@@ -11,30 +11,13 @@ class Player(models.Model):
     mmr = models.PositiveIntegerField()
     dota_id = models.CharField(max_length=200)
 
+    objects = PlayerManager()
+
     class Meta:
         ordering = ['rank']
 
     def __unicode__(self):
         return u'%s' % self.name
-
-    # TODO: make model manager and move it there?
-    def save(self, calc_ranks=True, *args, **kwargs):
-        super(Player, self).save(*args, **kwargs)
-
-        if not calc_ranks:
-            return
-
-        # recalculate player rankings based on score
-        score_groups = defaultdict(list)
-        for player in Player.objects.all():
-            score_groups[player.score].append(player)
-
-        score_groups = sorted(score_groups.items(), reverse=True)
-
-        for rank, group in enumerate(score_groups):
-            for player in group[1]:
-                player.rank = rank + 1
-                player.save(calc_ranks=False)
 
 
 class Match(models.Model):
@@ -54,6 +37,7 @@ class MatchPlayer(models.Model):
     def save(self, *args, **kwargs):
         super(MatchPlayer, self).save(*args, **kwargs)
 
+        # TODO: update scores in one query on match add
         if self.team == self.match.winner:
             self.player.score += 1
         else:
