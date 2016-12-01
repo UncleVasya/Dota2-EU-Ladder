@@ -21,20 +21,48 @@
     color: #FBB829;
 }
 
-section.balancer-result.team1 header a {
+section.balancer-result.team1 header a,
+section.balancer-result.team1 footer a{
     color: #92A525;
 }
 
-section.balancer-result.team2 header a {
+section.balancer-result.team2 header a,
+section.balancer-result.team2 footer a{
     color: #C23C2A;
 }
 
-section.balancer-result.team2 header {
+section.balancer-result.team2 header,
+section.balancer-result.team2 footer
+{
     text-align: right;
 }
 
 section.balancer-result article {
     display: flex;
+}
+
+/*section.balancer-result footer {*/
+    /*text-align: center;*/
+/*}*/
+
+section.balancer-result a.button {
+	display: inline-block;
+    margin-bottom: 0;
+    margin-top: 8px;
+}
+
+section.balancer-result.team1 a.button {
+    border: 1px solid #92A525;
+}
+
+section.balancer-result.team2 a.button {
+    border: 1px solid #C23C2A;
+}
+
+section.balancer-result a.button.already-done {
+    cursor: inherit;
+    border: none;
+    background: inherit;
 }
 
 .balancer-result-stats {
@@ -57,4 +85,8 @@ section.balancer-result article {
     position: absolute;
     left: -9999px;
     top: 0;
+}
+
+#button-copy {
+    margin-top: 0;
 }

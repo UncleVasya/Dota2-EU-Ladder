@@ -96,6 +96,7 @@ class BalancerResult(DetailView):
 
         context.update({
             'answer': answer,
+            'match': page.object_list[0].match,
             'pagination': page,
         })
 

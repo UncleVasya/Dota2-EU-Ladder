@@ -73,9 +73,19 @@
                         </table>
                     </div>
                 </article>
-                <footer>
-                    <a href="{% url 'balancer:match-create' result.id pagination.number|add:-1 forloop.counter0 %}"> Record victory! </a>
-                </footer>
+
+                {# buttons to record victory #}
+                {% if perms.ladder.add_match %}
+                    <footer>
+                        {% if not match %}
+                            {% url 'balancer:match-create' result.id pagination.number|add:-1 forloop.counter0 as url%}
+                            <a class="button team{{ forloop.counter }}" href="{{ url }}"> Record victory! </a>
+                        {% elif match.winner == forloop.counter0 %}
+                            <a class="button already-done team{{ forloop.counter }}"> Victory recorded! </a>
+                        {% endif %}
+                    </footer>
+                {% endif %}
+
             </section>
         </div>
     {% endfor %}
