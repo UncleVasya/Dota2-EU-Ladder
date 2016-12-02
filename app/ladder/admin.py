@@ -1,6 +1,8 @@
+from django import forms
 from app.ladder.models import Player, Match, MatchPlayer
 from django.contrib import admin
 from django.db.models import Prefetch
+from dal import autocomplete
 
 
 class PlayerAdmin(admin.ModelAdmin):
@@ -19,8 +21,20 @@ class PlayerAdmin(admin.ModelAdmin):
         Player.objects.update_ranks()
 
 
-class PlayerInline(admin.TabularInline):
+class MatchPlayerInlineForm(forms.ModelForm):
+    player = forms.ModelChoiceField(
+        queryset=Player.objects.all(),
+        widget=autocomplete.ModelSelect2(url='ladder:player-autocomplete')
+    )
+
+    class Meta:
+        model = Player
+        fields = ('__all__')
+
+
+class MatchPlayerInline(admin.TabularInline):
     model = MatchPlayer
+    form = MatchPlayerInlineForm
     min_num = 10
     max_num = 10
 
@@ -33,7 +47,7 @@ class MatchAdmin(admin.ModelAdmin):
     ]
     readonly_fields = ['date']
 
-    inlines = (PlayerInline, )
+    inlines = (MatchPlayerInline, )
 
     list_display = ('date', )
 
