@@ -20,14 +20,18 @@ class BalancerInput(FormView):
         players = [(p.name, p.mmr) for p in form.cleaned_data.values()]
 
         # balance teams and save result
-        answers = balance_teams(players)
+        mmr_exponent = 3
+        answers = balance_teams(players, mmr_exponent)
 
-        self.result = models.BalanceResult.objects.create()
-        for answer in answers:
-            models.BalanceAnswer.objects.create(
-                answer=answer,
-                result=self.result
-            )
+        with transaction.atomic():
+            self.result = models.BalanceResult.objects.create(mmr_exponent=mmr_exponent)
+            for answer in answers:
+                models.BalanceAnswer.objects.create(
+                    teams=answer['teams'],
+                    mmr_diff=answer['mmr_diff'],
+                    mmr_diff_exp=answer['mmr_diff_exp'],
+                    result=self.result
+                )
 
         return super(BalancerInput, self).form_valid(form)
 
@@ -44,12 +48,15 @@ class BalancerInputCustom(FormView):
         mmrs = [form.cleaned_data['MMR_%s' % i] for i in xrange(1, 11)]
 
         # balance teams and save result
-        answers = balance_teams(zip(players, mmrs))
+        mmr_exponent = 3
+        answers = balance_teams(zip(players, mmrs), mmr_exponent)
 
-        self.result = BalanceResult.objects.create()
+        self.result = BalanceResult.objects.create(mmr_exponent=mmr_exponent)
         for answer in answers:
             BalanceAnswer.objects.create(
-                answer=answer,
+                teams=answer['teams'],
+                mmr_diff=answer['mmr_diff'],
+                mmr_diff_exp=answer['mmr_diff_exp'],
                 result=self.result
             )
 
@@ -75,16 +82,16 @@ class BalancerResult(DetailView):
         except PageNotAnInteger:
             raise Http404
 
-        answer = page.object_list[0].answer
+        answer = page.object_list[0]
 
         # TODO: make a result.mmr_exponent DB field,
         # TODO: make an Answer model
-        mmr_exponent = 3
+        mmr_exponent = answer.result.mmr_exponent
 
-        players = [p for team in answer['teams'] for p in team['players']]
+        players = [p for team in answer.teams for p in team['players']]
         mmr_max = max([player[1] ** mmr_exponent for player in players])
 
-        for team in answer['teams']:
+        for team in answer.teams:
             for i, player in enumerate(team['players']):
                 mmr_percent = float(player[1] ** mmr_exponent) / mmr_max * 100
                 team['players'][i] = {
@@ -92,11 +99,9 @@ class BalancerResult(DetailView):
                     'mmr': player[1],
                     'mmr_percent': mmr_percent
                 }
-                print player
 
         context.update({
             'answer': answer,
-            'match': page.object_list[0].match,
             'pagination': page,
         })
 
@@ -108,12 +113,9 @@ class MatchCreate(PermissionRequiredMixin, RedirectView):
     permission_required = 'ladder.add_match'
 
     def get(self, request, *args, **kwargs):
-        answer = int(kwargs['answer'])
-
         try:
-            result = BalanceResult.objects.get(id=kwargs['pk'])
-            answer = result.answers.all()[answer]
-        except (BalanceResult.DoesNotExist, IndexError):
+            answer = BalanceAnswer.objects.get(id=kwargs['pk'])
+        except BalanceAnswer.DoesNotExist:
             return HttpResponseBadRequest(request)
 
         if answer.match:
@@ -122,7 +124,7 @@ class MatchCreate(PermissionRequiredMixin, RedirectView):
 
         # check that players from balance exist
         # (we don't allow CustomBalance results here)
-        players = [p[0] for t in answer.answer['teams'] for p in t['players']]
+        players = [p[0] for t in answer.teams for p in t['players']]
         players = Player.objects.filter(name__in=players)
 
         if len(players) < 10:
@@ -131,7 +133,7 @@ class MatchCreate(PermissionRequiredMixin, RedirectView):
         with transaction.atomic():
             match = Match.objects.create(winner=int(kwargs['winner']))
 
-            for i, team in enumerate(answer.answer['teams']):
+            for i, team in enumerate(answer.teams):
                 for player in team['players']:
                     player = next(p for p in players if p.name == player[0])
 

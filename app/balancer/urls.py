@@ -7,7 +7,7 @@ urlpatterns = [
     url(r'^results/(?P<pk>[0-9]+)/$', BalancerResult.as_view(), name='balancer-result'),
 
     url(
-        r'^results/(?P<pk>[0-9]+)/(?P<answer>[0-9]+)/match-create/(?P<winner>[0-1])/$',
+        r'^answers/(?P<pk>[0-9]+)/match-create/(?P<winner>[0-1])/$',
         MatchCreate.as_view(),
         name='match-create'
     ),
