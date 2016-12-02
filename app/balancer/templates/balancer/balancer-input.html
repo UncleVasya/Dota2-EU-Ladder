@@ -2,7 +2,7 @@
 {% load staticfiles %}
 
 {% block page_scripts %}
-
+    {{ form.media }} {# django-autocomplete-light stuff #}
 {% endblock page_scripts %}
 
 {% block page_styles %}
@@ -46,7 +46,6 @@
         {% block balancer-content %}
         <form action="{% url 'balancer:balancer-input' %}" method="post">
             {% csrf_token %}
-            {{ form.media }} {# django-autocomplete-light stuff #}
 
             <div class="table-responsive">
                 <table class="table table-borderless">
