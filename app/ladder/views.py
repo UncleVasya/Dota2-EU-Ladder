@@ -1,6 +1,7 @@
-from app.ladder.models import Player
+from collections import defaultdict
+from app.ladder.models import Player, MatchPlayer
 from dal import autocomplete
-from django.db.models import Max
+from django.db.models import Max, Count
 from django.views.generic import ListView, DetailView
 
 
@@ -11,13 +12,27 @@ class PlayerList(ListView):
         context = super(PlayerList, self).get_context_data(**kwargs)
         players = context['player_list']
 
-        max_vals = players.aggregate(Max('mmr'), Max('score'))
+        # get match counts for every player
+        match_counts = MatchPlayer.objects.values_list('player')\
+            .annotate(match_count=Count('*'))\
+            .order_by()
+        match_counts = defaultdict(int, match_counts)
+
+        for player in players:
+            player.match_count = match_counts[player.id]
+
+        max_vals = players.aggregate(Max('mmr'), Max('score'), )
         score_max = max_vals['score__max']
         mmr_max = max_vals['mmr__max']
+
+        matches_max = 0
+        if players:
+            matches_max = max(player.match_count for player in players)
 
         for player in players:
             player.score_percent = float(player.score) / score_max * 100
             player.mmr_percent = float(player.mmr) / mmr_max * 100
+            player.matches_percent = float(player.match_count) / matches_max * 100
 
         context.update({
             'player_list': players,

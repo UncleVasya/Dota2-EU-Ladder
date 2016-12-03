@@ -28,9 +28,9 @@
             <thead>
                 <tr>
                     <th class="cell-centered">Rank</th>
-                    <th class="col-xs-3">Player</th>
-                    <th class="col-xs-4">Score</th>
-                    <th class="col-xs-2">MMR</th>
+                    <th class="col-xs-4">Player</th>
+                    <th class="col-xs-2">Score</th>
+                    <th class="col-xs-3">MMR</th>
                     <th class="col-xs-2">Matches </th>
                 </tr>
             </thead>
@@ -72,9 +72,9 @@
                         </div>
                     </td>
                     <td>
-                        {{ player.matchplayer_set.count }}
+                        {{ player.match_count }}
                         <div class="color-bar">
-                            <div class="matches" style="width: 50{{ player.matches_percent }}%"></div>
+                            <div class="matches" style="width: {{ player.matches_percent }}%"></div>
                         </div>
                     </td>
                 </tr>
