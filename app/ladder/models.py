@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from autoslug import AutoSlugField
 from dota2_eu_ladder.managers import PlayerManager
 
 
@@ -10,6 +11,7 @@ class Player(models.Model):
     score = models.PositiveIntegerField(default=25)
     mmr = models.PositiveIntegerField()
     dota_id = models.CharField(max_length=200)
+    slug = AutoSlugField(populate_from='name', always_update=True)
 
     objects = PlayerManager()
 

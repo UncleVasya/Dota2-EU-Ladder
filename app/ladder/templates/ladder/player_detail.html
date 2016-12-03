@@ -10,7 +10,7 @@
 {% endblock page_styles %}
 
 {% block content %}
-    {% url 'ladder:player-overview' player.name as player_url %}
+    {% url 'ladder:player-overview' player.slug as player_url %}
 
     <div class="page-overview">
         <div class="page-overview-primary">

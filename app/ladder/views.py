@@ -29,7 +29,7 @@ class PlayerList(ListView):
 class PlayerOverview(DetailView):
     model = Player
     context_object_name = 'player'
-    slug_field = 'name__iexact'
+    slug_field = 'slug__iexact'
 
     def get_context_data(self, **kwargs):
         context = super(PlayerOverview, self).get_context_data(**kwargs)

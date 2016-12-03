@@ -36,7 +36,7 @@
             </thead>
             <tbody>
             {% for player in player_list %}
-                {% url 'ladder:player-overview' player.name as player_url %}
+                {% url 'ladder:player-overview' player.slug as player_url %}
 
                 <tr class="player_row">
                     <td class="cell-centered">
@@ -72,7 +72,7 @@
                         </div>
                     </td>
                     <td>
-                        {{ player.match_count }}
+                        {{ player.matchplayer_set.count }}
                         <div class="color-bar">
                             <div class="matches" style="width: 50{{ player.matches_percent }}%"></div>
                         </div>
