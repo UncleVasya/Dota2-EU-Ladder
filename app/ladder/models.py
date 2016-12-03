@@ -42,6 +42,7 @@ class MatchPlayer(models.Model):
 
     class Meta:
         unique_together = ('player', 'match')
+        ordering = ('-match__date', 'team')
 
     def save(self, *args, **kwargs):
         super(MatchPlayer, self).save(*args, **kwargs)

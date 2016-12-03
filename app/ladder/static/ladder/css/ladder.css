@@ -9,3 +9,23 @@
 .color-bar .matches {
     background: #FBB829;
 }
+
+.match-record {
+    color: #979797;
+}
+
+.match-record .wins, .match-row .win {
+    color: #A9CF54;
+}
+
+.match-record .sep {
+    padding: 0 2px;
+}
+
+.match-record .losses, .match-row .loss {
+    color: #C23C2A;
+}
+
+.match-record .draws, .match-row .draw {
+    color: #979797;
+}

@@ -1,7 +1,7 @@
 from app.ladder.models import Player
 from dal import autocomplete
 from django.db.models import Max
-from django.views.generic import ListView
+from django.views.generic import ListView, DetailView
 
 
 class PlayerList(ListView):
@@ -21,6 +21,33 @@ class PlayerList(ListView):
 
         context.update({
             'player_list': players,
+        })
+
+        return context
+
+
+class PlayerOverview(DetailView):
+    model = Player
+    context_object_name = 'player'
+    slug_field = 'name__iexact'
+
+    def get_context_data(self, **kwargs):
+        context = super(PlayerOverview, self).get_context_data(**kwargs)
+
+        player = self.object
+
+        matches = player.matchplayer_set.all()
+        wins = sum(1 if m.match.winner == m.team else 0 for m in matches)
+        losses = len(matches) - wins
+        win_percent = 0
+        if matches:
+            win_percent = float(wins) / len(matches) * 100
+
+        context.update({
+            'wins': wins,
+            'losses': losses,
+            'winrate': win_percent,
+            'match_list': matches,
         })
 
         return context
