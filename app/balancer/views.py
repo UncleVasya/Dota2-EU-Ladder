@@ -142,7 +142,6 @@ class MatchCreate(PermissionRequiredMixin, RedirectView):
                         player=player,
                         team=i
                     )
-                    answer.save()
 
             Player.objects.update_ranks()
 
