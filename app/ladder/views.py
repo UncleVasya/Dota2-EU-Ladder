@@ -25,9 +25,8 @@ class PlayerList(ListView):
         score_max = max_vals['score__max']
         mmr_max = max_vals['mmr__max']
 
-        matches_max = 0
-        if players:
-            matches_max = max(player.match_count for player in players)
+        matches_max = max(player.match_count for player in players)
+        matches_max = max(matches_max, 1)
 
         for player in players:
             player.score_percent = float(player.score) / score_max * 100
