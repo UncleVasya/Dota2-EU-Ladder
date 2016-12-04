@@ -53,15 +53,25 @@ class PlayerOverview(DetailView):
         matches = player.matchplayer_set.all()
         wins = sum(1 if m.match.winner == m.team else 0 for m in matches)
         losses = len(matches) - wins
+
         win_percent = 0
         if matches:
             win_percent = float(wins) / len(matches) * 100
+
+        score_changes = player.scorechange_set.all()
+
+        # calc score history
+        score = 0
+        for scoreChange in reversed(score_changes):
+            score += scoreChange.amount
+            scoreChange.score = score
 
         context.update({
             'wins': wins,
             'losses': losses,
             'winrate': win_percent,
             'match_list': matches,
+            'score_changes': score_changes,
         })
 
         return context

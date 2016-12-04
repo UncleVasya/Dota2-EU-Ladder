@@ -1,8 +1,9 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.db.models import Sum
 from autoslug import AutoSlugField
-from dota2_eu_ladder.managers import PlayerManager
+from dota2_eu_ladder.managers import PlayerManager, ScoreChangeManager
 
 
 class Player(models.Model):
@@ -11,7 +12,7 @@ class Player(models.Model):
     score = models.PositiveIntegerField(default=25)
     mmr = models.PositiveIntegerField()
     dota_id = models.CharField(max_length=200)
-    slug = AutoSlugField(populate_from='name', always_update=True)
+    slug = AutoSlugField(populate_from='name')
 
     objects = PlayerManager()
 
@@ -44,6 +45,9 @@ class MatchPlayer(models.Model):
 
     class Meta:
         unique_together = ('player', 'match')
+        # TODO: replace '-match__date' with '-id' and check that:
+        # TODO: - nothing breaks
+        # TODO: - speed increased
         ordering = ('-match__date', 'team')
 
     def save(self, *args, **kwargs):
@@ -55,4 +59,32 @@ class MatchPlayer(models.Model):
         else:
             self.player.score -= 1
 
+        score_change = 1 if self.team == self.match.winner else -1
+        ScoreChange.objects.create(
+            player=self.player,
+            amount=score_change,
+            match=self,
+        )
+
         self.player.save()
+
+
+class ScoreChange(models.Model):
+    player = models.ForeignKey(Player)
+    amount = models.SmallIntegerField()
+    match = models.ForeignKey(MatchPlayer, null=True, blank=True)
+    info = models.CharField(max_length=255)
+    date = models.DateTimeField(auto_now_add=True)
+
+    objects = ScoreChangeManager()
+
+    class Meta:
+        unique_together = ('player', 'match')
+        ordering = ('-id', )
+
+    def save(self, *args, **kwargs):
+        super(ScoreChange, self).save()
+
+        self.player.score = self.player.scorechange_set.aggregate(
+            Sum('amount')
+        )['amount__sum']

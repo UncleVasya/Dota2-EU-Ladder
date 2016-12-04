@@ -58,7 +58,7 @@
     </div>
 
     <section>
-    <header> Latest matches </header>
+    <header> Score history </header>
     <article>
         <div class="table-responsive table-borderless">
             <table class="table table-borderless">
@@ -71,16 +71,18 @@
                     </tr>
                 </thead>
                 <tbody>
-                {% for playerMatch in match_list %}
+                {% for event in score_changes %}
                     <tr class="match-row" data-link="{{ match_url }}">
                         <td>
-                        {% if playerMatch.team == playerMatch.match.winner %}
+                        {% if not event.match %}
+                            <div class="win"> Admin action </div>
+                        {% elif event.match.team == event.match.match.winner %}
                             <div class="win"> Won match </div>
                         {% else %}
                             <div class="loss"> Lost match </div>
                         {% endif %}
 
-                         {% with playerMatch.match.date as time %}
+                         {% with event.date as time %}
                             <time class="subtext timeago"
                                   datetime="{{ time|date:'c' }}"
                                   title="{{ time }}">
@@ -90,17 +92,21 @@
                         </td>
 
                         <td>
-                            {{ player.score }}
+                            {{ event.score }}
                         </td>
 
                         <td>
-                            +1
+                           {{ event.amount|stringformat:'+d' }}
                         </td>
 
                         <td>
-                            <a href="">Dotabuff</a>
-                            &nbsp;
-                            <a href="">Opendota</a>
+                            {% if event.match %}
+                                <a href="">Dotabuff</a>
+                                &nbsp;
+                                <a href="">Opendota</a>
+                            {% else %}
+                                {{ event.info }}
+                            {% endif %}
                         </td>
                     </tr>
                 {% endfor %}
