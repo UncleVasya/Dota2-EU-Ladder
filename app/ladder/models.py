@@ -9,8 +9,9 @@ from dota2_eu_ladder.managers import PlayerManager, ScoreChangeManager
 class Player(models.Model):
     name = models.CharField(max_length=200, unique=True)
     rank = models.PositiveIntegerField(default=0)
-    score = models.PositiveIntegerField(default=25)
+    score = models.PositiveIntegerField(default=0)
     mmr = models.PositiveIntegerField()
+    ladder_mmr = models.PositiveIntegerField(default=0)
     dota_id = models.CharField(max_length=200)
     slug = AutoSlugField(populate_from='name')
 
@@ -28,6 +29,7 @@ class Player(models.Model):
         # TODO: Or even better move this to manager.update_scores()
         # TODO  (this will allow us bulk_update in future)
         self.score = max(self.score, 0)
+        self.ladder_mmr = max(self.ladder_mmr, 0)
 
         super(Player, self).save(*args, **kwargs)
 
@@ -59,10 +61,15 @@ class MatchPlayer(models.Model):
         else:
             self.player.score -= 1
 
-        score_change = 1 if self.team == self.match.winner else -1
+        victory = 1 if self.team == self.match.winner else -1
+
+        score_change = 1 * victory
+        mmr_change = 15 * victory
+
         ScoreChange.objects.create(
             player=self.player,
             amount=score_change,
+            mmr_change=mmr_change,
             match=self,
         )
 
@@ -71,7 +78,8 @@ class MatchPlayer(models.Model):
 
 class ScoreChange(models.Model):
     player = models.ForeignKey(Player)
-    amount = models.SmallIntegerField()
+    amount = models.SmallIntegerField(default=0)
+    mmr_change = models.SmallIntegerField(default=0)
     match = models.ForeignKey(MatchPlayer, null=True, blank=True)
     info = models.CharField(max_length=255)
     date = models.DateTimeField(auto_now_add=True)
@@ -88,3 +96,7 @@ class ScoreChange(models.Model):
         self.player.score = self.player.scorechange_set.aggregate(
             Sum('amount')
         )['amount__sum']
+
+        self.player.ladder_mmr = self.player.scorechange_set.aggregate(
+            Sum('mmr_change')
+        )['mmr_change__sum']

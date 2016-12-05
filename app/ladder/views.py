@@ -61,10 +61,13 @@ class PlayerOverview(DetailView):
         score_changes = player.scorechange_set.all()
 
         # calc score history
-        score = 0
+        score = mmr = 0
         for scoreChange in reversed(score_changes):
             score += scoreChange.amount
+            mmr += scoreChange.mmr_change
+
             scoreChange.score = score
+            scoreChange.mmr = mmr
 
         context.update({
             'wins': wins,

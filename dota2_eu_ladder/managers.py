@@ -29,6 +29,7 @@ class ScoreChangeManager(models.Manager):
             ScoreChange(
                 player=player,
                 amount=25,
+                mmr_change=1500,
                 info='Season started',
             ).save()
 
