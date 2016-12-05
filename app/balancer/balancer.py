@@ -1,4 +1,5 @@
 import itertools
+from app.ladder.models import Match
 
 
 def balance_teams(players, mmr_exponent=3):
@@ -75,3 +76,46 @@ def balance_teams(players, mmr_exponent=3):
     answers.sort(key=lambda x: x['mmr_diff_exp'])
 
     return answers
+
+
+def balance_for_match(match):
+    """
+    Takes a match and produces balance info for it.
+    Used to calculate balance info for already played matches.
+
+    :param match: app.ladder.models.Match object
+    :return: dictionary with balance info
+    """
+
+    team_players = 5
+    mmr_exponent = 3
+
+    match = Match.objects.last()
+
+    # TODO: move this outside and take teams as a parameter instead of match
+    players = match.matchplayer_set.all()
+    teams = [
+        [(p.player.name, p.player.mmr) for p in players if p.team == team]
+        for team in xrange(2)
+    ]
+
+    # TODO: make function team_stats cause code repeats one from balance_teams
+    teams = [
+        {
+            'players': team,
+            'mmr': sum(player[1] for player in team) / team_players,
+            'mmr_exp': sum(player[1] ** mmr_exponent for player in team) / team_players
+        }
+        for team in teams
+    ]
+
+    # TODO: make function balance_stats cause code repeats one from balance_teams
+    answer = {
+        'teams': teams,
+        'mmr_diff': abs(teams[0]['mmr'] - teams[1]['mmr']),
+        'mmr_diff_exp': abs(teams[0]['mmr_exp'] - teams[1]['mmr_exp'])
+    }
+
+    return answer
+
+

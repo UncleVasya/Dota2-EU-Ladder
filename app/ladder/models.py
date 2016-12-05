@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from django.db import models
 from django.db.models import Sum
+from app.balancer.models import BalanceAnswer
 from autoslug import AutoSlugField
 from dota2_eu_ladder.managers import PlayerManager, ScoreChangeManager
 
@@ -37,6 +38,7 @@ class Player(models.Model):
 class Match(models.Model):
     players = models.ManyToManyField(Player, through='MatchPlayer')
     winner = models.PositiveSmallIntegerField()
+    balance = models.OneToOneField(BalanceAnswer, null=True)
     date = models.DateTimeField(auto_now_add=True)
 
 
@@ -55,25 +57,25 @@ class MatchPlayer(models.Model):
     def save(self, *args, **kwargs):
         super(MatchPlayer, self).save(*args, **kwargs)
 
-        # TODO: update scores in one query on match add
-        if self.team == self.match.winner:
-            self.player.score += 1
-        else:
-            self.player.score -= 1
-
-        victory = 1 if self.team == self.match.winner else -1
-
-        score_change = 1 * victory
-        mmr_change = 15 * victory
-
-        ScoreChange.objects.create(
-            player=self.player,
-            amount=score_change,
-            mmr_change=mmr_change,
-            match=self,
-        )
-
-        self.player.save()
+        # # TODO: update scores in one query on match add
+        # if self.team == self.match.winner:
+        #     self.player.score += 1
+        # else:
+        #     self.player.score -= 1
+        #
+        # victory = 1 if self.team == self.match.winner else -1
+        #
+        # score_change = 1 * victory
+        # mmr_change = 15 * victory
+        #
+        # ScoreChange.objects.create(
+        #     player=self.player,
+        #     amount=score_change,
+        #     mmr_change=mmr_change,
+        #     match=self,
+        # )
+        #
+        # self.player.save()
 
 
 class ScoreChange(models.Model):
@@ -100,3 +102,5 @@ class ScoreChange(models.Model):
         self.player.ladder_mmr = self.player.scorechange_set.aggregate(
             Sum('mmr_change')
         )['mmr_change__sum']
+
+        self.player.save()

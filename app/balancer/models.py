@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 import collections
 from django.db import models
-from app.ladder.models import Match
 from jsonfield import JSONField
 
 
@@ -18,4 +17,3 @@ class BalanceAnswer(models.Model):
     mmr_diff = models.IntegerField()
     mmr_diff_exp = models.IntegerField()
     result = models.ForeignKey(BalanceResult, related_name='answers')
-    match = models.ForeignKey(Match, null=True)  # if a match was played with these teams

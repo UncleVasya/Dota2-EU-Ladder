@@ -21,9 +21,10 @@ class PlayerList(ListView):
         for player in players:
             player.match_count = match_counts[player.id]
 
-        max_vals = players.aggregate(Max('mmr'), Max('score'), )
+        max_vals = players.aggregate(Max('mmr'), Max('score'), Max('ladder_mmr'))
         score_max = max_vals['score__max']
         mmr_max = max_vals['mmr__max']
+        ladder_mmr_max = max_vals['ladder_mmr__max']
 
         matches_max = max(player.match_count for player in players)
         matches_max = max(matches_max, 1)
@@ -31,6 +32,7 @@ class PlayerList(ListView):
         for player in players:
             player.score_percent = float(player.score) / score_max * 100
             player.mmr_percent = float(player.mmr) / mmr_max * 100
+            player.ladder_mmr_percent = float(player.ladder_mmr) / ladder_mmr_max * 100
             player.matches_percent = float(player.match_count) / matches_max * 100
 
         context.update({

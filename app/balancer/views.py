@@ -9,6 +9,7 @@ from django.core.urlresolvers import reverse_lazy, reverse
 from django.db import transaction
 from django.http import Http404, HttpResponseBadRequest
 from django.views.generic import FormView, DetailView, RedirectView
+from dota2_eu_ladder.managers import MatchManager
 from pure_pagination import Paginator
 
 
@@ -17,7 +18,7 @@ class BalancerInput(FormView):
     template_name = 'balancer/balancer-input.html'
 
     def form_valid(self, form):
-        players = [(p.name, p.mmr) for p in form.cleaned_data.values()]
+        players = [(p.name, p.ladder_mmr) for p in form.cleaned_data.values()]
 
         # balance teams and save result
         mmr_exponent = 3
@@ -118,7 +119,7 @@ class MatchCreate(PermissionRequiredMixin, RedirectView):
         except BalanceAnswer.DoesNotExist:
             return HttpResponseBadRequest(request)
 
-        if answer.match:
+        if hasattr(answer, 'match'):
             # we already created a match from this BalanceAnswer
             return HttpResponseBadRequest(request)
 
@@ -131,7 +132,10 @@ class MatchCreate(PermissionRequiredMixin, RedirectView):
             return HttpResponseBadRequest(request)
 
         with transaction.atomic():
-            match = Match.objects.create(winner=int(kwargs['winner']))
+            match = Match.objects.create(
+                winner=int(kwargs['winner']),
+                balance=answer,
+            )
 
             for i, team in enumerate(answer.teams):
                 for player in team['players']:
@@ -143,9 +147,7 @@ class MatchCreate(PermissionRequiredMixin, RedirectView):
                         team=i
                     )
 
+            MatchManager.add_scores(match)
             Player.objects.update_ranks()
-
-            answer.match = match
-            answer.save()
 
         return super(MatchCreate, self).get(request, *args, **kwargs)
