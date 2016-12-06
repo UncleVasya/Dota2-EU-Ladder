@@ -59,29 +59,6 @@ class MatchPlayer(models.Model):
         # TODO: - speed increased
         ordering = ('-match__date', 'team')
 
-    def save(self, *args, **kwargs):
-        super(MatchPlayer, self).save(*args, **kwargs)
-
-        # # TODO: update scores in one query on match add
-        # if self.team == self.match.winner:
-        #     self.player.score += 1
-        # else:
-        #     self.player.score -= 1
-        #
-        # victory = 1 if self.team == self.match.winner else -1
-        #
-        # score_change = 1 * victory
-        # mmr_change = 15 * victory
-        #
-        # ScoreChange.objects.create(
-        #     player=self.player,
-        #     amount=score_change,
-        #     mmr_change=mmr_change,
-        #     match=self,
-        # )
-        #
-        # self.player.save()
-
 
 class ScoreChange(models.Model):
     player = models.ForeignKey(Player)
