@@ -29,3 +29,18 @@
 .match-record .draws, .match-row .draw {
     color: #979797;
 }
+
+.test-winner {
+    color: #39CCCC;
+}
+
+div.test-winner {
+    font-size: 1.3em;
+    font-weight: 800;
+    line-height: 2em;
+    vertical-align: middle;
+    text-align: center;
+    text-shadow: 1px 1px 5px #000;
+    text-transform: uppercase;
+    margin-top: 12px;
+}

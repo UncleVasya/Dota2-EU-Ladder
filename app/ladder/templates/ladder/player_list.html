@@ -49,6 +49,10 @@
                             </a>
                         </div>
                         <a href="{{ player_url }}"> {{ player.name }} </a>
+                        {% if player.name == 'Ulafzs' %}
+                            &nbsp;&nbsp;
+                            <span class="test-winner">Day 1 winner!</span>
+                        {% endif %}
                         <div class="subtext">
                             {% with player.matchplayer_set.last.match.date as last_played %}
                                 <time class="timeago"
