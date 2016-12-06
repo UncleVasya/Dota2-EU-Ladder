@@ -24,7 +24,7 @@ class MatchManager(models.Manager):
 
         mmr_diff = match.balance.teams[0]['mmr'] - match.balance.teams[1]['mmr']
         underdog = 0 if mmr_diff <= 0 else 1
-        underdog_bonus = abs(mmr_diff / 5)
+        underdog_bonus = abs(mmr_diff) / 5
 
         print 'mmr diff: %d' % mmr_diff
         print 'underdog: %d' % underdog
