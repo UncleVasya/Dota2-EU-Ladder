@@ -3,6 +3,22 @@ from django.db import models
 
 
 class PlayerManager(models.Manager):
+    # gives player initial score and mmr
+    @staticmethod
+    def init_score(player):
+        from app.ladder.models import ScoreChange
+
+        avg_mmr = 4000  # TODO: calculate it
+        initial_mmr = 1500 - 30 * (avg_mmr - player.mmr) / 1000
+
+        score = ScoreChange.objects.create(
+            player=player,
+            amount=25,
+            mmr_change=initial_mmr,
+            info='Season started',
+        )
+        player.scorechange_set.add(score)
+
     def update_ranks(self):
         # recalculate player rankings based on score
         score_groups = defaultdict(list)
@@ -56,22 +72,4 @@ class MatchManager(models.Manager):
 
 
 class ScoreChangeManager(models.Manager):
-    def create(self, **kwargs):
-        from app.ladder.models import ScoreChange
-
-        player = kwargs['player']
-        print player
-
-        # if player has no score record yet, give him initial score and mmr
-        if player.scorechange_set.count() <= 0:
-            avg_mmr = 4000  # TODO: calculate it
-            initial_mmr = 1500 - 30 * (avg_mmr - player.mmr) / 1000
-
-            ScoreChange(
-                player=player,
-                amount=25,
-                mmr_change=initial_mmr,
-                info='Season started',
-            ).save()
-
-        return super(ScoreChangeManager, self).create(**kwargs)
+    pass

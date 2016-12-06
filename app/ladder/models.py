@@ -32,7 +32,12 @@ class Player(models.Model):
         self.score = max(self.score, 0)
         self.ladder_mmr = max(self.ladder_mmr, 0)
 
+        created = not self.pk
         super(Player, self).save(*args, **kwargs)
+
+        # give player initial score and mmr
+        if created:
+            PlayerManager.init_score(self)
 
 
 class Match(models.Model):
