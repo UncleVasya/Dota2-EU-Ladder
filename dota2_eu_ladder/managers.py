@@ -9,7 +9,7 @@ class PlayerManager(models.Manager):
         from app.ladder.models import ScoreChange
 
         avg_mmr = 4000  # TODO: calculate it
-        initial_mmr = 1500 - 30 * (avg_mmr - player.mmr) / 1000
+        initial_mmr = 200 - 30 * (avg_mmr - player.mmr) / 1000
 
         score = ScoreChange.objects.create(
             player=player,
@@ -20,9 +20,12 @@ class PlayerManager(models.Manager):
         player.scorechange_set.add(score)
 
     def update_ranks(self):
-        # recalculate player rankings based on score
+        players = self.filter(matchplayer__isnull=False).distinct()
+        players = players or self.all()
+
+        # recalculate player rankings based on ladder-mmr
         mmr_groups = defaultdict(list)
-        for player in self.all():
+        for player in players:
             mmr_groups[player.ladder_mmr].append(player)
 
         mmr_groups = sorted(mmr_groups.items(), reverse=True)
@@ -53,7 +56,7 @@ class MatchManager(models.Manager):
 
             score_change = 1 * is_victory
 
-            mmr_change = 15 * is_victory
+            mmr_change = 7 * is_victory
             mmr_change += underdog_bonus * is_underdog
 
             print 'Player: %s  Team: %d' % (matchPlayer.player.name, matchPlayer.team)

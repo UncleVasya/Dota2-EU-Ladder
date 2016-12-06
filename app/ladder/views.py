@@ -13,6 +13,8 @@ class PlayerList(ListView):
         context = super(PlayerList, self).get_context_data(**kwargs)
         players = context['player_list']
 
+        players = players or Player.objects.all()
+
         # get match counts for every player
         match_counts = MatchPlayer.objects.values_list('player')\
             .annotate(match_count=Count('*'))\
