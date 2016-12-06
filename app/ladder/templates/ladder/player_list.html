@@ -29,9 +29,8 @@
                 <tr>
                     <th class="cell-centered">Rank</th>
                     <th class="col-xs-4">Player</th>
-                    <th class="col-xs-2">Score</th>
-                    <th class="col-xs-1">MMR</th>
-                    <th class="col-xs-2">Ladder MMR</th>
+                    <th class="col-xs-3">Ladder MMR</th>
+                    <th class="col-xs-2">Dota MMR</th>
                     <th class="col-xs-2">Matches </th>
                 </tr>
             </thead>
@@ -61,21 +60,15 @@
                         </div>
                     </td>
                     <td>
-                        {{ player.score }}
+                        {{ player.ladder_mmr }}
                         <div class="color-bar">
-                            <div class="score" style="width: {{ player.score_percent }}%"></div>
+                            <div class="score" style="width: {{ player.ladder_mmr_percent }}%"></div>
                         </div>
                     </td>
                     <td>
                         {{ player.mmr }}
                         <div class="color-bar">
                             <div class="mmr" style="width: {{ player.mmr_percent }}%"></div>
-                        </div>
-                    </td>
-                    <td>
-                        {{ player.ladder_mmr }}
-                        <div class="color-bar">
-                            <div class="mmr" style="width: {{ player.ladder_mmr_percent }}%"></div>
                         </div>
                     </td>
                     <td>

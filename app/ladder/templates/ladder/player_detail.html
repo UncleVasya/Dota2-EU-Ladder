@@ -64,12 +64,10 @@
             <table class="table table-borderless">
                 <thead>
                     <tr>
-                        <th class="col-xs-2">Event</th>
-                        <th class="col-xs-1">Score</th>
-                        <th class="col-xs-2">Score change</th>
-                        <th class="col-xs-1">Ladder MMR</th>
-                        <th class="col-xs-2">MMR change</th>
-                        <th class="col-xs-2">Additional info</th>
+                        <th class="col-xs-4">Event</th>
+                        <th class="col-xs-2">Ladder MMR</th>
+                        <th class="col-xs-3">MMR change</th>
+                        <th class="col-xs-3">Additional info</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -91,14 +89,6 @@
                                 {{ time|date:'c'|default:'-' }}
                             </time>
                         {% endwith %}
-                        </td>
-
-                        <td>
-                            {{ event.score }}
-                        </td>
-
-                        <td>
-                           {{ event.amount|stringformat:'+d' }}
                         </td>
 
                         <td>
