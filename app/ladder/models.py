@@ -4,7 +4,7 @@ from django.db import models
 from django.db.models import Sum
 from app.balancer.models import BalanceAnswer
 from autoslug import AutoSlugField
-from dota2_eu_ladder.managers import PlayerManager, ScoreChangeManager
+from app.ladder.managers import PlayerManager, ScoreChangeManager
 
 
 class Player(models.Model):

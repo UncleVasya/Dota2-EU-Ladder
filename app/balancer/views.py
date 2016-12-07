@@ -9,7 +9,7 @@ from django.core.urlresolvers import reverse_lazy, reverse
 from django.db import transaction
 from django.http import Http404, HttpResponseBadRequest
 from django.views.generic import FormView, DetailView, RedirectView
-from dota2_eu_ladder.managers import MatchManager
+from app.ladder.managers import MatchManager
 from pure_pagination import Paginator
 
 
