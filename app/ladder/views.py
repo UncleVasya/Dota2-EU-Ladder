@@ -86,4 +86,4 @@ class PlayerOverview(DetailView):
 
 
 class PlayerAutocomplete(autocomplete.Select2QuerySetView):
-    model = Player
+    queryset = Player.objects.order_by('name')
