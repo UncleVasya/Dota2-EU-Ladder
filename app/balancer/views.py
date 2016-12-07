@@ -131,7 +131,7 @@ class MatchCreate(PermissionRequiredMixin, RedirectView):
 
         if hasattr(answer, 'match'):
             # we already created a match from this BalanceAnswer
-            return HttpResponseBadRequest(request)
+            return super(MatchCreate, self).get(request, *args, **kwargs)
 
         # check that players from balance exist
         # (we don't allow CustomBalance results here)
