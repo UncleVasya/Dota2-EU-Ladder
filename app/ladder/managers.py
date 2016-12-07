@@ -30,9 +30,11 @@ class PlayerManager(models.Manager):
 
         mmr_groups = sorted(mmr_groups.items(), reverse=True)
 
-        for rank, group in enumerate(mmr_groups):
+        rank = 0
+        for group in mmr_groups:
+            rank += len(group[1])
             for player in group[1]:
-                player.rank = rank + 1
+                player.rank = rank
                 player.save()
 
 
