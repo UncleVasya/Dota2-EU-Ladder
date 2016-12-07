@@ -1,5 +1,5 @@
 from django import forms
-from app.ladder.models import Player, Match, MatchPlayer
+from app.ladder.models import Player, Match, MatchPlayer, ScoreChange
 from django.contrib import admin
 from django.db.models import Prefetch
 from dal import autocomplete
@@ -61,5 +61,27 @@ class MatchAdmin(admin.ModelAdmin):
         Player.objects.update_ranks()
 
 
+class ScoreChangeAdminForm(forms.ModelForm):
+    player = forms.ModelChoiceField(
+        queryset=Player.objects.all(),
+        widget=autocomplete.ModelSelect2(url='ladder:player-autocomplete')
+    )
+
+
+class ScoreChangeAdmin(admin.ModelAdmin):
+    model = ScoreChange
+    form = ScoreChangeAdminForm
+
+    fieldsets = [
+        (None, {'fields': ['player', 'mmr_change', 'info']}),
+    ]
+
+    list_display = ('date', 'player', 'mmr_change', 'info')
+
+
 admin.site.register(Player, PlayerAdmin)
-admin.site.register(Match, MatchAdmin)
+admin.site.register(ScoreChange, ScoreChangeAdmin)
+
+# TODO: manual match input can be used to record PlayerDraft games;
+# TODO: atm we don't use it
+# admin.site.register(Match, MatchAdmin)
