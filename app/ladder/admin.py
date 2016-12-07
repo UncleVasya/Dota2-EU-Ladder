@@ -78,6 +78,11 @@ class ScoreChangeAdmin(admin.ModelAdmin):
 
     list_display = ('date', 'player', 'mmr_change', 'info')
 
+    def save_model(self, *args, **kwargs):
+        super(ScoreChangeAdmin, self).save_model(*args, **kwargs)
+
+        Player.objects.update_ranks()
+
 
 admin.site.register(Player, PlayerAdmin)
 admin.site.register(ScoreChange, ScoreChangeAdmin)
