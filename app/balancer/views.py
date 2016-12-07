@@ -75,15 +75,24 @@ class BalancerResult(DetailView):
     def get_context_data(self, **kwargs):
         context = super(BalancerResult, self).get_context_data(**kwargs)
 
-        # paginate
-        page_num = self.request.GET.get('page', 1)
-        try:
-            answers = context['result'].answers.all()
-            page = Paginator(answers, 1, request=self.request).page(page_num)
-        except PageNotAnInteger:
-            raise Http404
+        answer = self.kwargs['answer']
+        page = None
 
-        answer = page.object_list[0]
+        # TODO: make separate BalanceAnswer view
+        if answer is not None:
+            # try:
+            answer = BalanceAnswer.objects.get(id=answer)
+            # except ObjectNotFound as e:
+        else:
+            # paginate
+            page_num = self.request.GET.get('page', 1)
+            try:
+                answers = context['result'].answers.all()
+                page = Paginator(answers, 1, request=self.request).page(page_num)
+            except PageNotAnInteger:
+                raise Http404
+
+            answer = page.object_list[0]
 
         # TODO: make a result.mmr_exponent DB field,
         # TODO: make an Answer model

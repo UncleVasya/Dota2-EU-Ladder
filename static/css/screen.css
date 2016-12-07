@@ -465,3 +465,11 @@ table .avatar img {
     color: #92BB35;
     text-shadow: 1px 1px 0 rgba(10, 10, 10, 0.4);
 }
+
+a.link-white,
+a.link-white:visited,
+a.link-white:hover,
+a.link-white:active,
+a.link-white:focus {
+    color: white;
+}

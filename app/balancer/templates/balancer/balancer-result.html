@@ -58,8 +58,12 @@
 
                             <tbody>
                             {% for player in team.players %}
-                                <tr>
-                                    <td class="col-md-3">{{ player.name }}</td>
+                                {% url 'ladder:player-overview' player.name|slugify as player_url %}
+
+                                <tr data-link="{{ player_url }}">
+                                    <td class="col-md-3">
+                                        <a class='link-white' href="{{ player_url }}"> {{ player.name }} </a>
+                                    </td>
                                     <td class="col-md-2">{{ player.mmr }}</td>
                                     <td>
                                         <div class="color-bar">

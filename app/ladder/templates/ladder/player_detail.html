@@ -78,43 +78,51 @@
                 </thead>
                 <tbody>
                 {% for event in score_changes %}
-                    <tr class="match-row" data-link="{{ match_url }}">
-                        <td>
-                        {% if not event.match %}
-                            <div class="win"> Admin action </div>
-                        {% elif event.match.team == event.match.match.winner %}
-                            <div class="win"> Won match </div>
-                        {% else %}
-                            <div class="loss"> Lost match </div>
-                        {% endif %}
+                    {% with event.match.match.balance as balance %}
+                        {% url 'balancer:balancer-answer' balance.result.id balance.id as match_url %}
 
-                         {% with event.date as time %}
-                            <time class="subtext timeago"
-                                  datetime="{{ time|date:'c' }}"
-                                  title="{{ time }}">
-                                {{ time|date:'c'|default:'-' }}
-                            </time>
-                        {% endwith %}
-                        </td>
-
-                        <td>
-                            {{ event.mmr }}
-                        </td>
-
-                        <td>
-                           {{ event.mmr_change|stringformat:'+d' }}
-                        </td>
-
-                        <td>
-                            {% if event.match %}
-                                <a href="">Dotabuff</a>
-                                &nbsp;
-                                <a href="">Opendota</a>
+                        <tr class="match-row" data-link="{{ match_url }}">
+                            <td>
+                            {% if not event.match %}
+                                <div class="win"> Admin action </div>
+                            {% elif event.match.team == event.match.match.winner %}
+                                <div>
+                                    <a class="win" href="{{ match_url }}"> Won match </a>
+                                </div>
                             {% else %}
-                                {{ event.info }}
+                                <div>
+                                    <a class="loss" href="{{ match_url }}"> Lost match </a>
+                                </div>
                             {% endif %}
-                        </td>
-                    </tr>
+
+                             {% with event.date as time %}
+                                <time class="subtext timeago"
+                                      datetime="{{ time|date:'c' }}"
+                                      title="{{ time }}">
+                                    {{ time|date:'c'|default:'-' }}
+                                </time>
+                            {% endwith %}
+                            </td>
+
+                            <td>
+                                {{ event.mmr }}
+                            </td>
+
+                            <td>
+                               {{ event.mmr_change|stringformat:'+d' }}
+                            </td>
+
+                            <td>
+                                {% if event.match %}
+                                    <a href="">Dotabuff</a>
+                                    &nbsp;
+                                    <a href="">Opendota</a>
+                                {% else %}
+                                    {{ event.info }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endwith %}
                 {% endfor %}
                 </tbody>
             </table>
