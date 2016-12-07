@@ -75,7 +75,7 @@ class BalancerResult(DetailView):
     def get_context_data(self, **kwargs):
         context = super(BalancerResult, self).get_context_data(**kwargs)
 
-        answer = self.kwargs['answer']
+        answer = self.kwargs.get('answer', None)
         page = None
 
         # TODO: make separate BalanceAnswer view
