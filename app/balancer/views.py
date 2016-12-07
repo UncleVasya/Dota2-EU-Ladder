@@ -80,9 +80,10 @@ class BalancerResult(DetailView):
 
         # TODO: make separate BalanceAnswer view
         if answer is not None:
-            # try:
-            answer = BalanceAnswer.objects.get(id=answer)
-            # except ObjectNotFound as e:
+            try:
+                answer = BalanceAnswer.objects.get(id=answer)
+            except BalanceAnswer.DoesNotExist:
+                raise Http404
         else:
             # paginate
             page_num = self.request.GET.get('page', 1)
