@@ -1,7 +1,8 @@
 from collections import defaultdict
+from decimal import Decimal
 from app.ladder.models import Player, MatchPlayer
 from dal import autocomplete
-from django.db.models import Max, Count
+from django.db.models import Max, Count, Prefetch, Case, When, F, ExpressionWrapper, FloatField
 from django.views.generic import ListView, DetailView
 
 
@@ -15,14 +16,22 @@ class PlayerList(ListView):
 
         players = players or Player.objects.all()
 
-        # get match counts for every player
-        match_counts = MatchPlayer.objects.values_list('player')\
-            .annotate(match_count=Count('*'))\
-            .order_by()
-        match_counts = defaultdict(int, match_counts)
-
-        for player in players:
-            player.match_count = match_counts[player.id]
+        players = players.prefetch_related(Prefetch(
+            'matchplayer_set',
+            queryset=MatchPlayer.objects.select_related('match'),
+            to_attr='matches'
+        )).annotate(
+            match_count=Count('matchplayer'),
+            wins=Count(Case(
+                When(
+                    matchplayer__team=F('matchplayer__match__winner'), then=1)
+                )
+            ),
+            winrate=ExpressionWrapper(
+                F('wins') * Decimal('100') / F('match_count'),
+                output_field=FloatField()
+            )
+        )
 
         max_vals = players.aggregate(Max('mmr'), Max('score'), Max('ladder_mmr'))
         score_max = max_vals['score__max']

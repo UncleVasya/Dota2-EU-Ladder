@@ -29,10 +29,11 @@
             <thead>
                 <tr>
                     <th class="cell-centered">Rank <span class="sort-arrow"></span></th>
-                    <th class="col-xs-4">Player <span class="sort-arrow"></span></th>
-                    <th class="col-xs-3 tablesorter-headerDesc">Ladder MMR <span class="sort-arrow"></span></th>
+                    <th class="col-xs-3">Player <span class="sort-arrow"></span></th>
+                    <th class="col-xs-2 tablesorter-headerDesc">Ladder MMR <span class="sort-arrow"></span></th>
                     <th class="col-xs-2">Dota MMR <span class="sort-arrow"></span></th>
                     <th class="col-xs-2">Matches <span class="sort-arrow"></span></th>
+                    <th class="col-xs-2">Winrate <span class="sort-arrow"></span></th>
                 </tr>
             </thead>
             <tbody>
@@ -55,7 +56,7 @@
                             <span class="test-winner">Day 1 winner!</span>
                         {% endif %}
                         <div class="subtext">
-                            {% with player.matchplayer_set.last.match.date as last_played %}
+                            {% with player.matches.last.match.date as last_played %}
                                 <time class="timeago"
                                       datetime="{{ last_played|date:'c' }}"
                                       title="{{ last_played }}">
@@ -80,6 +81,12 @@
                         {{ player.match_count }}
                         <div class="color-bar">
                             <div class="matches" style="width: {{ player.matches_percent }}%"></div>
+                        </div>
+                    </td>
+                    <td>
+                        {{ player.winrate }}%
+                        <div class="color-bar">
+                            <div class="" style="width: {{ player.winrate }}%"></div>
                         </div>
                     </td>
                 </tr>
