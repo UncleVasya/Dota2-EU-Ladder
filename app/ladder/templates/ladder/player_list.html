@@ -85,6 +85,15 @@
                     </td>
                     <td>
                         {{ player.winrate }}%
+
+                        {% if player.match_count >= 5 %}
+                            {% if player.winrate >= 75 %}
+                                <img class="winrate-img" src="{% static 'img/PogChamp.png' %}">
+                            {% elif player.winrate <= 33 %}
+                                <img class="winrate-img" src="{% static 'img/4Head.png' %}">
+                            {% endif %}
+                        {% endif %}
+
                         <div class="color-bar">
                             <div class="" style="width: {{ player.winrate }}%"></div>
                         </div>
