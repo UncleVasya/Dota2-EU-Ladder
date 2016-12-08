@@ -2,6 +2,7 @@
 {% load staticfiles %}
 
 {% block page_scripts %}
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.28.0/js/jquery.tablesorter.js"></script>
     <script src="{% static 'ladder/js/ladder.js' %}"></script>
 {% endblock page_scripts %}
 
@@ -24,14 +25,14 @@
 <section>
 <article>
     <div class="table-responsive">
-        <table class="table table-borderless">
+        <table class="table table-borderless tablesorter">
             <thead>
                 <tr>
-                    <th class="cell-centered">Rank</th>
-                    <th class="col-xs-4">Player</th>
-                    <th class="col-xs-3">Ladder MMR</th>
-                    <th class="col-xs-2">Dota MMR</th>
-                    <th class="col-xs-2">Matches </th>
+                    <th class="cell-centered">Rank <span class="sort-arrow"></span></th>
+                    <th class="col-xs-4">Player <span class="sort-arrow"></span></th>
+                    <th class="col-xs-3 tablesorter-headerDesc">Ladder MMR <span class="sort-arrow"></span></th>
+                    <th class="col-xs-2">Dota MMR <span class="sort-arrow"></span></th>
+                    <th class="col-xs-2">Matches <span class="sort-arrow"></span></th>
                 </tr>
             </thead>
             <tbody>

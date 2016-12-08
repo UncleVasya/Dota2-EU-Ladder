@@ -44,3 +44,27 @@ div.test-winner {
     text-transform: uppercase;
     margin-top: 12px;
 }
+
+.tablesorter th {
+    cursor: pointer;
+}
+
+.sort-arrow {
+    display: inline-block;
+    border: 6px solid transparent;
+    height: 0;
+    width: 0;
+    vertical-align: middle;
+    margin-left: 6px;
+    margin-top: 1px;
+
+ }
+
+.tablesorter-headerDesc span {
+    border-top-color: white;
+}
+
+.tablesorter-headerAsc span {
+    margin-top: -7px;
+    border-bottom-color: white;
+}
