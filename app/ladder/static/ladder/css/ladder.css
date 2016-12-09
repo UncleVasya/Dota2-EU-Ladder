@@ -73,3 +73,11 @@ div.test-winner {
     width: 25px;
     height: 25px;
 }
+
+.admin-bonus {
+    color: #39CCCC;
+}
+
+.admin-penalty {
+    color: #FBB829;
+}

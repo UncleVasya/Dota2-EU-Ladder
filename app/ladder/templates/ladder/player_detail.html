@@ -84,7 +84,15 @@
                         <tr class="match-row" data-link="{{ match_url }}">
                             <td>
                             {% if not event.match %}
-                                <div class="win"> Admin action </div>
+                                 {# admin bonus or penalty #}
+                                <div
+                                    {% if event.mmr_change > 0 %}
+                                        class="admin-bonus"
+                                    {% else %}
+                                        class="admin-penalty"
+                                    {% endif %}>
+                                    Admin action
+                                </div>
                             {% elif event.match.team == event.match.match.winner %}
                                 <div>
                                     <a class="win" href="{{ match_url }}"> Won match </a>
