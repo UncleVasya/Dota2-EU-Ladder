@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.9/ref/settings/
 """
 from django.core.urlresolvers import reverse_lazy
+import sys
 
 import os
 
@@ -146,4 +147,31 @@ PAGINATION_SETTINGS = {
     'MARGIN_PAGES_DISPLAYED': 0,
 
     'SHOW_FIRST_PAGE_WHEN_INVALID': True,
+}
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {
+            'format': '[%(asctime)s] %(levelname)s %(name)s: %(message)s'
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'standard',
+            'level': 'DEBUG'
+        },
+    },
+    'loggers': {
+        # 'SteamClient': {
+        #     'handlers': ['console'],
+        #     'level': 'DEBUG',
+        # },
+        # 'Dota2Client': {
+        #     'handlers': ['console'],
+        #     'level': 'DEBUG',
+        # },
+    },
 }
