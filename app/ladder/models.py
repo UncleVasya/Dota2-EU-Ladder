@@ -13,7 +13,7 @@ class Player(models.Model):
     score = models.PositiveIntegerField(default=0)
     mmr = models.PositiveIntegerField()
     ladder_mmr = models.PositiveIntegerField(default=0)
-    dota_id = models.CharField(max_length=200)
+    dota_id = models.CharField(max_length=200, null=True, blank=True)
     slug = AutoSlugField(populate_from='name')
 
     objects = PlayerManager()

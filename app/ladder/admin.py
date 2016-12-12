@@ -9,9 +9,9 @@ class PlayerAdmin(admin.ModelAdmin):
     model = Player
 
     fieldsets = [
-        (None, {'fields': ['name', 'mmr', 'score', 'rank', 'dota_id']}),
+        (None, {'fields': ['name', 'mmr', 'dota_id', 'rank']}),
     ]
-    readonly_fields = ('rank', 'dota_id')
+    readonly_fields = ('rank',)
 
     list_display = ('name', 'rank', 'score', 'mmr')
 
