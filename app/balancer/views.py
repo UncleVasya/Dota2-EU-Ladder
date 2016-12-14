@@ -1,7 +1,7 @@
 from django.contrib.auth.mixins import PermissionRequiredMixin
-from app.balancer import models
 from app.balancer.balancer import balance_teams
 from app.balancer.forms import BalancerForm, BalancerCustomForm
+from app.balancer.managers import BalanceResultManager
 from app.balancer.models import BalanceResult, BalanceAnswer
 from app.ladder.models import Player, Match, MatchPlayer
 from django.core.paginator import PageNotAnInteger
@@ -20,19 +20,7 @@ class BalancerInput(FormView):
     def form_valid(self, form):
         players = [(p.name, p.ladder_mmr) for p in form.cleaned_data.values()]
 
-        # balance teams and save result
-        mmr_exponent = 1  # TODO: make DjangoSolo setting for this
-        answers = balance_teams(players, mmr_exponent)
-
-        with transaction.atomic():
-            self.result = models.BalanceResult.objects.create(mmr_exponent=mmr_exponent)
-            for answer in answers:
-                models.BalanceAnswer.objects.create(
-                    teams=answer['teams'],
-                    mmr_diff=answer['mmr_diff'],
-                    mmr_diff_exp=answer['mmr_diff_exp'],
-                    result=self.result
-                )
+        self.result = BalanceResultManager.balance_teams(players)
 
         return super(BalancerInput, self).form_valid(form)
 
@@ -48,18 +36,7 @@ class BalancerInputCustom(FormView):
         players = [form.cleaned_data['player_%s' % i] for i in xrange(1, 11)]
         mmrs = [form.cleaned_data['MMR_%s' % i] for i in xrange(1, 11)]
 
-        # balance teams and save result
-        mmr_exponent = 1   # TODO: make DjangoSolo setting for this
-        answers = balance_teams(zip(players, mmrs), mmr_exponent)
-
-        self.result = BalanceResult.objects.create(mmr_exponent=mmr_exponent)
-        for answer in answers:
-            BalanceAnswer.objects.create(
-                teams=answer['teams'],
-                mmr_diff=answer['mmr_diff'],
-                mmr_diff_exp=answer['mmr_diff_exp'],
-                result=self.result
-            )
+        self.result = BalanceResultManager.balance_teams(zip(players, mmrs))
 
         return super(BalancerInputCustom, self).form_valid(form)
 
@@ -141,23 +118,6 @@ class MatchCreate(PermissionRequiredMixin, RedirectView):
         if len(players) < 10:
             return HttpResponseBadRequest(request)
 
-        with transaction.atomic():
-            match = Match.objects.create(
-                winner=int(kwargs['winner']),
-                balance=answer,
-            )
-
-            for i, team in enumerate(answer.teams):
-                for player in team['players']:
-                    player = next(p for p in players if p.name == player[0])
-
-                    MatchPlayer.objects.create(
-                        match=match,
-                        player=player,
-                        team=i
-                    )
-
-            MatchManager.add_scores(match)
-            Player.objects.update_ranks()
+        MatchManager.record_balance(answer, int(kwargs['winner']))
 
         return super(MatchCreate, self).get(request, *args, **kwargs)

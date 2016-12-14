@@ -1,5 +1,5 @@
 from collections import defaultdict
-from django.db import models
+from django.db import models, transaction
 
 
 class PlayerManager(models.Manager):
@@ -77,6 +77,31 @@ class MatchManager(models.Manager):
                 mmr_change=mmr_change,
                 match=matchPlayer,
             )
+
+    @staticmethod
+    def record_balance(answer, winner):
+        from app.ladder.models import Player, Match, MatchPlayer
+
+        with transaction.atomic():
+            match = Match.objects.create(
+                winner=winner,
+                balance=answer,
+            )
+
+            for i, team in enumerate(answer.teams):
+                for player in team['players']:
+                    player = next(p for p in players if p.name == player[0])
+
+                    MatchPlayer.objects.create(
+                        match=match,
+                        player=player,
+                        team=i
+                    )
+
+            MatchManager.add_scores(match)
+            Player.objects.update_ranks()
+
+        return match
 
 
 class ScoreChangeManager(models.Manager):
