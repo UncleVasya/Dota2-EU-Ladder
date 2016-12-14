@@ -21,7 +21,7 @@ class BalancerInput(FormView):
         players = [(p.name, p.ladder_mmr) for p in form.cleaned_data.values()]
 
         # balance teams and save result
-        mmr_exponent = 3
+        mmr_exponent = 1  # TODO: make DjangoSolo setting for this
         answers = balance_teams(players, mmr_exponent)
 
         with transaction.atomic():
@@ -49,7 +49,7 @@ class BalancerInputCustom(FormView):
         mmrs = [form.cleaned_data['MMR_%s' % i] for i in xrange(1, 11)]
 
         # balance teams and save result
-        mmr_exponent = 3
+        mmr_exponent = 1   # TODO: make DjangoSolo setting for this
         answers = balance_teams(zip(players, mmrs), mmr_exponent)
 
         self.result = BalanceResult.objects.create(mmr_exponent=mmr_exponent)
