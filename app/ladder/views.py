@@ -8,7 +8,9 @@ from django.views.generic import ListView, DetailView
 
 class PlayerList(ListView):
     # those who played at least 1 game
-    queryset = Player.objects.filter(matchplayer__isnull=False).distinct()
+    # TODO make active players manager
+    queryset = Player.objects.exclude(name__in=['hoxieloxie'])\
+        .filter(matchplayer__isnull=False).distinct()
 
     def get_context_data(self, **kwargs):
         context = super(PlayerList, self).get_context_data(**kwargs)

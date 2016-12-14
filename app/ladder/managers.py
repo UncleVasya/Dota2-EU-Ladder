@@ -20,7 +20,10 @@ class PlayerManager(models.Manager):
         player.scorechange_set.add(score)
 
     def update_ranks(self):
-        players = self.filter(matchplayer__isnull=False).distinct()
+        # TODO: make 'active' field Player model
+        players = self.exclude(name__in=['hoxieloxie'])
+
+        players = players.filter(matchplayer__isnull=False).distinct()
         players = players or self.all()
 
         # recalculate player rankings based on ladder-mmr
