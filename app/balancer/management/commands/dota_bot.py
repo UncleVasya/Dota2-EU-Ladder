@@ -194,8 +194,10 @@ class Command(BaseCommand):
 
         # create dummy balance result
         players = Player.objects.filter(rank__gt=0)[:10]
+        players = [(p.name, p.ladder_mmr) for p in players]
+
         result = BalanceResultManager.balance_teams(players)
-        self.balance_answer = result.answers[0]
+        self.balance_answer = result.answers.first()
 
         if bot.lobby.match_outcome == EMatchOutcome.RadVictory:
             print 'Radiant won!'
