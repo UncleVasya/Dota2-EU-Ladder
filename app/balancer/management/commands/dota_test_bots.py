@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 import gevent
 import dota2
+import os
 from steam import SteamClient
 from dota2 import Dota2Client
 
@@ -13,8 +14,11 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('-l', '--lobby', type=int)
+
+        lobby_password = os.environ.get('LOBBY_PASSWORD', '')
         parser.add_argument('-p', '--password',
-                            nargs='?', type=str, default='eu', const='eu')
+                            nargs='?', type=str,
+                            default=lobby_password, const=lobby_password)
 
     def handle(self, *args, **options):
         self.lobby = options['lobby']
@@ -22,10 +26,12 @@ class Command(BaseCommand):
 
         bots_num = 9
 
+        bot_login = os.environ.get('BOT_LOGIN', '')
+        bot_password = os.environ.get('BOT_PASSWORD', '')
         credentials = [
             {
-                'login': 'login%d' % i,
-                'password': 'password%d' % i,
+                'login': '%s%d' % (bot_login, i),
+                'password': '%s%d' % (bot_password, i),
             } for i in xrange(2, bots_num+2)
         ]
 

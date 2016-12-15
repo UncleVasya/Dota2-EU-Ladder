@@ -36,10 +36,12 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         bots_num = options['number']
 
+        bot_login = os.environ.get('BOT_LOGIN', '')
+        bot_password = os.environ.get('BOT_PASSWORD', '')
         credentials = [
             {
-                'login': 'login%d' % i,
-                'password': 'password%d' % i,
+                'login': '%s%d' % (bot_login, i),
+                'password': '%s%d' % (bot_password, i),
             } for i in xrange(1, bots_num+1)
         ]
 
@@ -121,7 +123,8 @@ class Command(BaseCommand):
 
         bot.balance_answer = None
 
-        bot.create_practice_lobby(password='eu', options={
+        lobby_password = os.environ.get('LOBBY_PASSWORD', '')
+        bot.create_practice_lobby(password=lobby_password, options={
             'game_name': 'Inhouse Ladder',
             'game_mode': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_CD,
             'server_region': int(dota2.enums.EServerRegion.Europe),
