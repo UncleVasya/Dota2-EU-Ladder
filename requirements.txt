@@ -5,8 +5,8 @@ django-autocomplete-light==3.2.1
 django-debug-toolbar==1.5
 django-autoslug==1.9.3
 
-dota2==0.2.6
 pip==9.0.1
 setuptools==30.3.0
 
 git+git://github.com/unclevasya/django-pure-pagination.git@disablable_margins
+git+git://github.com/unclevasya/dota2.git@#1_basic_chat_support
