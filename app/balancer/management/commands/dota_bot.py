@@ -1,13 +1,10 @@
 from django.core.management.base import BaseCommand
 from django.core.urlresolvers import reverse
-from django.db import transaction
 from app.balancer.managers import BalanceResultManager
 from app.balancer.models import BalanceAnswer
 from app.ladder.managers import MatchManager
 from enum import IntEnum
 import gevent
-from app.balancer import models
-from app.balancer.balancer import balance_teams
 from app.ladder.models import Player
 import dota2
 import os
@@ -31,7 +28,6 @@ class LobbyState(IntEnum):
 class Command(BaseCommand):
     def __init__(self):
         self.bots = []
-        self.balance_answer = None
 
     def add_arguments(self, parser):
         parser.add_argument('-n', '--number',
@@ -51,7 +47,7 @@ class Command(BaseCommand):
             gevent.joinall([
                 gevent.spawn(self.start_bot, c) for c in credentials
             ])
-        except KeyboardInterrupt:
+        finally:
             for bot in self.bots:
                 bot.exit()
                 bot.steam.logout()
@@ -59,6 +55,7 @@ class Command(BaseCommand):
     def start_bot(self, credentials):
         client = SteamClient()
         dota = Dota2Client(client)
+        dota.balance_answer = None
 
         self.bots.append(dota)
 
@@ -96,7 +93,7 @@ class Command(BaseCommand):
         @dota.on(dota2.features.Chat.EVENT_CHAT_MESSAGE)
         def chat_message(channel, sender, text, msg_obj):
             if channel.channel_type != DOTAChatChannelType_t.DOTAChannelType_Lobby:
-                return  # ignore postgame and private messages
+                return  # ignore postgame and other chats
 
             # process known commands
             if text.startswith('!balance'):
@@ -106,7 +103,7 @@ class Command(BaseCommand):
 
             # process test commands
             elif text.startswith('!dummy_balance'):
-                self.balance_answer = BalanceAnswer(
+                dota.balance_answer = BalanceAnswer(
                     teams=[
                         {'players': [('Uvs', 3000)]},
                         {'players': []},
@@ -122,7 +119,7 @@ class Command(BaseCommand):
     def create_new_lobby(self, bot):
         print 'Making new lobby\n'
 
-        self.balance_answer = None
+        bot.balance_answer = None
 
         bot.create_practice_lobby(password='eu', options={
             'game_name': 'Inhouse Ladder',
@@ -170,14 +167,14 @@ class Command(BaseCommand):
         url = reverse('balancer:balancer-result', args=(result.id,))
         url = os.environ.get('BASE_URL', 'localhost:8000') + url
 
-        self.balance_answer = answer = result.answers.first()
+        bot.balance_answer = answer = result.answers.first()
         for i, team in enumerate(answer.teams):
             player_names = [p[0] for p in team['players']]
             bot.send_lobby_message('Team %d: %s' % (i+1, ' | '.join(player_names)))
         bot.send_lobby_message(url)
 
     def start_command(self, bot):
-        if not self.balance_answer:
+        if not bot.balance_answer:
             bot.send_lobby_message('Please balance teams first.')
             return
 
@@ -197,14 +194,14 @@ class Command(BaseCommand):
         players = [(p.name, p.ladder_mmr) for p in players]
 
         result = BalanceResultManager.balance_teams(players)
-        self.balance_answer = result.answers.first()
+        bot.balance_answer = result.answers.first()
 
         if bot.lobby.match_outcome == EMatchOutcome.RadVictory:
             print 'Radiant won!'
-            MatchManager.record_balance(self.balance_answer, 0)
+            MatchManager.record_balance(bot.balance_answer, 0)
         elif bot.lobby.match_outcome == EMatchOutcome.DireVictory:
             print 'Dire won!'
-            MatchManager.record_balance(self.balance_answer, 1)
+            MatchManager.record_balance(bot.balance_answer, 1)
 
     # checks if teams setup according to balance
     def check_teams_setup(self, bot):
@@ -226,7 +223,7 @@ class Command(BaseCommand):
         balancer_teams = [
             set(Player.objects.filter(name__in=[player[0] for player in team['players']])
                               .values_list('dota_id', flat=True))
-            for team in self.balance_answer.teams
+            for team in bot.balance_answer.teams
         ]
 
         print 'Balancer teams:'
@@ -240,10 +237,11 @@ class Command(BaseCommand):
             print 'Teams are correct (reversed)'
 
             # reverse teams in balance answer
-            self.balance_answer.teams = list(reversed(self.balance_answer.teams))
+            bot.balance_answer.teams = list(reversed(bot.balance_answer.teams))
+            # bot.balace_answer.save()
 
             print 'Corrected balance result:'
-            print self.balance_answer.teams
+            print bot.balance_answer.teams
 
             return True
 

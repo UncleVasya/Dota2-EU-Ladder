@@ -33,7 +33,7 @@ class Command(BaseCommand):
             gevent.joinall([
                 gevent.spawn(self.start_bot, c) for c in credentials
             ])
-        except KeyboardInterrupt:
+        finally:
             for bot in self.bots:
                 bot.exit()
                 bot.steam.logout()
