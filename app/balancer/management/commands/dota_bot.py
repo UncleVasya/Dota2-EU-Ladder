@@ -25,6 +25,8 @@ class LobbyState(IntEnum):
     SERVERASSIGN = 6
 
 
+# TODO: make DotaBot class
+
 class Command(BaseCommand):
     def __init__(self):
         self.bots = []
@@ -118,7 +120,8 @@ class Command(BaseCommand):
         client.login(credentials['login'], credentials['password'])
         client.run_forever()
 
-    def create_new_lobby(self, bot):
+    @staticmethod
+    def create_new_lobby(bot):
         print 'Making new lobby\n'
 
         bot.balance_answer = None
@@ -136,7 +139,8 @@ class Command(BaseCommand):
             'pause_setting': 1,
         })
 
-    def balance_command(self, bot):
+    @staticmethod
+    def balance_command(bot):
         print
         print 'Balancing players'
 
@@ -188,7 +192,8 @@ class Command(BaseCommand):
         bot.send_lobby_message('Ready to start')
         bot.launch_practice_lobby()
 
-    def process_game_result(self, bot):
+    @staticmethod
+    def process_game_result(bot):
         print 'Game is finished!\n'
         print bot.lobby
 
@@ -206,8 +211,9 @@ class Command(BaseCommand):
             print 'Dire won!'
             MatchManager.record_balance(bot.balance_answer, 1)
 
-    # checks if teams setup according to balance
-    def check_teams_setup(self, bot):
+    # checks if teams are setup according to balance
+    @staticmethod
+    def check_teams_setup(bot):
         print 'Checking teams setup\n'
 
         # get teams from game (player ids)
@@ -241,7 +247,7 @@ class Command(BaseCommand):
 
             # reverse teams in balance answer
             bot.balance_answer.teams = list(reversed(bot.balance_answer.teams))
-            # bot.balace_answer.save()
+            bot.balace_answer.save()
 
             print 'Corrected balance result:'
             print bot.balance_answer.teams
