@@ -82,6 +82,14 @@ class MatchManager(models.Manager):
     def record_balance(answer, winner):
         from app.ladder.models import Player, Match, MatchPlayer
 
+        players = [p[0] for t in answer.teams for p in t['players']]
+        players = Player.objects.filter(name__in=players)
+
+        # check that all players from balance exist
+        # (we don't allow CustomBalance results here)
+        if len(players) < 10:
+            return None
+
         with transaction.atomic():
             match = Match.objects.create(
                 winner=winner,
