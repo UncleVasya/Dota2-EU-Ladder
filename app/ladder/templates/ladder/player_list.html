@@ -16,14 +16,32 @@
     <div class="page-overview-primary">
         <div class="page-overview-title">
             <h1> Leaderboards
-                <small>Overview</small>
+                <small>{% block player-page-title %} {% endblock %}</small>
             </h1>
         </div>
     </div>
 </div>
 
+<div class="page-menu">
+    {% url 'ladder:player-list' as player_list_url %}
+    {% url 'ladder:player-list-score' as player_list_scores_url %}
+
+    <nav class="menu-links">
+        {% with request.resolver_match.url_name as page %}
+        <ul>
+            <li class="{% if page == 'player-list' or page == 'index' %}active{% endif %}">
+                <a href="{{ player_list_url }}">Best players</a></li>
+
+            <li class="{% if 'player-list-score' in page %}active{% endif %}">
+                <a href="{{ player_list_scores_url }}">Most successful</a></li>
+        </ul>
+        {% endwith %}
+    </nav>
+</div>
+
 <section>
 <article>
+    {% block player-list-content %}
     <div class="table-responsive">
         <table class="table table-borderless tablesorter">
             <thead>
@@ -56,11 +74,12 @@
                             <span class="test-winner">Day 1 winner!</span>
                         {% endif %}
                         <div class="subtext">
-                            {% with player.matches.last.match.date as last_played %}
+                            {% with player.matches|last as last_played %}
                                 <time class="timeago"
-                                      datetime="{{ last_played|date:'c' }}"
-                                      title="{{ last_played }}">
-                                    {{ last_played|date:'c'|default:'-' }}
+                                      datetime="{{ last_played.match.date|date:'c' }}"
+                                      title="{{ last_played.match.date }}">
+                                    {{ last_played.match.date|date:'c'|default:'-' }}
+                                {{ last_played.match.date }}
                                 </time>
                             {% endwith %}
                         </div>
@@ -103,6 +122,7 @@
             </tbody>
         </table>
     </div>
+    {% endblock player-list-content %}
 </article>
 </section>
 {% endblock %}

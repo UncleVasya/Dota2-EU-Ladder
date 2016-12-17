@@ -1,5 +1,5 @@
 .color-bar .score {
-    background: #A9CF54;
+    background: #FBB829;
 }
 
 .color-bar .mmr{
@@ -9,6 +9,15 @@
 .color-bar .matches {
     background: #FBB829;
 }
+
+.color-bar .wins {
+    background: #A9CF54
+}
+
+.color-bar .losses {
+    background: #EA030E;
+}
+
 
 .match-record {
     color: #979797;

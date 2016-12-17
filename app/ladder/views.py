@@ -56,6 +56,61 @@ class PlayerList(ListView):
         return context
 
 
+# TODO: inherit PlayersBest and PlayersSuccessful from PlayerList
+class PlayersSuccessful(ListView):
+    template_name = 'ladder/player_list_score.html'
+    # those who played at least 1 game
+    # TODO make active players manager
+    queryset = Player.objects.exclude(name__in=['hoxieloxie'])\
+        .filter(matchplayer__isnull=False).distinct()
+
+    def get_context_data(self, **kwargs):
+        context = super(PlayersSuccessful, self).get_context_data(**kwargs)
+        players = context['player_list']
+
+        players = players or Player.objects.all()
+
+        players = players.prefetch_related(Prefetch(
+            'matchplayer_set',
+            queryset=MatchPlayer.objects.select_related('match'),
+            to_attr='matches'
+        )).annotate(
+            match_count=Count('matchplayer'),
+            wins=Count(Case(
+                When(
+                    matchplayer__team=F('matchplayer__match__winner'), then=1)
+                )
+            ),
+            losses=F('match_count') - F('wins'),
+        )
+
+        # TODO: something like this:
+        #       max_vals = players.aggregate(...).values_list(flat=True)
+        #       score_max, mmr_max, ... = max_vals
+
+        max_vals = players.aggregate(Max('wins'), Max('losses'), Max('score'), Max('ladder_mmr'))
+        wins_max = max(1, max_vals['wins__max'])
+        losses_max = max(1, max_vals['losses__max'])
+        score_max = max(1, max_vals['score__max'])
+        ladder_mmr_max = max(1, max_vals['ladder_mmr__max'])
+
+        matches_max = max(player.match_count for player in players)
+        matches_max = max(1, matches_max)
+
+        for player in players:
+            player.wins_percent = float(player.wins) / wins_max * 100
+            player.loss_percent = float(player.losses) / losses_max * 100
+            player.score_percent = float(player.score) / score_max * 100
+            player.ladder_mmr_percent = float(player.ladder_mmr) / ladder_mmr_max * 100
+            player.matches_percent = float(player.match_count) / matches_max * 100
+
+        context.update({
+            'player_list': players,
+        })
+
+        return context
+
+
 class PlayerOverview(DetailView):
     model = Player
     context_object_name = 'player'

@@ -1,0 +1,76 @@
+{% extends "ladder/player_list.html" %}
+{% load staticfiles %}
+
+{% block player-page-title %} {% endblock %}
+
+{% block player-list-content %}
+
+<div class="table-responsive">
+    <table class="table table-borderless tablesorter">
+        <thead>
+            <tr>
+                <th class="col-xs-3">Player <span class="sort-arrow"></span></th>
+                <th class="col-xs-2 tablesorter-headerDesc">Score <span class="sort-arrow"></span></th>
+                <th class="col-xs-2">Wins <span class="sort-arrow"></span></th>
+                <th class="col-xs-2">Losses <span class="sort-arrow"></span></th>
+                <th class="col-xs-2">Ladder MMR <span class="sort-arrow"></span></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for player in player_list %}
+            {% url 'ladder:player-overview' player.slug as player_url %}
+
+            <tr class="player_row">
+                <td>
+                    <div class="avatar">
+                        <a href="{{ player_url }}">
+                            <img src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/60/6009ebd5640bed7c75004558733d63493ff2eaf8_full.jpg">
+                        </a>
+                    </div>
+                    <a href="{{ player_url }}"> {{ player.name }} </a>
+                    {% if player.name == 'Ulafzs' %}
+                        &nbsp;&nbsp;
+                        <span class="test-winner">Day 1 winner!</span>
+                    {% endif %}
+                    <div class="subtext">
+                        {% with player.matches|last as last_played %}
+                            <time class="timeago"
+                                  datetime="{{ last_played.match.date|date:'c' }}"
+                                  title="{{ last_played.match.date }}">
+                                {{ last_played.match.date|date:'c'|default:'-' }}
+                            {{ last_played.match.date }}
+                            </time>
+                        {% endwith %}
+                    </div>
+                </td>
+                <td>
+                    {{ player.score }}
+                    <div class="color-bar">
+                        <div class="score" style="width: {{ player.score_percent }}%"></div>
+                    </div>
+                </td>
+                <td>
+                    {{ player.wins }}
+                    <div class="color-bar">
+                        <div class="wins" style="width: {{ player.wins_percent }}%"></div>
+                    </div>
+                </td>
+                <td>
+                    {{ player.losses }}
+                    <div class="color-bar">
+                        <div class="losses" style="width: {{ player.loss_percent }}%"></div>
+                    </div>
+                </td>
+                <td>
+                    {{ player.ladder_mmr }}
+                    <div class="color-bar">
+                        <div class="" style="width: {{ player.ladder_mmr_percent }}%"></div>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{%  endblock player-list-content %}
