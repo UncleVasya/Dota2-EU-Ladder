@@ -64,13 +64,6 @@ class MatchManager(models.Manager):
             mmr_change = 7 * is_victory
             mmr_change += underdog_bonus * is_underdog
 
-            print 'Player: %s  Team: %d' % (matchPlayer.player.name, matchPlayer.team)
-            print 'is victory: %d' % is_victory
-            print 'is_underdog: %d' % is_underdog
-            print 'score change: %d' % score_change
-            print 'mmr change: %+d' % mmr_change
-            print ''
-
             ScoreChange.objects.create(
                 player=matchPlayer.player,
                 amount=score_change,
