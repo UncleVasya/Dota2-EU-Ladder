@@ -105,18 +105,6 @@ class Command(BaseCommand):
             elif text.startswith('!start'):
                 self.start_command(dota)
 
-            # process test commands
-            elif text.startswith('!dummy_balance'):
-                dota.balance_answer = BalanceAnswer(
-                    teams=[
-                        {'players': [('Uvs', 3000)]},
-                        {'players': []},
-                    ]
-                )
-
-            else:
-                dota.send_lobby_message('Fuck off, %s!' % sender)
-
         client.login(credentials['login'], credentials['password'])
         client.run_forever()
 
@@ -196,13 +184,6 @@ class Command(BaseCommand):
     def process_game_result(bot):
         print 'Game is finished!\n'
         print bot.lobby
-
-        # create dummy balance result
-        players = Player.objects.filter(rank__gt=0)[:10]
-        players = [(p.name, p.ladder_mmr) for p in players]
-
-        result = BalanceResultManager.balance_teams(players)
-        bot.balance_answer = result.answers.first()
 
         if bot.lobby.match_outcome == EMatchOutcome.RadVictory:
             print 'Radiant won!'
