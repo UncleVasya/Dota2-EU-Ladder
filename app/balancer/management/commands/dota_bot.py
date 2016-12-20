@@ -101,7 +101,7 @@ class Command(BaseCommand):
 
             # process known commands
             if text.startswith('!balance'):
-                self.balance_command(dota)
+                self.balance_command(dota, text)
             elif text.startswith('!start'):
                 self.start_command(dota)
 
@@ -119,7 +119,7 @@ class Command(BaseCommand):
             'game_name': 'Inhouse Ladder',
             'game_mode': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_CD,
             'server_region': int(dota2.enums.EServerRegion.Europe),
-            'fill_with_bots': True,
+            'fill_with_bots': False,
             'allow_spectating': True,
             'allow_cheats': False,
             'allchat': True,
@@ -128,7 +128,7 @@ class Command(BaseCommand):
         })
 
     @staticmethod
-    def balance_command(bot):
+    def balance_command(bot, command):
         print
         print 'Balancing players'
 
@@ -159,10 +159,18 @@ class Command(BaseCommand):
         players = [(p.name, p.ladder_mmr) for p in players.values()]
         result = BalanceResultManager.balance_teams(players)
 
-        url = reverse('balancer:balancer-result', args=(result.id,))
-        url = os.environ.get('BASE_URL', 'localhost:8000') + url
+        try:
+            answer_num = int(command.split(' ')[1])
+            answer_num = max(1, min(40, answer_num))
+        except (IndexError, ValueError):
+            answer_num = 1
 
-        bot.balance_answer = answer = result.answers.first()
+        url = reverse('balancer:balancer-result', args=(result.id,))
+        host = os.environ.get('BASE_URL', 'localhost:8000')
+
+        url = '%s%s?page=%s' % (host, url, answer_num)
+
+        bot.balance_answer = answer = result.answers.all()[answer_num-1]
         for i, team in enumerate(answer.teams):
             player_names = [p[0] for p in team['players']]
             bot.send_lobby_message('Team %d: %s' % (i+1, ' | '.join(player_names)))
