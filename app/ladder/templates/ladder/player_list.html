@@ -33,7 +33,7 @@
             <li class="{% if page == 'player-list' or page == 'index' %}active{% endif %}">
                 <a href="{{ player_list_url }}">Ladder MMR</a></li>
 
-            <li class="{% if 'player-list-score' in page %}active{% endif %}">
+            <li class="{% if page == 'player-list-score' %}active{% endif %}">
                 <a href="{{ player_list_scores_url }}">Score</a></li>
         </ul>
         {% endwith %}

@@ -111,6 +111,7 @@ class PlayersSuccessful(ListView):
         return context
 
 
+# TODO: inherit PlayerOverview, PlayerAllies etc from PlayerDetail
 class PlayerOverview(DetailView):
     model = Player
     context_object_name = 'player'
@@ -146,6 +147,64 @@ class PlayerOverview(DetailView):
             'winrate': win_percent,
             'match_list': matches,
             'score_changes': score_changes,
+        })
+
+        return context
+
+
+# TODO: inherit from ListView and SingleObjectMixin
+class PlayerAllies(DetailView):
+    model = Player
+    context_object_name = 'player'
+    slug_field = 'slug__iexact'
+    template_name = 'ladder/player_teammates.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(PlayerAllies, self).get_context_data(**kwargs)
+
+        player = self.object
+
+        matches = player.matchplayer_set.all()
+        wins = sum(1 if m.match.winner == m.team else 0 for m in matches)
+        losses = len(matches) - wins
+
+        win_percent = 0
+        if matches:
+            win_percent = float(wins) / len(matches) * 100
+
+        # calc teammates stats
+        matches = player.matchplayer_set.select_related(
+            'match'
+        ).prefetch_related(
+            Prefetch('match__matchplayer_set',
+                     queryset=MatchPlayer.objects.select_related('player'))
+        )
+
+        # gather initial teammate stats
+        teammates = defaultdict(lambda: defaultdict(int))
+        for matchPlayer in matches.all():
+            match = matchPlayer.match
+            for mp in match.matchplayer_set.all():  # all players for this match
+                if mp.player == player:
+                    continue  # this is us, not a teammate
+
+                if mp.team == matchPlayer.team:
+                    teammate = teammates[mp.player.name]
+                    teammate['match_count'] += 1
+                    teammate['wins'] += 1 if match.winner == mp.team else 0
+
+        # calc additional teammate stats
+        for name, teammate in teammates.iteritems():
+            teammate['name'] = name
+            teammate['winrate'] = float(teammate['wins']) / teammate['match_count'] * 100
+
+        teammates = sorted(teammates.values(), key=lambda x: -x['match_count'])
+
+        context.update({
+            'wins': wins,
+            'losses': losses,
+            'winrate': win_percent,
+            'teammates': teammates,
         })
 
         return context

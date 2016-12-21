@@ -63,6 +63,24 @@
         </div>
     {% endif %}
 
+    <div class="page-menu">
+        {% url 'ladder:player-overview' player.slug as player_score_url %}
+        {% url 'ladder:player-teammates' player.slug as player_teammates_url %}
+
+        <nav class="menu-links">
+            {% with request.resolver_match.url_name as page %}
+            <ul>
+                <li class="{% if page == 'player-overview' %}active{% endif %}">
+                    <a href="{{ player_score_url }}">Score history</a></li>
+
+                <li class="{% if page == 'player-teammates' %}active{% endif %}">
+                    <a href="{{ player_teammates_url }}">Teammates</a></li>
+            </ul>
+            {% endwith %}
+        </nav>
+    </div>
+
+    {% block player-content %}
     <section>
     <header> Score history </header>
     <article>
@@ -137,4 +155,5 @@
         </div>
     </article>
     </section>
+    {% endblock player-content %}
 {% endblock content %}
