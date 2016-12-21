@@ -75,7 +75,7 @@
                             <span class="test-winner">Day 1 winner!</span>
                         {% endif %}
                         <div class="subtext">
-                            {% with player.matches|last as last_played %}
+                            {% with player.matches|first as last_played %}
                                 <time class="timeago"
                                       datetime="{{ last_played.match.date|date:'c' }}"
                                       title="{{ last_played.match.date }}">
