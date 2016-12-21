@@ -63,7 +63,7 @@
                         </div>
                     </td>
                     <td>
-                        {{ teammate.winrate }}%
+                        {{ teammate.winrate|floatformat:2 }}%
                         <div class="color-bar">
                             <div class="" style="width: {{ teammate.winrate }}%"></div>
                         </div>
