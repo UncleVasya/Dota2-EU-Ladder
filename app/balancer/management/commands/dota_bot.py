@@ -1,7 +1,6 @@
 from django.core.management.base import BaseCommand
 from django.core.urlresolvers import reverse
 from app.balancer.managers import BalanceResultManager
-from app.balancer.models import BalanceAnswer
 from app.ladder.managers import MatchManager
 from enum import IntEnum
 import gevent
@@ -33,7 +32,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('-n', '--number',
-                            nargs='?', type=int, default=1, const=1)
+                            nargs='?', type=int, default=2, const=2)
 
     def handle(self, *args, **options):
         bots_num = options['number']
@@ -59,7 +58,10 @@ class Command(BaseCommand):
     def start_bot(self, credentials):
         client = SteamClient()
         dota = Dota2Client(client)
+
         dota.balance_answer = None
+        dota.min_mmr = 0
+        dota.lobby_options = {}
 
         self.bots.append(dota)
 
@@ -104,6 +106,10 @@ class Command(BaseCommand):
                 self.balance_command(dota, text)
             elif text.startswith('!start'):
                 self.start_command(dota)
+            elif text.startswith('!mmr'):
+                self.mmr_command(dota, text)
+            elif text.startswith('!flip'):
+                dota.flip_lobby_teams()
 
         client.login(credentials['login'], credentials['password'])
         client.run_forever()
@@ -113,10 +119,8 @@ class Command(BaseCommand):
         print 'Making new lobby\n'
 
         bot.balance_answer = None
-
-        lobby_password = os.environ.get('LOBBY_PASSWORD', '')
-        bot.create_practice_lobby(password=lobby_password, options={
-            'game_name': 'Inhouse Ladder',
+        bot.lobby_options = {
+            'game_name': Command.generate_lobby_name(bot),
             'game_mode': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_CD,
             'server_region': int(dota2.enums.EServerRegion.Europe),
             'fill_with_bots': False,
@@ -125,7 +129,11 @@ class Command(BaseCommand):
             'allchat': True,
             'dota_tv_delay': 2,
             'pause_setting': 1,
-        })
+        }
+
+        bot.create_practice_lobby(
+            password=os.environ.get('LOBBY_PASSWORD', ''),
+            options=bot.lobby_options)
 
     @staticmethod
     def balance_command(bot, command):
@@ -176,17 +184,36 @@ class Command(BaseCommand):
             bot.send_lobby_message('Team %d: %s' % (i+1, ' | '.join(player_names)))
         bot.send_lobby_message(url)
 
-    def start_command(self, bot):
+    @staticmethod
+    def start_command(bot):
         if not bot.balance_answer:
             bot.send_lobby_message('Please balance teams first.')
             return
 
-        if not self.check_teams_setup(bot):
+        if not Command.check_teams_setup(bot):
             bot.send_lobby_message('Please join slots according to balance.')
             return
 
         bot.send_lobby_message('Ready to start')
         bot.launch_practice_lobby()
+
+    @staticmethod
+    def mmr_command(bot, command):
+        print
+        print 'Setting lobby MMR: '
+        print command
+
+        try:
+            min_mmr = int(command.split(' ')[1])
+            min_mmr = max(0, min(9000, min_mmr))
+        except (IndexError, ValueError):
+            return
+
+        bot.min_mmr = min_mmr
+        bot.lobby_options['game_name'] = Command.generate_lobby_name(bot)
+        bot.config_practice_lobby(bot.lobby_options)
+
+        bot.send_lobby_message('Min MMR set to %d' % min_mmr)
 
     @staticmethod
     def process_game_result(bot):
@@ -247,4 +274,12 @@ class Command(BaseCommand):
 
         return False
 
+    @staticmethod
+    def generate_lobby_name(bot):
+        lobby_name = 'Inhouse Ladder'
+
+        if bot.min_mmr > 0:
+            lobby_name += ' %d+ MMR' % bot.min_mmr
+
+        return lobby_name
 
