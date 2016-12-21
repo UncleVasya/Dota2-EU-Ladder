@@ -122,7 +122,7 @@ class PlayerOverview(DetailView):
 
         player = self.object
 
-        matches = player.matchplayer_set.all()
+        matches = player.matchplayer_set.select_related('match').all()
         wins = sum(1 if m.match.winner == m.team else 0 for m in matches)
         losses = len(matches) - wins
 
@@ -130,7 +130,10 @@ class PlayerOverview(DetailView):
         if matches:
             win_percent = float(wins) / len(matches) * 100
 
-        score_changes = player.scorechange_set.all()
+        score_changes = player.scorechange_set.select_related(
+            'match', 'match__match',
+            'match__match__balance', 'match__match__balance__result'
+        ).all()
 
         # calc score history
         score = mmr = 0
