@@ -1,7 +1,7 @@
 from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal
-from app.ladder.models import Player, MatchPlayer
+from app.ladder.models import Player, MatchPlayer, Match
 from dal import autocomplete
 from django.db.models import Max, Count, Prefetch, Case, When, F, ExpressionWrapper, FloatField
 from django.views.generic import ListView, DetailView
@@ -52,6 +52,7 @@ class PlayerList(ListView):
 
         context.update({
             'player_list': players,
+            'matches_count': Match.objects.count()
         })
 
         return context
@@ -107,6 +108,7 @@ class PlayersSuccessful(ListView):
 
         context.update({
             'player_list': players,
+            'matches_count': Match.objects.count()
         })
 
         return context
