@@ -159,14 +159,14 @@ class PlayerOverview(DetailView):
 
 
 # TODO: inherit from ListView and SingleObjectMixin
-class PlayerAllies(DetailView):
+class PlayerTeammates(DetailView):
     model = Player
     context_object_name = 'player'
     slug_field = 'slug__iexact'
     template_name = 'ladder/player_teammates.html'
 
     def get_context_data(self, **kwargs):
-        context = super(PlayerAllies, self).get_context_data(**kwargs)
+        context = super(PlayerTeammates, self).get_context_data(**kwargs)
 
         player = self.object
 
@@ -210,6 +210,71 @@ class PlayerAllies(DetailView):
             teammate['matches_percent'] = float(teammate['match_count']) / matches_max * 100
 
         teammates = sorted(teammates.values(), key=lambda x: -x['mmr_change'])
+        teammates = [t for t in teammates if t['match_count'] > 2]
+
+        context.update({
+            'wins': wins,
+            'losses': losses,
+            'winrate': win_percent,
+            'teammates': teammates,
+        })
+
+        return context
+
+
+# TODO: inherit from ListView and SingleObjectMixin
+class PlayerOpponents(DetailView):
+    model = Player
+    context_object_name = 'player'
+    slug_field = 'slug__iexact'
+    template_name = 'ladder/player_opponents.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(PlayerOpponents, self).get_context_data(**kwargs)
+
+        player = self.object
+
+        matches = player.matchplayer_set.select_related(
+            'match'
+        ).prefetch_related(
+            Prefetch('match__matchplayer_set',
+                     queryset=MatchPlayer.objects.select_related('player'))
+        ).prefetch_related('match__matchplayer_set__scorechange_set')
+
+        wins = sum(1 if m.match.winner == m.team else 0 for m in matches)
+        losses = len(matches) - wins
+
+        win_percent = 0
+        if matches:
+            win_percent = float(wins) / len(matches) * 100
+
+        # gather initial teammate stats
+        teammates = defaultdict(lambda: defaultdict(int))
+        for matchPlayer in matches:
+            match = matchPlayer.match
+            for mp in match.matchplayer_set.all():  # all players for this match
+                if mp.player == player:
+                    continue  # this is us, not a teammate
+
+                if mp.team != matchPlayer.team:
+                    teammate = teammates[mp.player.name]
+                    teammate['match_count'] += 1
+                    teammate['wins'] += 1 if match.winner == matchPlayer.team else 0
+                    teammate['mmr_change'] += matchPlayer.scorechange_set.first().mmr_change
+                    teammate['score_change'] += matchPlayer.scorechange_set.first().amount
+
+                    teammate['last_played'] = mp.match.date if not teammate['last_played'] \
+                        else max(mp.match.date, teammate['last_played'])
+
+        # calc additional teammate stats
+        matches_max = max(t['match_count'] for t in teammates.values())
+        for name, teammate in teammates.iteritems():
+            teammate['name'] = name
+            teammate['winrate'] = float(teammate['wins']) / teammate['match_count'] * 100
+            teammate['matches_percent'] = float(teammate['match_count']) / matches_max * 100
+
+        teammates = sorted(teammates.values(), key=lambda x: -x['mmr_change'])
+        teammates = [t for t in teammates if t['match_count'] > 2]
 
         context.update({
             'wins': wins,
