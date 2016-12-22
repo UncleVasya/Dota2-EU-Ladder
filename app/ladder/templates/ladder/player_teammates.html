@@ -17,59 +17,55 @@
         <table class="table table-borderless tablesorter">
             <thead>
                 <tr>
-                    <th class="col-xs-4">Player <span class="sort-arrow"></span></th>
+                    <th class="col-xs-3">Player <span class="sort-arrow"></span></th>
                     <th class="col-xs-2">MMR change <span class="sort-arrow"></span></th>
                     <th class="col-xs-2">Score change <span class="sort-arrow"></span></th>
                     <th class="col-xs-2 tablesorter-headerDesc">Matches <span class="sort-arrow"></span></th>
-                    <th class="col-xs-2">Winrate <span class="sort-arrow"></span></th>
+                    <th class="col-xs-3">Winrate <span class="sort-arrow"></span></th>
                 </tr>
             </thead>
             <tbody>
             {% for teammate in teammates %}
-                {% with event.match.match.balance as balance %}
-                    {% url 'ladder:player-detail' teammate.name|slugify as teammate_url %}
+                {% url 'ladder:player-teammates' teammate.name|slugify as teammate_url %}
 
-                    <tr class="match-row" data-link="{{ teammate_url }}">
-                        <td>
-                            <div class="avatar">
-                                <a href="{{ teammate_url }}">
-                                    <img src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/60/6009ebd5640bed7c75004558733d63493ff2eaf8_full.jpg">
-                                </a>
-                            </div>
-                            <a href="{{ teammate_url }}"> {{ teammate.name }} </a>
-{#                            <div class="subtext">#}
-{#                                {% with player.matches|last as last_played %}#}
-{#                                    <time class="timeago"#}
-{#                                          datetime="{{ last_played.match.date|date:'c' }}"#}
-{#                                          title="{{ last_played.match.date }}">#}
-{#                                        {{ last_played.match.date|date:'c'|default:'-' }}#}
-{#                                    {{ last_played.match.date }}#}
-{#                                    </time>#}
-{#                                {% endwith %}#}
-{#                            </div>#}
-                        </td>
-
-                        <td>
-                            {{ teammate.mmr_gain|stringformat:'+d' }}
-                        </td>
-                        <td>
-                           {{ teammate.score_gain|stringformat:'+d' }}
-                        </td>
-
-                        <td>
-                        {{ teammate.match_count }}
-                        <div class="color-bar">
-                            <div class="matches" style="width: {{ teammate.matches_percent }}%"></div>
+                <tr class="match-row" data-link="{{ teammate_url }}">
+                    <td>
+                        <div class="avatar">
+                            <a href="{{ teammate_url }}">
+                                <img src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/60/6009ebd5640bed7c75004558733d63493ff2eaf8_full.jpg">
+                            </a>
                         </div>
+                        <a href="{{ teammate_url }}"> {{ teammate.name }} </a>
+                            <div class="subtext">
+                                <time class="timeago"
+                                      datetime="{{ teammate.last_played|date:'c' }}"
+                                      title="{{ teammate.last_played }}">
+                                    {{ teammate.last_played|date:'c'|default:'-' }}
+                                {{ teammate.last_played }}
+                                </time>
+                            </div>
+                    </td>
+
+                    <td>
+                        {{ teammate.mmr_change|stringformat:'+d' }}
                     </td>
                     <td>
-                        {{ teammate.winrate|floatformat:2 }}%
-                        <div class="color-bar">
-                            <div class="" style="width: {{ teammate.winrate }}%"></div>
-                        </div>
+                       {{ teammate.score_change|stringformat:'+d' }}
                     </td>
-                    </tr>
-                {% endwith %}
+
+                    <td>
+                    {{ teammate.match_count }}
+                    <div class="color-bar">
+                        <div class="matches" style="width: {{ teammate.matches_percent }}%"></div>
+                    </div>
+                </td>
+                <td>
+                    {{ teammate.winrate|floatformat:2 }}%
+                    <div class="color-bar">
+                        <div class="winrate" style="width: {{ teammate.winrate }}%"></div>
+                    </div>
+                </td>
+                </tr>
             {% endfor %}
             </tbody>
         </table>

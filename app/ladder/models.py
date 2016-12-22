@@ -64,7 +64,7 @@ class ScoreChange(models.Model):
     player = models.ForeignKey(Player)
     amount = models.SmallIntegerField(default=0)
     mmr_change = models.SmallIntegerField(default=0)
-    match = models.ForeignKey(MatchPlayer, null=True, blank=True)
+    match = models.ForeignKey(MatchPlayer, null=True, blank=True)  # TODO: this should be 1-to-1
     info = models.CharField(max_length=255)
     date = models.DateTimeField(auto_now_add=True)
 

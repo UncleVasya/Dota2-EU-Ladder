@@ -1,4 +1,5 @@
 from collections import defaultdict
+from datetime import datetime
 from decimal import Decimal
 from app.ladder.models import Player, MatchPlayer
 from dal import autocomplete
@@ -122,7 +123,7 @@ class PlayerOverview(DetailView):
 
         player = self.object
 
-        matches = player.matchplayer_set.select_related('match').all()
+        matches = player.matchplayer_set.select_related('match')
         wins = sum(1 if m.match.winner == m.team else 0 for m in matches)
         losses = len(matches) - wins
 
@@ -133,7 +134,7 @@ class PlayerOverview(DetailView):
         score_changes = player.scorechange_set.select_related(
             'match', 'match__match',
             'match__match__balance', 'match__match__balance__result'
-        ).all()
+        )
 
         # calc score history
         score = mmr = 0
@@ -167,7 +168,13 @@ class PlayerAllies(DetailView):
 
         player = self.object
 
-        matches = player.matchplayer_set.all()
+        matches = player.matchplayer_set.select_related(
+            'match'
+        ).prefetch_related(
+            Prefetch('match__matchplayer_set',
+                     queryset=MatchPlayer.objects.select_related('player'))
+        ).prefetch_related('match__matchplayer_set__scorechange_set')
+
         wins = sum(1 if m.match.winner == m.team else 0 for m in matches)
         losses = len(matches) - wins
 
@@ -175,17 +182,9 @@ class PlayerAllies(DetailView):
         if matches:
             win_percent = float(wins) / len(matches) * 100
 
-        # calc teammates stats
-        matches = player.matchplayer_set.select_related(
-            'match'
-        ).prefetch_related(
-            Prefetch('match__matchplayer_set',
-                     queryset=MatchPlayer.objects.select_related('player'))
-        )
-
         # gather initial teammate stats
         teammates = defaultdict(lambda: defaultdict(int))
-        for matchPlayer in matches.all():
+        for matchPlayer in matches:
             match = matchPlayer.match
             for mp in match.matchplayer_set.all():  # all players for this match
                 if mp.player == player:
@@ -195,13 +194,20 @@ class PlayerAllies(DetailView):
                     teammate = teammates[mp.player.name]
                     teammate['match_count'] += 1
                     teammate['wins'] += 1 if match.winner == mp.team else 0
+                    teammate['mmr_change'] += mp.scorechange_set.first().mmr_change
+                    teammate['score_change'] += mp.scorechange_set.first().amount
+
+                    teammate['last_played'] = mp.match.date if not teammate['last_played'] \
+                        else max(mp.match.date, teammate['last_played'])
 
         # calc additional teammate stats
+        matches_max = max(t['match_count'] for t in teammates.values())
         for name, teammate in teammates.iteritems():
             teammate['name'] = name
             teammate['winrate'] = float(teammate['wins']) / teammate['match_count'] * 100
+            teammate['matches_percent'] = float(teammate['match_count']) / matches_max * 100
 
-        teammates = sorted(teammates.values(), key=lambda x: -x['match_count'])
+        teammates = sorted(teammates.values(), key=lambda x: -x['mmr_change'])
 
         context.update({
             'wins': wins,
