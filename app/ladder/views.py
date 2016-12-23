@@ -273,7 +273,7 @@ class PlayerOpponents(DetailView):
             teammate['winrate'] = float(teammate['wins']) / teammate['match_count'] * 100
             teammate['matches_percent'] = float(teammate['match_count']) / matches_max * 100
 
-        teammates = sorted(teammates.values(), key=lambda x: -x['mmr_change'])
+        teammates = sorted(teammates.values(), key=lambda x: x['mmr_change'])
         teammates = [t for t in teammates if t['match_count'] > 2]
 
         context.update({
