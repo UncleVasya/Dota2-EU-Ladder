@@ -1,0 +1,14 @@
+{% extends 'ladder/player_overview.html' %}
+{% load staticfiles %}
+
+{% block player-page-title %} Score history {% endblock %}
+
+{% block player-content %}
+
+<section>
+<article>
+    {% include 'ladder/player_scores_table.html' %}
+</article>
+</section>
+
+{% endblock player-content %}

@@ -154,6 +154,23 @@ class PlayerDetail(DetailView):
                      queryset=MatchPlayer.objects.select_related('player'))
         ).prefetch_related('scorechange_set')
 
+    def score_history(self):
+        player = self.object
+        score_changes = player.scorechange_set.select_related(
+            'match', 'match__match',
+            'match__match__balance', 'match__match__balance__result'
+        )
+
+        score = mmr = 0
+        for scoreChange in reversed(score_changes):
+            score += scoreChange.amount
+            mmr += scoreChange.mmr_change
+
+            scoreChange.score = score
+            scoreChange.mmr = mmr
+
+        return score_changes
+
     def teammates_stats(self, matches_min=3, opponents=False):
         player = self.object
 
@@ -189,26 +206,26 @@ class PlayerDetail(DetailView):
 
 
 class PlayerOverview(PlayerDetail):
+    template_name = 'ladder/player_overview.html'
+
     def get_context_data(self, **kwargs):
+        self.add_matches_data()
         context = super(PlayerOverview, self).get_context_data(**kwargs)
-
-        player = context['player']
-        score_changes = player.scorechange_set.select_related(
-            'match', 'match__match',
-            'match__match__balance', 'match__match__balance__result'
-        )
-
-        # calc score history
-        score = mmr = 0
-        for scoreChange in reversed(score_changes):
-            score += scoreChange.amount
-            mmr += scoreChange.mmr_change
-
-            scoreChange.score = score
-            scoreChange.mmr = mmr
-
         context.update({
-            'score_changes': score_changes,
+            'score_changes': self.score_history()[:10],
+            'teammates': self.teammates_stats()[:5],
+            'opponents': reversed(self.teammates_stats(opponents=True)[-5:]),
+        })
+        return context
+
+
+class PlayerScores(PlayerDetail):
+    template_name = 'ladder/player_scores.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(PlayerScores, self).get_context_data(**kwargs)
+        context.update({
+            'score_changes': self.score_history(),
         })
         return context
 
@@ -219,9 +236,8 @@ class PlayerTeammates(PlayerDetail):
     def get_context_data(self, **kwargs):
         self.add_matches_data()
         context = super(PlayerTeammates, self).get_context_data(**kwargs)
-
         context.update({
-            'teammates': self.teammates_stats(matches_min=3),
+            'teammates': self.teammates_stats(),
         })
         return context
 
@@ -232,12 +248,8 @@ class PlayerOpponents(PlayerDetail):
     def get_context_data(self, **kwargs):
         self.add_matches_data()
         context = super(PlayerOpponents, self).get_context_data(**kwargs)
-
-        teammates = self.teammates_stats(matches_min=3, opponents=True)
-        teammates = sorted(teammates, key=lambda x: x['mmr_change'])
-
         context.update({
-            'teammates': teammates,
+            'opponents': reversed(self.teammates_stats(opponents=True)),
         })
         return context
 

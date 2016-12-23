@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+
+{% block page_scripts %}
+    <script src="{% static 'ladder/js/ladder.js' %}"></script>
+{% endblock page_scripts %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'ladder/css/ladder.css' %}">
+{% endblock page_styles %}
+
+{% block content %}
+
+    {% url 'ladder:player-overview' player.slug as player_url %}
+    <div class="page-overview">
+        <div class="page-overview-primary">
+            <div class="avatar">
+                <a href="{{ player_url }}">
+                    <img src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/60/6009ebd5640bed7c75004558733d63493ff2eaf8_full.jpg" alt="{{ player.name }}">
+                </a>
+            </div>
+            <div class="page-overview-title">
+                <h1> {{ player.name }}
+                    <small class="country">{{ player.country }}</small>  {# TODO: fill it #}
+                    <small>{% block player-page-title %} Overview {% endblock %}</small>
+                </h1>
+            </div>
+        </div>
+
+        <div class="page-overview-secondary">
+            <dl>
+                <dd>
+                {% with player.matchplayer_set.first.match.date as last_played %}
+                    <time class="timeago"
+                          datetime="{{ last_played|date:'c' }}"
+                          title="{{ last_played }}">
+                        {{ last_played|date:'c'|default:'-' }}
+                    </time>
+                {% endwith %}
+                </dd>
+                <dt>Last Match</dt>
+            </dl>
+            <dl>
+                <dd>
+                    <span class="match-record">
+                        <span class="wins">{{ wins }}</span>
+                        <span class="sep">-</span>
+                        <span class="losses">{{ losses }}</span>
+                    </span>
+                </dd>
+                <dt>Record</dt>
+            </dl>
+            <dl>
+                <dd>{{ winrate|floatformat:2 }}%</dd>
+                <dt>Win Rate</dt>
+            </dl>
+        </div>
+    </div>
+
+    {% if player.name == 'Ulafzs' %}
+        <div class="test-winner">
+            Day 1 winner!
+        </div>
+    {% endif %}
+
+    <div class="page-menu">
+        {% url 'ladder:player-overview' player.slug as player_url %}
+        {% url 'ladder:player-scores' player.slug as player_score_url %}
+        {% url 'ladder:player-teammates' player.slug as player_teammates_url %}
+        {% url 'ladder:player-opponents' player.slug as player_opponents_url %}
+
+        <nav class="menu-links">
+            {% with request.resolver_match.url_name as page %}
+            <ul>
+                <li class="{% if page == 'player-overview' %}active{% endif %}">
+                    <a href="{{ player_url }}">Overview</a></li>
+
+                <li class="{% if page == 'player-scores' %}active{% endif %}">
+                    <a href="{{ player_score_url }}">Score history</a></li>
+
+                <li class="{% if page == 'player-teammates' %}active{% endif %}">
+                    <a href="{{ player_teammates_url }}">Teammates</a></li>
+
+                <li class="{% if page == 'player-opponents' %}active{% endif %}">
+                    <a href="{{ player_opponents_url }}">Opponents</a></li>
+            </ul>
+            {% endwith %}
+        </nav>
+    </div>
+
+    {% block player-content %}
+        <section>
+            <header>Recent activity
+                <small>This season</small>
+                <div class="more">
+                    <a href="{% url 'ladder:player-scores' player.slug %}">
+                        <i class="fa fa-plus-square"></i> more
+                    </a>
+                </div>
+            </header>
+        <article>
+            {% include 'ladder/player_scores_table.html' %}
+        </article>
+        </section>
+
+        <section>
+            <header>Best teammates
+            <small>This season</small>
+            <div class="more">
+                <a href="{% url 'ladder:player-teammates' player.slug %}">
+                    <i class="fa fa-plus-square"></i> more
+                </a>
+            </div>
+            </header>
+        <article>
+            {% include 'ladder/player_teammates_table.html' with teammates=teammates %}
+        </article>
+        </section>
+
+        <section>
+            <header>Strongest opponents
+            <small>This season</small>
+            <div class="more">
+                <a href="{% url 'ladder:player-opponents' player.slug %}">
+                    <i class="fa fa-plus-square"></i> more
+                </a>
+            </div>
+            </header>
+        <article>
+            {% include 'ladder/player_teammates_table.html' with teammates=opponents opponents=True %}
+        </article>
+        </section>
+    {% endblock player-content %}
+{% endblock content %}

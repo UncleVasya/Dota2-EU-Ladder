@@ -1,4 +1,4 @@
-{% extends 'ladder/player_detail.html' %}
+{% extends 'ladder/player_overview.html' %}
 {% load staticfiles %}
 
 {% block page_scripts %}
@@ -7,13 +7,13 @@
     <script src="{% static 'ladder/js/player_opponents.js' %}"></script>
 {% endblock page_scripts %}
 
-{% block player-page-title %}Opponents{% endblock %}
+{% block player-page-title %} Opponents {% endblock %}
 
 {% block player-content %}
 
 <section>
 <article>
-    {% include 'ladder/player_teammates_table.html' with opponents=True %}
+    {% include 'ladder/player_teammates_table.html' with teammates=opponents opponents=True %}
 </article>
 </section>
 

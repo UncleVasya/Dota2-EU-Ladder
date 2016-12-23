@@ -1,5 +1,8 @@
+{% with request.resolver_match.url_name as page %}
+
 <div class="table-responsive table-borderless">
-    <table class="table table-borderless tablesorter">
+    <table class="table table-borderless
+            {% if page != 'player-overview' %} tablesorter {% endif %}">
         <thead>
             <tr>
                 <th class="col-xs-3">Player <span class="sort-arrow"></span></th>
@@ -11,7 +14,9 @@
         </thead>
         <tbody>
         {% for teammate in teammates %}
-            {% if opponents %}
+            {% if page == 'player-overview' %}
+                {% url 'ladder:player-overview' teammate.name|slugify as teammate_url %}
+            {% elif opponents %}
                 {% url 'ladder:player-opponents' teammate.name|slugify as teammate_url %}
             {% else %}
                 {% url 'ladder:player-teammates' teammate.name|slugify as teammate_url %}
@@ -59,3 +64,5 @@
         </tbody>
     </table>
 </div>
+
+{% endwith %}

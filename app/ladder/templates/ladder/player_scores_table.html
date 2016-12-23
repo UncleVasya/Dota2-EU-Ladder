@@ -1,0 +1,69 @@
+<div class="table-responsive table-borderless">
+    <table class="table table-borderless">
+        <thead>
+            <tr>
+                <th class="col-xs-4">Event</th>
+                <th class="col-xs-2">Ladder MMR</th>
+                <th class="col-xs-3">MMR change</th>
+                <th class="col-xs-3">Additional info</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for event in score_changes %}
+            {% with event.match.match.balance as balance %}
+                {% url 'balancer:balancer-answer' balance.result.id balance.id as match_url %}
+
+                <tr class="match-row" data-link="{{ match_url }}">
+                    <td>
+                    {% if not event.match %}
+                         {# admin bonus or penalty #}
+                        <div
+                            {% if event.mmr_change > 0 %}
+                                class="admin-bonus"
+                            {% else %}
+                                class="admin-penalty"
+                            {% endif %}>
+                            Admin action
+                        </div>
+                    {% elif event.match.team == event.match.match.winner %}
+                        <div>
+                            <a class="win" href="{{ match_url }}"> Won match </a>
+                        </div>
+                    {% else %}
+                        <div>
+                            <a class="loss" href="{{ match_url }}"> Lost match </a>
+                        </div>
+                    {% endif %}
+
+                     {% with event.date as time %}
+                        <time class="subtext timeago"
+                              datetime="{{ time|date:'c' }}"
+                              title="{{ time }}">
+                            {{ time|date:'c'|default:'-' }}
+                        </time>
+                    {% endwith %}
+                    </td>
+
+                    <td>
+                        {{ event.mmr }}
+                    </td>
+
+                    <td>
+                       {{ event.mmr_change|stringformat:'+d' }}
+                    </td>
+
+                    <td>
+                        {% if event.match %}
+                            <a href="">Dotabuff</a>
+                            &nbsp;
+                            <a href="">Opendota</a>
+                        {% else %}
+                            {{ event.info }}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endwith %}
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
