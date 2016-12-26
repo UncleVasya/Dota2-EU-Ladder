@@ -163,7 +163,7 @@ class PlayerDetail(DetailView):
 
         score = mmr = 0
         for scoreChange in reversed(score_changes):
-            score += scoreChange.amount
+            score += scoreChange.score_change
             mmr += scoreChange.mmr_change
 
             scoreChange.score = score
@@ -189,7 +189,7 @@ class PlayerDetail(DetailView):
                 teammate['match_count'] += 1
                 teammate['wins'] += 1 if match.winner == matchPlayer.team else 0
                 teammate['mmr_change'] += changes.mmr_change
-                teammate['score_change'] += changes.amount
+                teammate['score_change'] += changes.score_change
 
                 teammate['last_played'] = mp.match.date if not teammate['last_played'] \
                     else max(mp.match.date, teammate['last_played'])

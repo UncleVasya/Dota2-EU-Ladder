@@ -62,7 +62,7 @@ class MatchPlayer(models.Model):
 
 class ScoreChange(models.Model):
     player = models.ForeignKey(Player)
-    amount = models.SmallIntegerField(default=0)
+    score_change = models.SmallIntegerField(default=0)
     mmr_change = models.SmallIntegerField(default=0)
     match = models.ForeignKey(MatchPlayer, null=True, blank=True)  # TODO: this should be 1-to-1
     info = models.CharField(max_length=255)
@@ -78,8 +78,8 @@ class ScoreChange(models.Model):
         super(ScoreChange, self).save()
 
         self.player.score = self.player.scorechange_set.aggregate(
-            Sum('amount')
-        )['amount__sum']
+            Sum('score_change')
+        )['score_change__sum']
 
         self.player.ladder_mmr = self.player.scorechange_set.aggregate(
             Sum('mmr_change')

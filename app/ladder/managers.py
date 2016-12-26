@@ -8,12 +8,12 @@ class PlayerManager(models.Manager):
     def init_score(player):
         from app.ladder.models import ScoreChange
 
-        avg_mmr = 4000  # TODO: calculate it
+        avg_mmr = 4000
         initial_mmr = 200 - 30 * (avg_mmr - player.mmr) / 1000
 
         score = ScoreChange.objects.create(
             player=player,
-            amount=25,
+            score_amount=25,
             mmr_change=initial_mmr,
             info='Season started',
         )
@@ -66,7 +66,7 @@ class MatchManager(models.Manager):
 
             ScoreChange.objects.create(
                 player=matchPlayer.player,
-                amount=score_change,
+                score_change=score_change,
                 mmr_change=mmr_change,
                 match=matchPlayer,
             )
