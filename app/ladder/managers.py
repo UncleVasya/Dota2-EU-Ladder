@@ -100,7 +100,6 @@ class MatchManager(models.Manager):
                     )
 
             MatchManager.add_scores(match)
-            Player.objects.update_ranks()
 
         return match
 

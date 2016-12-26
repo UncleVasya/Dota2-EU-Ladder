@@ -49,8 +49,8 @@ INSTALLED_APPS = [
     'pure_pagination',
     'debug_toolbar',
 
-    'app.ladder',
-    'app.balancer',
+    'app.ladder.apps.LadderConfig',
+    'app.balancer.apps.BalancerConfig',
 ]
 
 MIDDLEWARE_CLASSES = [

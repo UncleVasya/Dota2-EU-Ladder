@@ -73,16 +73,3 @@ class ScoreChange(models.Model):
     class Meta:
         unique_together = ('player', 'match')
         ordering = ('-id', )
-
-    def save(self, *args, **kwargs):
-        super(ScoreChange, self).save()
-
-        self.player.score = self.player.scorechange_set.aggregate(
-            Sum('score_change')
-        )['score_change__sum']
-
-        self.player.ladder_mmr = self.player.scorechange_set.aggregate(
-            Sum('mmr_change')
-        )['mmr_change__sum']
-
-        self.player.save()

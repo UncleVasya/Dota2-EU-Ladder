@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class BalancerConfig(AppConfig):
-    name = 'balancer'
+    name = 'app.balancer'

@@ -51,15 +51,6 @@ class MatchAdmin(admin.ModelAdmin):
 
     list_display = ('date', )
 
-    def get_queryset(self, request):  # performance optimisation
-        qs = super(MatchAdmin, self).get_queryset(request)
-        return qs.prefetch_related(Prefetch('players'))
-
-    def save_related(self, request, form, formsets, change):
-        super(MatchAdmin, self).save_related(request, form, formsets, change)
-
-        Player.objects.update_ranks()
-
 
 class ScoreChangeAdminForm(forms.ModelForm):
     player = forms.ModelChoiceField(
@@ -89,4 +80,4 @@ admin.site.register(ScoreChange, ScoreChangeAdmin)
 
 # TODO: manual match input can be used to record PlayerDraft games;
 # TODO: atm we don't use it
-# admin.site.register(Match, MatchAdmin)
+admin.site.register(Match, MatchAdmin)
