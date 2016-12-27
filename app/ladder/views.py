@@ -36,7 +36,7 @@ class PlayerList(ListView):
             )
         )
 
-        max_vals = players.aggregate(Max('mmr'), Max('score'), Max('ladder_mmr'))
+        max_vals = players.aggregate(Max('dota_mmr'), Max('score'), Max('ladder_mmr'))
         score_max = max_vals['score__max']
         mmr_max = max_vals['mmr__max']
         ladder_mmr_max = max_vals['ladder_mmr__max']
