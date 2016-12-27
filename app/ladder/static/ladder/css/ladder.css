@@ -94,3 +94,8 @@ div.test-winner {
 .admin-penalty {
     color: #FBB829;
 }
+
+td .small {
+    float: right;
+    padding-right: 15px;
+}

@@ -29,6 +29,18 @@
 
         <div class="page-overview-secondary">
             <dl>
+                <dd>{{ player.ladder_mmr}}</dd>
+                <dt>Ladder MMR</dt>
+            </dl>
+            <dl>
+                <dd>{{ player.score}}</dd>
+                <dt>Score</dt>
+            </dl>
+            <dl>
+                <dd>{{ player.dota_mmr}}</dd>
+                <dt>Dota MMR</dt>
+            </dl>
+            <dl>
                 <dd>
                 {% with player.matchplayer_set.first.match.date as last_played %}
                     <time class="timeago"

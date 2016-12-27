@@ -4,7 +4,7 @@
             <tr>
                 <th class="col-xs-4">Event</th>
                 <th class="col-xs-2">Ladder MMR</th>
-                <th class="col-xs-3">MMR change</th>
+                <th class="col-xs-3">Score</th>
                 <th class="col-xs-3">Additional info</th>
             </tr>
         </thead>
@@ -46,10 +46,22 @@
 
                     <td>
                         {{ event.mmr }}
+                        <span class=small>
+                            {{ event.mmr_change|stringformat:'+d' }}
+                        </span>
+                        <div class="color-bar">
+                            <div class="mmr" style="width: {{ event.mmr_percent }}%"></div>
+                        </div>
                     </td>
 
                     <td>
-                       {{ event.mmr_change|stringformat:'+d' }}
+                        {{ event.score }}
+                        <span class=small>
+                            {{ event.score_change|stringformat:'+d' }}
+                        </span>
+                        <div class="color-bar">
+                            <div class="score" style="width: {{ event.score_percent }}%"></div>
+                        </div>
                     </td>
 
                     <td>

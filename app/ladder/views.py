@@ -161,6 +161,10 @@ class PlayerDetail(DetailView):
             'match__match__balance', 'match__match__balance__result'
         )
 
+        max_vals = Player.objects.aggregate(Max('score'), Max('ladder_mmr'))
+        score_max = max(1, max_vals['score__max'])
+        mmr_max = max(1, max_vals['ladder_mmr__max'])
+
         score = mmr = 0
         for scoreChange in reversed(score_changes):
             score += scoreChange.score_change
@@ -168,6 +172,8 @@ class PlayerDetail(DetailView):
 
             scoreChange.score = score
             scoreChange.mmr = mmr
+            scoreChange.score_percent = float(score) / score_max * 100
+            scoreChange.mmr_percent = float(mmr) / mmr_max * 100
 
         return score_changes
 
