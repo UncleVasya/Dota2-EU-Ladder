@@ -1,6 +1,6 @@
 var main = function() {
     $('table.tablesorter').tablesorter({
-        sortList: [[1,1]],  // 2nd column sorted desc
+        sortList: [[2,1]],  // 2nd column sorted desc
         sortStable: true,
         sortInitialOrder: 'desc'
     });

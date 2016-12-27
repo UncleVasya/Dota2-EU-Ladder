@@ -38,7 +38,7 @@ class PlayerList(ListView):
 
         max_vals = players.aggregate(Max('dota_mmr'), Max('score'), Max('ladder_mmr'))
         score_max = max_vals['score__max']
-        mmr_max = max_vals['mmr__max']
+        dota_mmr_max = max_vals['dota_mmr__max']
         ladder_mmr_max = max_vals['ladder_mmr__max']
 
         matches_max = max(player.match_count for player in players)
@@ -46,7 +46,7 @@ class PlayerList(ListView):
 
         for player in players:
             player.score_percent = float(player.score) / score_max * 100
-            player.mmr_percent = float(player.mmr) / mmr_max * 100
+            player.dota_mmr_percent = float(player.dota_mmr) / dota_mmr_max * 100
             player.ladder_mmr_percent = float(player.ladder_mmr) / ladder_mmr_max * 100
             player.matches_percent = float(player.match_count) / matches_max * 100
 

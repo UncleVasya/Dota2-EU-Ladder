@@ -61,7 +61,7 @@
 
                 <tr class="player_row">
                     <td class="cell-centered">
-                        {{ player.rank }}
+                        {{ player.rank_ladder_mmr }}
                     </td>
                     <td>
                         <div class="avatar">
@@ -92,9 +92,9 @@
                         </div>
                     </td>
                     <td>
-                        {{ player.mmr }}
+                        {{ player.dota_mmr }}
                         <div class="color-bar">
-                            <div class="mmr" style="width: {{ player.mmr_percent }}%"></div>
+                            <div class="mmr" style="width: {{ player.dota_mmr_percent }}%"></div>
                         </div>
                     </td>
                     <td>

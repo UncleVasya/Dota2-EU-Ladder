@@ -9,11 +9,11 @@ class PlayerAdmin(admin.ModelAdmin):
     model = Player
 
     fieldsets = [
-        (None, {'fields': ['name', 'dota_mmr', 'dota_id', 'rank_mmr']}),
+        (None, {'fields': ['name', 'dota_mmr', 'dota_id', 'rank_ladder_mmr']}),
     ]
-    readonly_fields = ('rank_mmr',)
+    readonly_fields = ('rank_ladder_mmr',)
 
-    list_display = ('name', 'rank_mmr', 'score', 'dota_mmr')
+    list_display = ('name', 'rank_ladder_mmr', 'score', 'dota_mmr')
 
     def save_model(self, request, obj, form, change):
         super(PlayerAdmin, self).save_model(request, obj, form, change)

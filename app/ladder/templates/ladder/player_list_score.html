@@ -15,6 +15,7 @@
     <table class="table table-borderless tablesorter">
         <thead>
             <tr>
+                <th class="cell-centered">Rank <span class="sort-arrow"></span></th>
                 <th class="col-xs-3">Player <span class="sort-arrow"></span></th>
                 <th class="col-xs-2">Score <span class="sort-arrow"></span></th>
                 <th class="col-xs-2">Wins <span class="sort-arrow"></span></th>
@@ -27,6 +28,9 @@
             {% url 'ladder:player-overview' player.slug as player_url %}
 
             <tr class="player_row">
+                <td class="cell-centered">
+                    {{ player.rank_score }}
+                </td>
                 <td>
                     <div class="avatar">
                         <a href="{{ player_url }}">

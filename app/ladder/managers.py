@@ -20,25 +20,31 @@ class PlayerManager(models.Manager):
         player.scorechange_set.add(score)
 
     def update_ranks(self):
+        # recalculate player rankings by particular field (ladder_mmr or score)
+        def update_ranks_by(field):
+            groups = defaultdict(list)
+            for player in players:
+                value = getattr(player, field)
+                groups[value].append(player)
+
+            groups = sorted(groups.items(), reverse=True)
+            print groups
+
+            rank = 0
+            for group in groups:
+                rank += len(group[1])
+                for player in group[1]:
+                    setattr(player, 'rank_%s' % field, rank)
+                    player.save()
+
         # TODO: make 'active' field Player model
         players = self.exclude(name__in=['hoxieloxie'])
 
         players = players.filter(matchplayer__isnull=False).distinct()
         players = players or self.all()
 
-        # recalculate player rankings based on ladder-mmr
-        mmr_groups = defaultdict(list)
-        for player in players:
-            mmr_groups[player.ladder_mmr].append(player)
-
-        mmr_groups = sorted(mmr_groups.items(), reverse=True)
-
-        rank = 0
-        for group in mmr_groups:
-            rank += len(group[1])
-            for player in group[1]:
-                player.rank = rank
-                player.save()
+        update_ranks_by('ladder_mmr')
+        update_ranks_by('score')
 
 
 class MatchManager(models.Manager):
