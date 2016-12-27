@@ -9,7 +9,7 @@ class PlayerManager(models.Manager):
         from app.ladder.models import ScoreChange
 
         avg_mmr = 4000
-        initial_mmr = 200 - 30 * (avg_mmr - player.mmr) / 1000
+        initial_mmr = 200 - 30 * (avg_mmr - player.dota_mmr) / 1000
 
         score = ScoreChange.objects.create(
             player=player,
