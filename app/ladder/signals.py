@@ -24,9 +24,9 @@ def score_change(sender, instance, **kwargs):
     player.save()
 
     print 'Player mmr, score: %s, %s' % (player.ladder_mmr, player.score)
-1
 
-@receiver([post_save, post_delete], sender=Match)
+
+@receiver(post_delete, sender=Match)
 def match_change(sender, instance, **kwargs):
     print '\n'
     print 'match_change signal'
