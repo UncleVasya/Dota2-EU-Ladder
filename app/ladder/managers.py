@@ -13,7 +13,7 @@ class PlayerManager(models.Manager):
 
         score = ScoreChange.objects.create(
             player=player,
-            score_amount=25,
+            score_change=25,
             mmr_change=initial_mmr,
             info='Season started',
         )
