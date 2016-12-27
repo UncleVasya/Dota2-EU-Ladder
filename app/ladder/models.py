@@ -9,10 +9,10 @@ from app.ladder.managers import PlayerManager, ScoreChangeManager
 
 class Player(models.Model):
     name = models.CharField(max_length=200, unique=True)
-    rank_mmr = models.PositiveIntegerField(default=0)
-    score = models.PositiveIntegerField(default=0)
     dota_mmr = models.PositiveIntegerField()
     ladder_mmr = models.PositiveIntegerField(default=0)
+    score = models.PositiveIntegerField(default=0)
+    rank_mmr = models.PositiveIntegerField(default=0)
     dota_id = models.CharField(max_length=200, null=True, blank=True)
     slug = AutoSlugField(populate_from='name')
 
