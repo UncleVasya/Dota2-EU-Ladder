@@ -148,11 +148,11 @@ class PlayerDetail(DetailView):
         player = self.object
 
         player.matches = player.matchplayer_set.select_related(
-            'match'
+            'match', 'scorechange'
         ).prefetch_related(
             Prefetch('match__matchplayer_set',
                      queryset=MatchPlayer.objects.select_related('player'))
-        ).prefetch_related('scorechange_set')
+        )
 
     def score_history(self):
         player = self.object
@@ -178,7 +178,7 @@ class PlayerDetail(DetailView):
         teammates = defaultdict(lambda: defaultdict(int))
         for matchPlayer in player.matches:
             match = matchPlayer.match
-            changes = matchPlayer.scorechange_set.all()[0]
+            changes = matchPlayer.scorechange
             for mp in match.matchplayer_set.all():  # all players for this match
                 if mp.player == player or \
                    mp.team == matchPlayer.team and opponents or \
