@@ -111,6 +111,9 @@ class Command(BaseCommand):
                 return  # ignore postgame and other chats
 
             # process known commands
+            # TODO: refactor to something like this:
+            # TODO:    command = text.split[' '][0]
+            # TODO:    commands[command].run()
             if text.startswith('!balance'):
                 self.balance_command(dota, text)
             elif text.startswith('!start'):
@@ -125,6 +128,9 @@ class Command(BaseCommand):
                 self.teamkick_command(dota, text)
             elif text.startswith('!check'):
                 self.check_command(dota)
+            elif text.startswith('!forcestart'):
+                self.balance_answer = None
+                dota.launch_practice_lobby()
 
         client.login(credentials['login'], credentials['password'])
         client.run_forever()
@@ -294,6 +300,10 @@ class Command(BaseCommand):
     def process_game_result(bot):
         print 'Game is finished!\n'
         print bot.lobby
+
+        if not bot.balance_answer:
+            print 'No balance exists (probably !forcestart)'
+            return
 
         if bot.lobby.match_outcome == EMatchOutcome.RadVictory:
             print 'Radiant won!'
