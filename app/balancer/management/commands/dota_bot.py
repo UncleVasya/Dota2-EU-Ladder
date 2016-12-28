@@ -123,6 +123,8 @@ class Command(BaseCommand):
                 self.voice_command(dota, text)
             elif text.startswith('!teamkick'):
                 self.teamkick_command(dota, text)
+            elif text.startswith('!check'):
+                self.check_command(dota)
 
         client.login(credentials['login'], credentials['password'])
         client.run_forever()
@@ -266,6 +268,27 @@ class Command(BaseCommand):
             if player.name.lower().startswith(name):
                 print 'kicking %s' % player.name
                 bot.practice_lobby_kick_from_team(SteamID(player.id).as_32)
+
+    # this command checks if all lobby members are known to bot
+    @staticmethod
+    def check_command(bot):
+        players_steam = {
+            SteamID(player.id).as_32: player for player in bot.lobby.members
+        }
+
+        # get players from DB using dota id
+        players = Player.objects.filter(
+            dota_id__in=players_steam.keys()
+        ).values_list('dota_id', flat=True)
+
+        unregistered = [players_steam[p].name for p in players_steam.keys()
+                        if str(p) not in players]
+
+        if unregistered:
+            bot.send_lobby_message('I don\'t know these guys: %s' %
+                                   ', '.join(unregistered))
+        else:
+            bot.send_lobby_message('I know everybody here.')
 
     @staticmethod
     def process_game_result(bot):
