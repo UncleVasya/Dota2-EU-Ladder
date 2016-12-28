@@ -28,7 +28,6 @@ class PlayerManager(models.Manager):
                 groups[value].append(player)
 
             groups = sorted(groups.items(), reverse=True)
-            print groups
 
             rank = 0
             for group in groups:

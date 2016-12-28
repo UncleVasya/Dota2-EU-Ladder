@@ -62,6 +62,7 @@ class Command(BaseCommand):
         dota.balance_answer = None
         dota.min_mmr = 0
         dota.lobby_options = {}
+        dota.voice_required = False
 
         self.bots.append(dota)
 
@@ -87,6 +88,14 @@ class Command(BaseCommand):
 
         @dota.on(dota2.features.Lobby.EVENT_LOBBY_CHANGED)
         def lobby_changed(lobby):
+            if int(lobby.state) == LobbyState.UI:
+                # game isn't launched yet;
+                # check if all players have right to play
+                if dota.voice_required:
+                    Command.kick_voice_issues(dota)
+                if dota.min_mmr > 0:
+                    Command.kick_low_mmr(dota)
+
             if int(lobby.state) == LobbyState.POSTGAME:
                 # game ended, process result and create new lobby
                 self.process_game_result(dota)
@@ -110,6 +119,8 @@ class Command(BaseCommand):
                 self.mmr_command(dota, text)
             elif text.startswith('!flip'):
                 dota.flip_lobby_teams()
+            elif text.startswith('!voice'):
+                self.voice_command(dota, text)
 
         client.login(credentials['login'], credentials['password'])
         client.run_forever()
@@ -126,7 +137,7 @@ class Command(BaseCommand):
             'fill_with_bots': False,
             'allow_spectating': True,
             'allow_cheats': False,
-            'allchat': True,
+            'allchat': False,
             'dota_tv_delay': 2,
             'pause_setting': 1,
         }
@@ -216,6 +227,27 @@ class Command(BaseCommand):
         bot.send_lobby_message('Min MMR set to %d' % min_mmr)
 
     @staticmethod
+    def voice_command(bot, command):
+        print
+        print 'Voice command: '
+        print command
+
+        bot.voice_required = True
+        try:
+            if command.split(' ')[1] == 'off':
+                bot.voice_required = False
+        except (IndexError, ValueError):
+            pass
+
+        if bot.voice_required:
+            Command.kick_voice_issues(bot)
+
+        bot.lobby_options['game_name'] = Command.generate_lobby_name(bot)
+        bot.config_practice_lobby(bot.lobby_options)
+
+        bot.send_lobby_message('Voice required set to %s' % bot.voice_required)
+
+    @staticmethod
     def process_game_result(bot):
         print 'Game is finished!\n'
         print bot.lobby
@@ -279,7 +311,47 @@ class Command(BaseCommand):
         lobby_name = 'Inhouse Ladder'
 
         if bot.min_mmr > 0:
-            lobby_name += ' %d+ MMR' % bot.min_mmr
+            lobby_name += ' %d+' % bot.min_mmr
+        if bot.voice_required:
+            lobby_name += ' Voice'
 
         return lobby_name
 
+    @staticmethod
+    def kick_voice_issues(bot):
+        players_steam = {
+            SteamID(player.id).as_32: player for player in bot.lobby.members
+            if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)
+        }
+
+        problematic = Player.objects.filter(
+            dota_id__in=players_steam.keys(),
+            voice_issues=True
+        ).values_list('dota_id', flat=True)
+
+        print 'Problematic: %s' % problematic
+
+        for player in problematic:
+            bot.practice_lobby_kick_from_team(int(player))
+
+    @staticmethod
+    def kick_low_mmr(bot):
+        players_steam = {
+            SteamID(player.id).as_32: player for player in bot.lobby.members
+            if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)
+        }
+        players = Player.objects.filter(
+            dota_id__in=players_steam.keys()
+        ).values_list('dota_id', flat=True)
+
+        if bot.min_mmr > 1000:
+            # this is dota mmr
+            problematic = players.filter(dota_mmr__lt=bot.min_mmr)
+        else:
+            # this is ladder mmr
+            problematic = players.filter(ladder_mmr__lt=bot.min_mmr)
+
+        print 'Problematic: %s' % problematic
+
+        for player in problematic:
+            bot.practice_lobby_kick_from_team(int(player))

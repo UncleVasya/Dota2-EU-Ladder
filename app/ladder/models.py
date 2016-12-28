@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.db import models
-from django.db.models import Sum
 from app.balancer.models import BalanceAnswer
 from autoslug import AutoSlugField
 from app.ladder.managers import PlayerManager, ScoreChangeManager
@@ -10,10 +9,14 @@ from app.ladder.managers import PlayerManager, ScoreChangeManager
 class Player(models.Model):
     name = models.CharField(max_length=200, unique=True)
     dota_mmr = models.PositiveIntegerField()
+
     ladder_mmr = models.PositiveIntegerField(default=0)
     score = models.PositiveIntegerField(default=0)
     rank_ladder_mmr = models.PositiveIntegerField(default=0)
     rank_score = models.PositiveIntegerField(default=0)
+
+    voice_issues = models.BooleanField(default=False)
+
     dota_id = models.CharField(max_length=200, null=True, blank=True)
     slug = AutoSlugField(populate_from='name')
 

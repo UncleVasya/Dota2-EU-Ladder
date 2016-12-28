@@ -9,11 +9,13 @@ class PlayerAdmin(admin.ModelAdmin):
     model = Player
 
     fieldsets = [
-        (None, {'fields': ['name', 'dota_mmr', 'dota_id', 'rank_ladder_mmr']}),
+        (None, {'fields': ['name', 'dota_mmr', 'dota_id', 'voice_issues']}),
+        (None, {'fields': ['ladder_mmr', 'score']}),
+        (None, {'fields': ['rank_ladder_mmr', 'rank_score']}),
     ]
-    readonly_fields = ('rank_ladder_mmr',)
+    readonly_fields = ('ladder_mmr', 'score', 'rank_ladder_mmr', 'rank_score')
 
-    list_display = ('name', 'rank_ladder_mmr', 'score', 'dota_mmr')
+    list_display = ('name', 'rank_ladder_mmr', 'score', 'dota_mmr', 'dota_id')
 
     def save_model(self, request, obj, form, change):
         super(PlayerAdmin, self).save_model(request, obj, form, change)
@@ -77,7 +79,4 @@ class ScoreChangeAdmin(admin.ModelAdmin):
 
 admin.site.register(Player, PlayerAdmin)
 admin.site.register(ScoreChange, ScoreChangeAdmin)
-
-# TODO: manual match input can be used to record PlayerDraft games;
-# TODO: atm we don't use it
 admin.site.register(Match, MatchAdmin)
