@@ -121,6 +121,8 @@ class Command(BaseCommand):
                 dota.flip_lobby_teams()
             elif text.startswith('!voice'):
                 self.voice_command(dota, text)
+            elif text.startswith('!teamkick'):
+                self.teamkick_command(dota, text)
 
         client.login(credentials['login'], credentials['password'])
         client.run_forever()
@@ -246,6 +248,24 @@ class Command(BaseCommand):
         bot.config_practice_lobby(bot.lobby_options)
 
         bot.send_lobby_message('Voice required set to %s' % bot.voice_required)
+
+    @staticmethod
+    def teamkick_command(bot, command):
+        print
+        print 'Teamkick command'
+        print command
+
+        try:
+            name = command.split(' ')[1].lower()
+        except (IndexError, ValueError):
+            return
+
+        for player in bot.lobby.members:
+            if player.team not in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS):
+                continue
+            if player.name.lower().startswith(name):
+                print 'kicking %s' % player.name
+                bot.practice_lobby_kick_from_team(SteamID(player.id).as_32)
 
     @staticmethod
     def process_game_result(bot):
