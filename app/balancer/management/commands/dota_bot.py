@@ -23,6 +23,15 @@ class LobbyState(IntEnum):
     NOTREADY = 5
     SERVERASSIGN = 6
 
+GameModes = {
+    'AP': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_AP,
+    'AR': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_AR,
+    'RD': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_RD,
+    'SD': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_SD,
+    'CD': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_CD,
+    'CM': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_CM,
+}
+
 
 # TODO: make DotaBot class
 
@@ -131,6 +140,8 @@ class Command(BaseCommand):
             elif text.startswith('!forcestart'):
                 self.balance_answer = None
                 dota.launch_practice_lobby()
+            elif text.startswith('!mode'):
+                self.mode_command(dota, text)
 
         client.login(credentials['login'], credentials['password'])
         client.run_forever()
@@ -295,6 +306,22 @@ class Command(BaseCommand):
                                    ', '.join(unregistered))
         else:
             bot.send_lobby_message('I know everybody here.')
+
+    @staticmethod
+    def mode_command(bot, command):
+        print
+        print 'Mode command'
+        print command
+
+        try:
+            mode = command.split(' ')[1].upper()
+        except (IndexError, ValueError):
+            return
+
+        bot.lobby_options['game_mode'] = GameModes[mode]
+        bot.config_practice_lobby(bot.lobby_options)
+
+        bot.send_lobby_message('Game mode set to %s' % mode)
 
     @staticmethod
     def process_game_result(bot):
