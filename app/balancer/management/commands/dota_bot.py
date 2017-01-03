@@ -32,6 +32,19 @@ GameModes = {
     'CM': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_CM,
 }
 
+GameServers = {
+    'EU': dota2.enums.EServerRegion.Europe,
+    'EUW': dota2.enums.EServerRegion.Europe,
+    'EUE': dota2.enums.EServerRegion.Austria,
+    'US': dota2.enums.EServerRegion.USWest,
+    'USW': dota2.enums.EServerRegion.USWest,
+    'USE': dota2.enums.EServerRegion.USEast,
+    'AU': dota2.enums.EServerRegion.Australia,
+    'SEA': dota2.enums.EServerRegion.Singapore,
+    'SI': dota2.enums.EServerRegion.Singapore,
+    'KO': dota2.enums.EServerRegion.Korea,
+}
+
 
 # TODO: make DotaBot class
 
@@ -142,6 +155,8 @@ class Command(BaseCommand):
                 dota.launch_practice_lobby()
             elif text.startswith('!mode'):
                 self.mode_command(dota, text)
+            elif text.startswith('!server'):
+                self.server_command(dota, text)
 
         client.login(credentials['login'], credentials['password'])
         client.run_forever()
@@ -322,6 +337,22 @@ class Command(BaseCommand):
         bot.config_practice_lobby(bot.lobby_options)
 
         bot.send_lobby_message('Game mode set to %s' % mode)
+
+    @staticmethod
+    def server_command(bot, command):
+        print
+        print 'Server command'
+        print command
+
+        try:
+            mode = command.split(' ')[1].upper()
+        except (IndexError, ValueError):
+            return
+
+        bot.lobby_options['server_region'] = GameServers[mode]
+        bot.config_practice_lobby(bot.lobby_options)
+
+        bot.send_lobby_message('Game server set to %s' % mode)
 
     @staticmethod
     def process_game_result(bot):
