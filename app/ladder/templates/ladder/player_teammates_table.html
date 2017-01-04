@@ -52,13 +52,13 @@
                 <div class="color-bar">
                     <div class="matches" style="width: {{ teammate.matches_percent }}%"></div>
                 </div>
-            </td>
-            <td>
-                {{ teammate.winrate|floatformat:2 }}%
-                <div class="color-bar">
-                    <div class="winrate" style="width: {{ teammate.winrate }}%"></div>
-                </div>
-            </td>
+                </td>
+                <td>
+                    {{ teammate.winrate|floatformat:2 }}%
+                    <div class="color-bar">
+                        <div class="winrate" style="width: {{ teammate.winrate }}%"></div>
+                    </div>
+                </td>
             </tr>
         {% endfor %}
         </tbody>

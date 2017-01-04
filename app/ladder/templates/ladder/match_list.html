@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+
+{% block page_scripts %}
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.28.0/js/jquery.tablesorter.js"></script>
+    <script src="{% static 'ladder/js/ladder.js' %}"></script>
+    <script src="{% static 'ladder/js/player_list.js' %}"></script>
+{% endblock page_scripts %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'ladder/css/ladder.css' %}">
+{% endblock page_styles %}
+
+{% block content %}
+
+<div class="page-overview">
+    <div class="page-overview-primary">
+        <div class="page-overview-title">
+            <h1> Match history
+                <small>{% block player-page-title %} {% endblock %}</small>
+            </h1>
+        </div>
+    </div>
+</div>
+
+<section>
+<article>
+    {% include 'pagination.html' with page_obj=pagination %}
+
+    <div class="table-responsive">
+        <table class="table table-borderless">
+            <thead>
+                <tr>
+                    <th class="col-xs-2">Result</th>
+                    <th class="col-xs-5">Radiant team</th>
+                    <th class="col-xs-5 align-right">Dire team</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for match in match_list %}
+                {% with match.balance as balance %}
+                    {% url 'balancer:balancer-answer' balance.result.id balance.id as match_url %}
+
+                    <tr class="match-row" data-link="{{ match_url }}">
+                        <td>
+                        {% if match.winner == 0 %}
+                            <div>
+                                <span class=""> Radiant victory </span>
+                            </div>
+                        {% else %}
+                            <div>
+                                <span class=""> Dire victory </span>
+                            </div>
+                        {% endif %}
+
+                        {% with match.date as time %}
+                            <time class="subtext timeago"
+                                  datetime="{{ time|date:'c' }}"
+                                  title="{{ time }}">
+                                {{ time|date:'c'|default:'-' }}
+                            </time>
+                        {% endwith %}
+                        </td>
+
+                        <td>
+                            {% for mp in match.radiant %}
+                                {% url 'ladder:player-overview' mp.player.slug as player_url %}
+
+                                <a class="{% if mp.team == match.winner %} win {% else %} loss {% endif %}"
+                                   href="{{ player_url }}">{{ mp.player.name }}</a>{% if not forloop.last %},{% endif %}
+                            {% endfor %}
+                        </td>
+
+                        <td class="align-right">
+                            {% for mp in match.dire %}
+                                {% url 'ladder:player-overview' mp.player.slug as player_url %}
+
+                                <a class="{% if mp.team == match.winner %} win {% else %} loss {% endif %}"
+                                   href="{{ player_url }}">{{ mp.player.name }}</a>{% if not forloop.last %},{% endif %}
+                            {% endfor %}
+                        </td>
+                    </tr>
+                {% endwith %}
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include 'pagination.html' with page_obj=pagination %}
+</article>
+</section>
+{% endblock content %}

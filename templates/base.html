@@ -37,16 +37,20 @@
                 {% url 'index' as url %}
                 <a class="menu-logo" href="{{ url }}"> Dota 2 EU Ladder </a>
 
-                {% with request.resolver_match.namespace as namespace %}
+                {% with request.resolver_match.url_name as url_name %}
                 <nav class="menu-links">
                     <ul>
-                        <li class="{% if namespace == 'ladder' %}active{% endif %}">
+                        <li class="{% if 'player' in url_name %}active{% endif %}">
                             {% url 'ladder:player-list' as url %}
                             <a href="{{ url }}"> Leaderboards </a></li>
 
-                        <li class="{% if namespace == 'balancer' %}active{% endif %}">
+                        <li class="{% if 'balancer' in url_name %}active{% endif %}">
                             {% url 'balancer:balancer-input' as url %}
                             <a href="{{ url }}"> Team balancer </a></li>
+
+                        <li class="{% if 'match' in url_name %}active{% endif %}">
+                            {% url 'ladder:match-list' as url %}
+                            <a href="{{ url }}"> Match history </a></li>
                     </ul>
                 </nav>
                 {% endwith %}

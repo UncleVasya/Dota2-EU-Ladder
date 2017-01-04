@@ -473,3 +473,15 @@ a.link-white:active,
 a.link-white:focus {
     color: white;
 }
+
+.team1, .radiant {
+    color: #92A525;
+}
+
+.team2, .dire {
+    color: #C23C2A;
+}
+
+.align-right {
+    text-align: right;
+}

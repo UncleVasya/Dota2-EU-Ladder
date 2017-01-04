@@ -5,6 +5,7 @@ from app.ladder.models import Player, MatchPlayer, Match
 from dal import autocomplete
 from django.db.models import Max, Count, Prefetch, Case, When, F, ExpressionWrapper, FloatField
 from django.views.generic import ListView, DetailView
+from pure_pagination import Paginator
 
 
 class PlayerList(ListView):
@@ -262,3 +263,30 @@ class PlayerOpponents(PlayerDetail):
 
 class PlayerAutocomplete(autocomplete.Select2QuerySetView):
     queryset = Player.objects.order_by('name')
+
+
+class MatchList(ListView):
+    ordering = ['-date']
+
+    queryset = Match.objects.prefetch_related(
+        Prefetch('matchplayer_set',
+                 queryset=MatchPlayer.objects.select_related('player')))
+
+    def get_context_data(self, **kwargs):
+        context = super(MatchList, self).get_context_data(**kwargs)
+        matches = context['match_list']
+
+        page_num = self.request.GET.get('page', 1)
+        page = Paginator(matches, 50, request=self.request).page(page_num)
+        matches = page.object_list
+
+        for match in matches:
+            match.radiant = [mp for mp in match.matchplayer_set.all() if mp.team == 0]
+            match.dire = [mp for mp in match.matchplayer_set.all() if mp.team == 1]
+
+        context.update({
+            'match_list': matches,
+            'pagination': page,
+        })
+
+        return context
