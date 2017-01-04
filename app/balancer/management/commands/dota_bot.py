@@ -174,8 +174,8 @@ class Command(BaseCommand):
             'allow_spectating': True,
             'allow_cheats': False,
             'allchat': False,
-            'dota_tv_delay': 2,
-            'pause_setting': 1,
+            'dota_tv_delay': 0,  # TODO: this is LobbyDotaTV_10
+            'pause_setting': 0,  # TODO: LobbyDotaPauseSetting_Unlimited
         }
 
         bot.create_practice_lobby(
