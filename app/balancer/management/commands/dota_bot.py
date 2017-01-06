@@ -493,6 +493,12 @@ class Command(BaseCommand):
 
         print 'Teams don\'t match'
 
+        # kick people from wrong slots
+        for i, team in enumerate(game_teams):
+            for player in team:
+                if player not in balancer_teams[i]:
+                    bot.practice_lobby_kick_from_team(int(player))
+
         return False
 
     @staticmethod
