@@ -85,6 +85,7 @@ class Command(BaseCommand):
         dota.min_mmr = 0
         dota.lobby_options = {}
         dota.voice_required = False
+        dota.staff_mode = False
 
         self.bots.append(dota)
 
@@ -132,31 +133,9 @@ class Command(BaseCommand):
             if channel.channel_type != DOTAChatChannelType_t.DOTAChannelType_Lobby:
                 return  # ignore postgame and other chats
 
-            # process known commands
-            # TODO: refactor to something like this:
-            # TODO:    command = text.split[' '][0]
-            # TODO:    commands[command].run()
-            if text.startswith('!balance'):
-                self.balance_command(dota, text)
-            elif text.startswith('!start'):
-                self.start_command(dota)
-            elif text.startswith('!mmr'):
-                self.mmr_command(dota, text)
-            elif text.startswith('!flip'):
-                dota.flip_lobby_teams()
-            elif text.startswith('!voice'):
-                self.voice_command(dota, text)
-            elif text.startswith('!teamkick'):
-                self.teamkick_command(dota, text)
-            elif text.startswith('!check'):
-                self.check_command(dota)
-            elif text.startswith('!forcestart'):
-                self.balance_answer = None
-                dota.launch_practice_lobby()
-            elif text.startswith('!mode'):
-                self.mode_command(dota, text)
-            elif text.startswith('!server'):
-                self.server_command(dota, text)
+            if text.startswith('!'):
+                # look like this is bot command
+                Command.bot_cmd(dota, msg_obj)
 
         client.login(credentials['login'], credentials['password'])
         client.run_forever()
@@ -181,6 +160,59 @@ class Command(BaseCommand):
         bot.create_practice_lobby(
             password=os.environ.get('LOBBY_PASSWORD', ''),
             options=bot.lobby_options)
+
+    @staticmethod
+    def bot_cmd(bot, msg):
+        text = msg.text
+        command = text.split(' ')[0]
+
+        staff_only = ['!staff', '!forcestart']
+
+        # get player from DB using dota id
+        try:
+            player = Player.objects.get(dota_id=msg.account_id)
+        except Player.DoesNotExist:
+            bot.send_lobby_message('%s, who the fuck are you?' % msg.persona_name)
+            return
+
+        # check permissions when needed
+        if not player.bot_access:
+            if bot.staff_mode:
+                bot.send_lobby_message('%s, I am in staff-only mode.' % msg.persona_name)
+                return
+            if command in staff_only:
+                bot.send_lobby_message('%s, this command is staff-only.' % msg.persona_name)
+                return
+
+        # process known commands
+        # TODO: refactor to something like this:
+        # TODO:    command = text.split[' '][0]
+        # TODO:    commands[command].run()
+        if text.startswith('!balance'):
+            Command.balance_command(bot, text)
+        elif text.startswith('!start'):
+            Command.start_command(bot)
+        elif text.startswith('!mmr'):
+            Command.mmr_command(bot, text)
+        elif text.startswith('!flip'):
+            bot.flip_lobby_teams()
+        elif text.startswith('!voice'):
+            Command.voice_command(bot, text)
+        elif text.startswith('!teamkick'):
+            Command.teamkick_command(bot, text)
+        elif text.startswith('!check'):
+            Command.check_command(bot)
+        elif text.startswith('!forcestart'):
+            Command.balance_answer = None
+            bot.launch_practice_lobby()
+        elif text.startswith('!mode'):
+            Command.mode_command(bot, text)
+        elif text.startswith('!server'):
+            Command.server_command(bot, text)
+        elif text.startswith('!staff'):
+            Command.staff_command(bot, text)
+        elif text.startswith('!whois'):
+            Command.whois_command(bot, text)
 
     @staticmethod
     def balance_command(bot, command):
@@ -353,6 +385,49 @@ class Command(BaseCommand):
         bot.config_practice_lobby(bot.lobby_options)
 
         bot.send_lobby_message('Game server set to %s' % mode)
+
+    @staticmethod
+    def staff_command(bot, command):
+        print
+        print 'Staff command: '
+        print command
+
+        bot.staff_mode = True
+        try:
+            if command.split(' ')[1] == 'off':
+                bot.staff_mode = False
+        except (IndexError, ValueError):
+            pass
+
+        bot.send_lobby_message('Staff mode set to %s' % bot.staff_mode)
+
+    @staticmethod
+    def whois_command(bot, command):
+        print
+        print 'Whois command:'
+        print command
+
+        try:
+            name = command.split(' ')[1].lower()
+        except (IndexError, ValueError):
+            return
+
+        for member in bot.lobby.members:
+            if member.name.lower().startswith(name):
+                try:
+                    player = Player.objects.get(dota_id=SteamID(member.id).as_32)
+                except Player.DoesNotExist:
+                    bot.send_lobby_message('%s: I don\'t know him' % member.name)
+                    return
+
+                bot.send_lobby_message(
+                    '%s: %s, MMR: %d, Ladder MMR: %d, Score: %d, Games: %d' %
+                    (member.name, player.name, player.dota_mmr, player.ladder_mmr,
+                     player.score, player.matchplayer_set.count())
+                )
+                return
+
+        bot.send_lobby_message('No such name.')
 
     @staticmethod
     def process_game_result(bot):

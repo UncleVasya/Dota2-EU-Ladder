@@ -20,6 +20,8 @@ class Player(models.Model):
     dota_id = models.CharField(max_length=200, null=True, blank=True)
     slug = AutoSlugField(populate_from='name')
 
+    bot_access = models.BooleanField(default=False)
+
     objects = PlayerManager()
 
     class Meta:
