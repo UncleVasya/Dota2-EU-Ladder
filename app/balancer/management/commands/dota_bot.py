@@ -12,6 +12,7 @@ from steam import SteamClient, SteamID
 from dota2 import Dota2Client
 
 from dota2.enums import DOTA_GC_TEAM, EMatchOutcome, DOTAChatChannelType_t
+from steam.client.builtins.friends import SteamFriendlist
 
 
 class LobbyState(IntEnum):
@@ -95,6 +96,10 @@ class Command(BaseCommand):
         @client.on('logged_on')
         def start_dota():
             dota.launch()
+
+        @client.friends.on(SteamFriendlist.EVENT_FRIEND_INVITE)
+        def friend_invite(user):
+            client.friends.add(user.steam_id)
 
         @dota.on('ready')
         def dota_started():
@@ -254,8 +259,10 @@ class Command(BaseCommand):
             bot.send_lobby_message('Team %d: %s' % (i+1, ' | '.join(player_names)))
         bot.send_lobby_message(url)
 
+    # TODO: get command from kwargs, so I don't have to add
+    #       command argument for when I don't need it
     @staticmethod
-    def start_command(bot):
+    def start_command(bot, command):
         if not bot.balance_answer:
             bot.send_lobby_message('Please balance teams first.')
             return
@@ -326,7 +333,7 @@ class Command(BaseCommand):
 
     # this command checks if all lobby members are known to bot
     @staticmethod
-    def check_command(bot):
+    def check_command(bot, command):
         players_steam = {
             SteamID(player.id).as_32: player for player in bot.lobby.members
         }
@@ -346,7 +353,7 @@ class Command(BaseCommand):
             bot.send_lobby_message('I know everybody here.')
 
     @staticmethod
-    def forcestart_command(bot):
+    def forcestart_command(bot, command):
             Command.balance_answer = None
             bot.launch_practice_lobby()
 
