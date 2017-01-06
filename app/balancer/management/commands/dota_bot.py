@@ -166,7 +166,25 @@ class Command(BaseCommand):
         text = msg.text
         command = text.split(' ')[0]
 
-        staff_only = ['!staff', '!forcestart']
+        commands = {
+            '!balance': Command.balance_command,
+            '!b': Command.balance_command,
+            '!start': Command.start_command,
+            '!mmr': Command.mmr_command,
+            '!flip': bot.flip_lobby_teams,
+            '!voice': Command.voice_command,
+            '!teamkick': Command.teamkick_command,
+            '!tk': Command.teamkick_command,
+            '!check': Command.check_command,
+            '!forcestart': Command.forcestart_command,
+            '!fs': Command.forcestart_command,
+            '!mode': Command.mode_command,
+            '!server': Command.server_command,
+            '!staff': Command.staff_command,
+            '!whois': Command.whois_command,
+            '!wh': Command.whois_command,
+        }
+        staff_only = ['!staff', '!forcestart', '!fs']
 
         # get player from DB using dota id
         try:
@@ -184,35 +202,8 @@ class Command(BaseCommand):
                 bot.send_lobby_message('%s, this command is staff-only.' % msg.persona_name)
                 return
 
-        # process known commands
-        # TODO: refactor to something like this:
-        # TODO:    command = text.split[' '][0]
-        # TODO:    commands[command].run()
-        if text.startswith('!balance'):
-            Command.balance_command(bot, text)
-        elif text.startswith('!start'):
-            Command.start_command(bot)
-        elif text.startswith('!mmr'):
-            Command.mmr_command(bot, text)
-        elif text.startswith('!flip'):
-            bot.flip_lobby_teams()
-        elif text.startswith('!voice'):
-            Command.voice_command(bot, text)
-        elif text.startswith('!teamkick'):
-            Command.teamkick_command(bot, text)
-        elif text.startswith('!check'):
-            Command.check_command(bot)
-        elif text.startswith('!forcestart'):
-            Command.balance_answer = None
-            bot.launch_practice_lobby()
-        elif text.startswith('!mode'):
-            Command.mode_command(bot, text)
-        elif text.startswith('!server'):
-            Command.server_command(bot, text)
-        elif text.startswith('!staff'):
-            Command.staff_command(bot, text)
-        elif text.startswith('!whois'):
-            Command.whois_command(bot, text)
+        # user can use this command
+        commands[command](bot, text)
 
     @staticmethod
     def balance_command(bot, command):
@@ -353,6 +344,11 @@ class Command(BaseCommand):
                                    ', '.join(unregistered))
         else:
             bot.send_lobby_message('I know everybody here.')
+
+    @staticmethod
+    def forcestart_command(bot):
+            Command.balance_answer = None
+            bot.launch_practice_lobby()
 
     @staticmethod
     def mode_command(bot, command):
