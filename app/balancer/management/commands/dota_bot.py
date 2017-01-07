@@ -150,6 +150,7 @@ class Command(BaseCommand):
         print 'Making new lobby\n'
 
         bot.balance_answer = None
+        bot.staff_mode = False
         bot.lobby_options = {
             'game_name': Command.generate_lobby_name(bot),
             'game_mode': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_CD,
