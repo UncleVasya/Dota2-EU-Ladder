@@ -188,6 +188,7 @@ class Command(BaseCommand):
             '!staff': Command.staff_command,
             '!whois': Command.whois_command,
             '!wh': Command.whois_command,
+            '!teams': Command.teams_command,
         }
         staff_only = ['!staff', '!forcestart', '!fs']
 
@@ -431,6 +432,29 @@ class Command(BaseCommand):
                 return
 
         bot.send_lobby_message('No such name.')
+
+    @staticmethod
+    def teams_command(bot, command):
+        print 'Teams command'
+
+        if not bot.balance_answer:
+            bot.send_lobby_message('Please balance teams first.')
+            return
+
+        teams = [
+            Player.objects.filter(
+                name__in=[player[0] for player in team['players']]
+            ).order_by('-ladder_mmr')
+            for team in bot.balance_answer.teams
+        ]
+
+        dota_mmr = [' '.join(str(player.dota_mmr) for player in team) for team in teams]
+        ladder_mmr = [' '.join(str(player.ladder_mmr) for player in team) for team in teams]
+
+        bot.send_lobby_message('Ladder MMR:')
+        [bot.send_lobby_message(team) for team in ladder_mmr]
+        bot.send_lobby_message('Dota MMR:')
+        [bot.send_lobby_message(team) for team in dota_mmr]
 
     @staticmethod
     def process_game_result(bot):
