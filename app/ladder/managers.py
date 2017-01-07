@@ -51,6 +51,7 @@ class MatchManager(models.Manager):
     def add_scores(match):
         from app.ladder.models import ScoreChange
 
+        # TODO: make values like win/loss change and underdog bonus changeble in admin panel
         mmr_diff = match.balance.teams[0]['mmr'] - match.balance.teams[1]['mmr']
         underdog = 0 if mmr_diff <= 0 else 1
         underdog_bonus = abs(mmr_diff) / 10  # 1 point for each 10 avg. mmr diff
@@ -67,7 +68,7 @@ class MatchManager(models.Manager):
 
             score_change = 1 * is_victory
 
-            mmr_change = 3 * is_victory
+            mmr_change = 7 * is_victory
             mmr_change += underdog_bonus * is_underdog
 
             ScoreChange.objects.create(
