@@ -8,7 +8,7 @@ class BalanceResultManager(models.Manager):
         from app.balancer.models import BalanceResult, BalanceAnswer
 
         # balance teams and save result
-        mmr_exponent = 1
+        mmr_exponent = 3
         answers = balance_teams(players, mmr_exponent)
 
         with transaction.atomic():
