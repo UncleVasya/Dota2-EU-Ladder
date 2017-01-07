@@ -1,3 +1,4 @@
+from app.balancer.models import BalanceAnswer
 from django.core.management.base import BaseCommand
 from django.core.urlresolvers import reverse
 from app.balancer.managers import BalanceResultManager
@@ -452,6 +453,8 @@ class Command(BaseCommand):
         dota_mmr = [' '.join(str(player.dota_mmr) for player in team) for team in teams]
         ladder_mmr = [' '.join(str(player.ladder_mmr) for player in team) for team in teams]
 
+        [bot.send_lobby_message(' | '.join(player.name for player in team))
+         for team in teams]
         bot.send_lobby_message('Ladder MMR:')
         [bot.send_lobby_message(team) for team in ladder_mmr]
         bot.send_lobby_message('Dota MMR:')
