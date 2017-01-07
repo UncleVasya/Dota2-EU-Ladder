@@ -53,7 +53,8 @@ class MatchManager(models.Manager):
 
         mmr_diff = match.balance.teams[0]['mmr'] - match.balance.teams[1]['mmr']
         underdog = 0 if mmr_diff <= 0 else 1
-        underdog_bonus = abs(mmr_diff) / 2
+        underdog_bonus = abs(mmr_diff) / 10  # 1 point for each 10 avg. mmr diff
+        underdog_bonus = min(1, underdog_bonus)  # but no more than 1
 
         print 'mmr diff: %d' % mmr_diff
         print 'underdog: %d' % underdog
@@ -66,7 +67,7 @@ class MatchManager(models.Manager):
 
             score_change = 1 * is_victory
 
-            mmr_change = 7 * is_victory
+            mmr_change = 3 * is_victory
             mmr_change += underdog_bonus * is_underdog
 
             ScoreChange.objects.create(
