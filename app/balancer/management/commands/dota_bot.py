@@ -512,7 +512,7 @@ class Command(BaseCommand):
 
             # reverse teams in balance answer
             bot.balance_answer.teams = list(reversed(bot.balance_answer.teams))
-            bot.balace_answer.save()
+            bot.balance_answer.save()
 
             print 'Corrected balance result:'
             print bot.balance_answer.teams
