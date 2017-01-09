@@ -1,5 +1,5 @@
 from django.db import models, transaction
-from app.balancer.balancer import balance_teams
+from app.balancer.balancer import balance_teams, balance_from_teams
 
 
 class BalanceResultManager(models.Manager):
@@ -8,6 +8,7 @@ class BalanceResultManager(models.Manager):
         from app.balancer.models import BalanceResult, BalanceAnswer
 
         # balance teams and save result
+        # TODO: make mmr_exponent changable from admin panel
         mmr_exponent = 3
         answers = balance_teams(players, mmr_exponent)
 
@@ -22,3 +23,20 @@ class BalanceResultManager(models.Manager):
                 )
 
         return result
+
+
+class BalanceAnswerManager(models.Manager):
+    @staticmethod
+    def balance_custom(teams):
+        from app.balancer.models import BalanceAnswer
+
+        mmr_exponent = 3
+        answer = balance_from_teams(teams, mmr_exponent)
+
+        answer = BalanceAnswer.objects.create(
+            teams=answer['teams'],
+            mmr_diff=answer['mmr_diff'],
+            mmr_diff_exp=answer['mmr_diff_exp'],
+        )
+
+        return answer

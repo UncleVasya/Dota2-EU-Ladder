@@ -27,7 +27,7 @@ def balance_teams(players, mmr_exponent=3):
     :return: a list of team pairs with some meta data
     """
 
-    team_players = 5
+    team_players = len(players) / 2
 
     # sort players by mmr
     players.sort(key=lambda x: -x[1])
@@ -78,33 +78,40 @@ def balance_teams(players, mmr_exponent=3):
     return answers
 
 
-def balance_for_match(match):
+def balance_from_teams(teams, mmr_exponent=3):
     """
-    Takes a match and produces balance info for it.
-    Used to calculate balance info for already played matches.
+    Takes an already made-up teams and produces balance info for it.
+    Used to calculate balance info for custom teams setup
 
-    :param match: app.ladder.models.Match object
+    :param teams: list of teams, where each team is a list of players (name and mmr):
+            Example input:
+
+                teams = [
+                    [
+                        ['Denden',     3000],
+                        ['Uvs',        8000],
+                        ['Polshy',     5000],
+                        ['SMMN',       5500],
+                        ['Ulafzs',     6000],
+                    ]
+                    [
+                        ['Lazy Panda', 4000],
+                        ['Smile',      5000],
+                        ['rawr',       3500],
+                        ['Paul',       6200],
+                        ['Mikel',      2400],
+                    ]
+                ]
+
     :return: dictionary with balance info
     """
-
-    team_players = 5
-    mmr_exponent = 3
-
-    match = Match.objects.last()
-
-    # TODO: move this outside and take teams as a parameter instead of match
-    players = match.matchplayer_set.all()
-    teams = [
-        [(p.player.name, p.player.mmr) for p in players if p.team == team]
-        for team in xrange(2)
-    ]
 
     # TODO: make function team_stats cause code repeats one from balance_teams
     teams = [
         {
             'players': team,
-            'mmr': sum(player[1] for player in team) / team_players,
-            'mmr_exp': sum(player[1] ** mmr_exponent for player in team) / team_players
+            'mmr': sum(player[1] for player in team) / len(team),
+            'mmr_exp': sum(player[1] ** mmr_exponent for player in team) / len(team)
         }
         for team in teams
     ]

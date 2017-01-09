@@ -1,7 +1,7 @@
 from app.balancer.models import BalanceAnswer
 from django.core.management.base import BaseCommand
 from django.core.urlresolvers import reverse
-from app.balancer.managers import BalanceResultManager
+from app.balancer.managers import BalanceResultManager, BalanceAnswerManager
 from app.ladder.managers import MatchManager
 from enum import IntEnum
 import gevent
@@ -191,8 +191,10 @@ class Command(BaseCommand):
             '!whois': Command.whois_command,
             '!wh': Command.whois_command,
             '!teams': Command.teams_command,
+            '!swap': Command.swap_command,
+            '!custom': Command.custom_command,
         }
-        staff_only = ['!staff', '!forcestart', '!fs']
+        staff_only = ['!staff', '!forcestart', '!fs', '!swap', '!custom']
 
         # get player from DB using dota id
         try:
@@ -259,7 +261,8 @@ class Command(BaseCommand):
         bot.balance_answer = answer = result.answers.all()[answer_num-1]
         for i, team in enumerate(answer.teams):
             player_names = [p[0] for p in team['players']]
-            bot.send_lobby_message('Team %d: %s' % (i+1, ' | '.join(player_names)))
+            bot.send_lobby_message('Team %d (avg. %d): %s' %
+                                   (i+1, team['mmr'], ' | '.join(player_names)))
         bot.send_lobby_message(url)
 
     # TODO: get command from kwargs, so I don't have to add
@@ -459,6 +462,86 @@ class Command(BaseCommand):
         [bot.send_lobby_message(team) for team in ladder_mmr]
         bot.send_lobby_message('Dota MMR:')
         [bot.send_lobby_message(team) for team in dota_mmr]
+
+    # swap 2 players in balance
+    @staticmethod
+    def swap_command(bot, command):
+        print 'Swap command:'
+        print command
+
+        if not bot.balance_answer:
+            bot.send_lobby_message('Please balance teams first.')
+            return
+
+        # get player indexes
+        try:
+            player_1 = int(command.split(' ')[1]) - 1
+            player_2 = int(command.split(' ')[2]) - 1
+            if not 0 <= player_1 < 5 or not 0 <= player_2 < 5:
+                raise ValueError
+        except (IndexError, ValueError):
+            bot.send_lobby_message('Can\'t do that')
+            return
+
+        teams = [team['players'] for team in bot.balance_answer.teams]
+
+        # swap players and generate new balance
+        swap = teams[0][player_1]
+        teams[0][player_1] = teams[1][player_2]
+        teams[1][player_2] = swap
+
+        bot.balance_answer = BalanceAnswerManager.balance_custom(teams)
+
+        for i, team in enumerate(bot.balance_answer.teams):
+            player_names = [p[0] for p in team['players']]
+            bot.send_lobby_message(
+                'Team %d (avg. %d): %s' %
+                (i+1, team['mmr'], ' | '.join(player_names)))
+
+    # creates balance record for already made-up teams
+    # TODO: refactor this code to decrese repetition
+    # TODO: between this func, balance_command() and check_teams()
+    @staticmethod
+    def custom_command(bot, command):
+        print '!custom command'
+
+        # convert steam64 into 32bit dota id and build a dic of {id: player}
+        players_steam = {
+            SteamID(player.id).as_32: player for player in bot.lobby.members
+            if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)
+        }
+
+        if len(players_steam) < 10:
+            bot.send_lobby_message('We don\'t have 10 players')
+            return
+
+        # get players from DB using dota id
+        players = Player.objects.filter(dota_id__in=players_steam.keys())
+        players = {player.dota_id: player for player in players}
+
+        unregistered = [players_steam[p].name for p in players_steam.keys()
+                        if str(p) not in players]
+
+        if unregistered:
+            bot.send_lobby_message('I don\'t know these guys: %s' %
+                                   ', '.join(unregistered))
+            return
+
+        # create balance record for these players
+        radiant = [(p.name, p.ladder_mmr) for key, p in players.iteritems()
+                   if players_steam[int(key)].team == DOTA_GC_TEAM.GOOD_GUYS]
+        dire = [(p.name, p.ladder_mmr) for key, p in players.iteritems()
+                if players_steam[int(key)].team == DOTA_GC_TEAM.BAD_GUYS]
+
+        bot.balance_answer = BalanceAnswerManager.balance_custom([radiant, dire])
+
+        # TODO: create print_balance func
+        # TODO and use it in here, balance_command(), teams_command(), swap_command()
+        for i, team in enumerate(bot.balance_answer.teams):
+            player_names = [p[0] for p in team['players']]
+            bot.send_lobby_message(
+                'Team %d (avg. %d): %s' %
+                (i+1, team['mmr'], ' | '.join(player_names)))
 
     @staticmethod
     def process_game_result(bot):
