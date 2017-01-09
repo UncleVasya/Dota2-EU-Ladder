@@ -202,7 +202,10 @@ class PlayerDetail(DetailView):
                     else max(mp.match.date, teammate['last_played'])
 
         # calc additional teammate stats
-        matches_max = max(t['match_count'] for t in teammates.values())
+        matches_max = 0
+        if teammates:
+            matches_max = max(t['match_count'] for t in teammates.values())
+
         for name, teammate in teammates.iteritems():
             teammate['name'] = name
             teammate['winrate'] = float(teammate['wins']) / teammate['match_count'] * 100
