@@ -39,17 +39,17 @@
             <tbody>
             {% for match in match_list %}
                 {% with match.balance as balance %}
-                    {% url 'balancer:balancer-answer' balance.result.id balance.id as match_url %}
+                    {% url 'balancer:balancer-answer' balance.id as match_url %}
 
                     <tr class="match-row" data-link="{{ match_url }}">
                         <td>
                         {% if match.winner == 0 %}
                             <div>
-                                <span class=""> Radiant victory </span>
+                                <a class="link-white" href="{{ match_url }}"> Radiant victory </a>
                             </div>
                         {% else %}
                             <div>
-                                <span class=""> Dire victory </span>
+                                <a class="link-white" href="{{ match_url }}"> Dire victory </a>
                             </div>
                         {% endif %}
 

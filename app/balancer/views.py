@@ -52,28 +52,15 @@ class BalancerResult(DetailView):
     def get_context_data(self, **kwargs):
         context = super(BalancerResult, self).get_context_data(**kwargs)
 
-        answer = self.kwargs.get('answer', None)
-        page = None
+        # paginate
+        page_num = self.request.GET.get('page', 1)
+        try:
+            answers = context['result'].answers.all()
+            page = Paginator(answers, 1, request=self.request).page(page_num)
+        except PageNotAnInteger:
+            raise Http404
 
-        # TODO: make separate BalanceAnswer view
-        if answer is not None:
-            try:
-                answer = BalanceAnswer.objects.get(id=answer)
-            except BalanceAnswer.DoesNotExist:
-                raise Http404
-        else:
-            # paginate
-            page_num = self.request.GET.get('page', 1)
-            try:
-                answers = context['result'].answers.all()
-                page = Paginator(answers, 1, request=self.request).page(page_num)
-            except PageNotAnInteger:
-                raise Http404
-
-            answer = page.object_list[0]
-
-        # TODO: make a result.mmr_exponent DB field,
-        # TODO: make an Answer model
+        answer = page.object_list[0]
         mmr_exponent = answer.result.mmr_exponent
 
         players = [p for team in answer.teams for p in team['players']]
@@ -91,6 +78,39 @@ class BalancerResult(DetailView):
         context.update({
             'answer': answer,
             'pagination': page,
+        })
+
+        return context
+
+
+class BalancerAnswer(DetailView):
+    model = BalanceAnswer
+    # TODO make separate balancer-answer.html template and include it in BalancerResult page
+    template_name = 'balancer/balancer-result.html'
+    context_object_name = 'answer'
+
+    def get_context_data(self, **kwargs):
+        context = super(BalancerAnswer, self).get_context_data(**kwargs)
+        answer = context['answer']
+
+        # TODO: move mmr_exponent field from BalanceResult to BalanceAnswer model
+        # TODO: also this code repeats from BalancerResult view. Move to separate func?
+        mmr_exponent = 3
+
+        players = [p for team in answer.teams for p in team['players']]
+        mmr_max = max([player[1] ** mmr_exponent for player in players])
+
+        for team in answer.teams:
+            for i, player in enumerate(team['players']):
+                mmr_percent = float(player[1] ** mmr_exponent) / mmr_max * 100
+                team['players'][i] = {
+                    'name': player[0],
+                    'mmr': player[1],
+                    'mmr_percent': mmr_percent
+                }
+
+        context.update({
+            'answer': answer,
         })
 
         return context

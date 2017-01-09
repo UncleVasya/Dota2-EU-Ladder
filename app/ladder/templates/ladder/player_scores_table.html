@@ -11,7 +11,7 @@
         <tbody>
         {% for event in score_changes %}
             {% with event.match.match.balance as balance %}
-                {% url 'balancer:balancer-answer' balance.result.id balance.id as match_url %}
+                {% url 'balancer:balancer-answer' balance.id as match_url %}
 
                 <tr class="match-row" data-link="{{ match_url }}">
                     <td>
