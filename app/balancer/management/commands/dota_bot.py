@@ -36,15 +36,10 @@ GameModes = {
 
 GameServers = {
     'EU': dota2.enums.EServerRegion.Europe,
-    'EUW': dota2.enums.EServerRegion.Europe,
-    'EUE': dota2.enums.EServerRegion.Austria,
-    'US': dota2.enums.EServerRegion.USWest,
-    'USW': dota2.enums.EServerRegion.USWest,
     'USE': dota2.enums.EServerRegion.USEast,
+    'USW': dota2.enums.EServerRegion.USWest,
     'AU': dota2.enums.EServerRegion.Australia,
     'SEA': dota2.enums.EServerRegion.Singapore,
-    'SI': dota2.enums.EServerRegion.Singapore,
-    'KO': dota2.enums.EServerRegion.Korea,
 }
 
 
