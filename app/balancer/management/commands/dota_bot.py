@@ -1,3 +1,4 @@
+import re
 from app.balancer.models import BalanceAnswer
 from django.core.management.base import BaseCommand
 from django.core.urlresolvers import reverse
