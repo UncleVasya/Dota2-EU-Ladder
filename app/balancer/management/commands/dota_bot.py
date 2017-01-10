@@ -83,6 +83,7 @@ class Command(BaseCommand):
         dota.lobby_options = {}
         dota.voice_required = False
         dota.staff_mode = False
+        dota.server = 'EU'
 
         self.bots.append(dota)
 
@@ -150,7 +151,7 @@ class Command(BaseCommand):
         bot.lobby_options = {
             'game_name': Command.generate_lobby_name(bot),
             'game_mode': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_CD,
-            'server_region': int(dota2.enums.EServerRegion.Europe),
+            'server_region': GameServers[bot.server],
             'fill_with_bots': False,
             'allow_spectating': True,
             'allow_cheats': False,
@@ -381,14 +382,15 @@ class Command(BaseCommand):
         print command
 
         try:
-            mode = command.split(' ')[1].upper()
+            server = command.split(' ')[1].upper()
         except (IndexError, ValueError):
             return
 
-        bot.lobby_options['server_region'] = GameServers[mode]
+        bot.server = server
+        bot.lobby_options['server_region'] = GameServers[server]
         bot.config_practice_lobby(bot.lobby_options)
 
-        bot.send_lobby_message('Game server set to %s' % mode)
+        bot.send_lobby_message('Game server set to %s' % server)
 
     @staticmethod
     def staff_command(bot, command):
