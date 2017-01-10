@@ -9,7 +9,7 @@ class BalanceResultManager(models.Manager):
 
         # balance teams and save result
         # TODO: make mmr_exponent changable from admin panel
-        mmr_exponent = 3
+        mmr_exponent = 2
         answers = balance_teams(players, mmr_exponent)
 
         with transaction.atomic():
@@ -30,7 +30,7 @@ class BalanceAnswerManager(models.Manager):
     def balance_custom(teams):
         from app.balancer.models import BalanceAnswer
 
-        mmr_exponent = 3
+        mmr_exponent = 2
         answer = balance_from_teams(teams, mmr_exponent)
 
         answer = BalanceAnswer.objects.create(
