@@ -9,6 +9,8 @@ from app.ladder.managers import PlayerManager, ScoreChangeManager
 class Player(models.Model):
     name = models.CharField(max_length=200, unique=True)
     dota_mmr = models.PositiveIntegerField()
+    dota_id = models.CharField(max_length=200, null=True, blank=True)
+    slug = AutoSlugField(populate_from='name')
 
     ladder_mmr = models.PositiveIntegerField(default=0)
     score = models.PositiveIntegerField(default=0)
@@ -16,10 +18,6 @@ class Player(models.Model):
     rank_score = models.PositiveIntegerField(default=0)
 
     voice_issues = models.BooleanField(default=False)
-
-    dota_id = models.CharField(max_length=200, null=True, blank=True)
-    slug = AutoSlugField(populate_from='name')
-
     bot_access = models.BooleanField(default=False)
 
     objects = PlayerManager()
