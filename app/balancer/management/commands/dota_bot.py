@@ -207,6 +207,7 @@ class Command(BaseCommand):
             '!teams': Command.teams_command,
             '!swap': Command.swap_command,
             '!custom': Command.custom_command,
+            '!ban': Command.ban_command,  # just a prank command atm
         }
         staff_only = ['!staff', '!forcestart', '!fs', '!swap', '!custom']
 
@@ -225,6 +226,12 @@ class Command(BaseCommand):
             if command in staff_only:
                 bot.send_lobby_message('%s, this command is staff-only.' % msg.persona_name)
                 return
+
+        # joke command for ulafzs
+        # TODO: remove this eventually
+        if command == '!ban' and player.name.lower() != 'ulafzs':
+            bot.send_lobby_message('%s, only master ulafzs can use this command.' % msg.persona_name)
+            return
 
         # user can use this command
         commands[command](bot, text)
@@ -557,6 +564,25 @@ class Command(BaseCommand):
             bot.send_lobby_message(
                 'Team %d (avg. %d): %s' %
                 (i+1, team['mmr'], ' | '.join(player_names)))
+
+    @staticmethod
+    def ban_command(bot, command):
+        print
+        print 'Ban command:'
+        print command
+
+        try:
+            name = command.split(' ')[1]
+        except (IndexError, ValueError):
+            return
+
+        bot.send_lobby_message('Banning %s in...' % name)
+        for i in range(5, 0, -1):
+            gevent.sleep(1)
+            bot.send_lobby_message('%d' % i)
+
+        gevent.sleep(1)
+        bot.send_lobby_message('JUST A PRANK!')
 
     @staticmethod
     def process_game_result(bot):
