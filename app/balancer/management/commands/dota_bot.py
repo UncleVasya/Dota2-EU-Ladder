@@ -92,8 +92,25 @@ class Command(BaseCommand):
         dota.verbose_debug = True
 
         @client.on('logged_on')
-        def start_dota():
+        def logged_on():
             dota.launch()
+
+        @client.on('channel_secured')
+        def send_login():
+            if client.relogin_available:
+                client.relogin()
+
+        @client.on('reconnect')
+        def handle_reconnect(delay):
+            print 'Reconnect in %ds...' % delay
+
+        @client.on('disconnected')
+        def handle_disconnect():
+            print 'Disconnected.'
+
+            if client.relogin_available:
+                print 'Reconnecting...'
+                client.reconnect(maxdelay=30)
 
         @client.friends.on(SteamFriendlist.EVENT_FRIEND_INVITE)
         def friend_invite(user):
