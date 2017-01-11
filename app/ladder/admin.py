@@ -16,6 +16,7 @@ class PlayerAdmin(admin.ModelAdmin):
     readonly_fields = ('ladder_mmr', 'score', 'rank_ladder_mmr', 'rank_score')
 
     list_display = ('name', 'rank_ladder_mmr', 'score', 'dota_mmr', 'dota_id')
+    search_fields = ('=name',)
 
     def save_model(self, request, obj, form, change):
         super(PlayerAdmin, self).save_model(request, obj, form, change)
