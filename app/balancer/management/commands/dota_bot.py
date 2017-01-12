@@ -85,6 +85,7 @@ class Command(BaseCommand):
         dota.voice_required = False
         dota.staff_mode = False
         dota.server = 'EU'
+        dota.players = {}
 
         self.bots.append(dota)
 
@@ -134,6 +135,7 @@ class Command(BaseCommand):
             if int(lobby.state) == LobbyState.UI:
                 # game isn't launched yet;
                 # check if all players have right to play
+                Command.kick_blacklisted(dota)
                 if dota.voice_required:
                     Command.kick_voice_issues(dota)
                 if dota.min_mmr > 0:
@@ -166,6 +168,7 @@ class Command(BaseCommand):
 
         bot.balance_answer = None
         bot.staff_mode = False
+        bot.players = {}
         bot.lobby_options = {
             'game_name': Command.generate_lobby_name(bot),
             'game_mode': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_CD,
@@ -703,3 +706,50 @@ class Command(BaseCommand):
 
         for player in problematic:
             bot.practice_lobby_kick_from_team(int(player))
+
+    @staticmethod
+    def kick_blacklisted(bot):
+        old_players = bot.players
+        current_players = {
+            SteamID(player.id).as_32: player for player in bot.lobby.members
+            if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)
+        }
+
+        bot.players = current_players
+
+        print 'Old players: %s' % old_players
+        print 'Current players: %s' % current_players
+
+        if not old_players or not current_players:
+            return
+
+        joined_players = set(current_players.keys()) - set(old_players.keys())
+
+        players = Player.objects.filter(
+            dota_id__in=joined_players
+        ).prefetch_related('blacklist', 'blacklisted_by')
+
+        print 'New guys: %s' % players
+
+        for p in players:
+            print 'Player: %s' % p
+            print 'Blacklist: %s' % p.blacklist.all()
+            print 'Blacklisted by: %s' % p.blacklisted_by.all()
+
+            blacklist = list(p.blacklist.all()) + list(p.blacklisted_by.all())
+            blacklist = [int(b.dota_id) for b in blacklist]
+            blacklist = set(blacklist)
+
+            print 'Set: %s' % blacklist
+            collision = blacklist.intersection(set(old_players.keys()))
+            print 'Collision: %s' % collision
+
+            if not collision:
+                continue  # this guy can play
+
+            # tell player he collides with other players
+            collision = [old_players[c].name for c in collision]
+            bot.send_lobby_message('%s, you can\'t play with: %s' %
+                                   (p.name, ', '.join(collision)))
+
+            bot.practice_lobby_kick_from_team(int(p.dota_id))
