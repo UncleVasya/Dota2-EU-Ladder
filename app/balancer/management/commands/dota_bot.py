@@ -135,7 +135,7 @@ class Command(BaseCommand):
             if int(lobby.state) == LobbyState.UI:
                 # game isn't launched yet;
                 # check if all players have right to play
-                Command.kick_blacklisted(dota)
+                # Command.kick_blacklisted(dota)
                 if dota.voice_required:
                     Command.kick_voice_issues(dota)
                 if dota.min_mmr > 0:
