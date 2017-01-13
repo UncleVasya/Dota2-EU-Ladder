@@ -86,6 +86,11 @@
                             <a class="button team{{ forloop.counter }}" href="{{ url }}"> Record victory! </a>
                         {% endif %}
                     {% elif answer.match.winner == forloop.counter0 %}
+                        {% if perms.ladder.delete_match %}
+                            {% url 'balancer:match-delete' answer.id as url %}
+                            <a class="button team{{ forloop.counter }}" href="{{ url }}"> X </a>
+                        {% endif %}
+
                         <a class="button already-done team{{ forloop.counter }}"> Victory recorded! </a>
                     {% endif %}
                 </footer>

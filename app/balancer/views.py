@@ -141,3 +141,22 @@ class MatchCreate(PermissionRequiredMixin, RedirectView):
         MatchManager.record_balance(answer, int(kwargs['winner']))
 
         return super(MatchCreate, self).get(request, *args, **kwargs)
+
+
+class MatchDelete(PermissionRequiredMixin, RedirectView):
+    pattern_name = 'balancer:balancer-answer'
+    permission_required = 'ladder.delete_match'
+
+    def get(self, request, *args, **kwargs):
+        try:
+            answer = BalanceAnswer.objects.get(id=kwargs['pk'])
+        except BalanceAnswer.DoesNotExist:
+            return HttpResponseBadRequest(request)
+
+        if not hasattr(answer, 'match'):
+            # no match to delete
+            return super(MatchDelete, self).get(request, *args, **kwargs)
+
+        answer.match.delete()
+
+        return super(MatchDelete, self).get(request, *args, **kwargs)

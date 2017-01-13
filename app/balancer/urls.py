@@ -1,6 +1,7 @@
 from django.conf.urls import url
 
-from app.balancer.views import BalancerInput, BalancerResult, BalancerInputCustom, MatchCreate, BalancerAnswer
+from app.balancer.views import BalancerInput, BalancerResult, BalancerInputCustom, MatchCreate, BalancerAnswer, \
+    MatchDelete
 
 urlpatterns = [
     url(r'^$', BalancerInput.as_view(), name='balancer-input'),
@@ -13,4 +14,6 @@ urlpatterns = [
 
     url(r'^answers/(?P<pk>[0-9]+)/match-create/(?P<winner>[0-1])/$', MatchCreate.as_view(),
         name='match-create'),
+    url(r'^answers/(?P<pk>[0-9]+)/match-delete/$', MatchDelete.as_view(),
+        name='match-delete'),
 ]
