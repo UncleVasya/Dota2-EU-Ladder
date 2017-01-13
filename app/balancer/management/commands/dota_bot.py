@@ -135,6 +135,7 @@ class Command(BaseCommand):
             if int(lobby.state) == LobbyState.UI:
                 # game isn't launched yet;
                 # check if all players have right to play
+                Command.kick_banned(dota)
                 # Command.kick_blacklisted(dota)
                 if dota.voice_required:
                     Command.kick_voice_issues(dota)
@@ -219,6 +220,10 @@ class Command(BaseCommand):
             player = Player.objects.get(dota_id=msg.account_id)
         except Player.DoesNotExist:
             bot.send_lobby_message('%s, who the fuck are you?' % msg.persona_name)
+            return
+
+        if player.banned:
+            bot.send_lobby_message('%s, you are banned.' % msg.persona_name)
             return
 
         # check permissions when needed
@@ -753,3 +758,21 @@ class Command(BaseCommand):
                                    (p.name, ', '.join(collision)))
 
             bot.practice_lobby_kick_from_team(int(p.dota_id))
+
+    @staticmethod
+    def kick_banned(bot):
+        players_steam = {
+            SteamID(player.id).as_32: player for player in bot.lobby.members
+            if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)
+        }
+
+        problematic = Player.objects.filter(
+            dota_id__in=players_steam.keys(),
+            banned=True
+        ).values_list('dota_id', flat=True)
+
+        print 'Problematic: %s' % problematic
+
+        for player in problematic:
+            bot.send_lobby_message('%s, you are banned.' % players_steam[int(player)].name)
+            bot.practice_lobby_kick_from_team(int(player))

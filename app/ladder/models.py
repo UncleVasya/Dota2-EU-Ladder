@@ -19,6 +19,7 @@ class Player(models.Model):
 
     voice_issues = models.BooleanField(default=False)
     bot_access = models.BooleanField(default=False)
+    banned = models.BooleanField(default=False)
     blacklist = models.ManyToManyField('self', symmetrical=False, related_name='blacklisted_by')
 
     objects = PlayerManager()

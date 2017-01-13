@@ -36,7 +36,7 @@ class PlayerAdmin(admin.ModelAdmin):
     model = Player
 
     fieldsets = [
-        (None, {'fields': ['name', 'dota_mmr', 'dota_id', 'voice_issues', 'bot_access']}),
+        (None, {'fields': ['name', 'dota_mmr', 'dota_id', 'voice_issues', 'bot_access', 'banned']}),
         (None, {'fields': ['ladder_mmr', 'score']}),
         (None, {'fields': ['rank_ladder_mmr', 'rank_score']}),
     ]
