@@ -27,7 +27,7 @@
         {% for player in player_list %}
             {% url 'ladder:player-overview' player.slug as player_url %}
 
-            <tr class="player_row">
+            <tr class="player_row" data-link="{{ player_url }}">
                 <td class="cell-centered">
                     {{ player.rank_score }}
                 </td>
@@ -72,7 +72,9 @@
                     </div>
                 </td>
                 <td>
-                    {{ player.ladder_mmr }}
+                    <span data-toggle="tooltip" data-mmr="{{ player.ladder_mmr }}">
+                        {{ player.ladder_mmr }}
+                    </span>
                     <div class="color-bar">
                         <div class="" style="width: {{ player.ladder_mmr_percent }}%"></div>
                     </div>

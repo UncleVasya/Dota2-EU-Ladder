@@ -29,7 +29,11 @@
 
         <div class="page-overview-secondary">
             <dl>
-                <dd>{{ player.ladder_mmr}}</dd>
+                <dd>
+                    <span data-toggle="tooltip" data-mmr="{{ player.ladder_mmr }}">
+                        {{ player.ladder_mmr }}
+                    </span>
+                </dd>
                 <dt>Ladder MMR</dt>
             </dl>
             <dl>

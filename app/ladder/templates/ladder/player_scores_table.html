@@ -45,7 +45,9 @@
                     </td>
 
                     <td>
-                        {{ event.mmr }}
+                        <span data-toggle="tooltip" data-mmr="{{ event.mmr }}">
+                            {{ event.mmr }}
+                        </span>
                         <span class=small>
                             {{ event.mmr_change|stringformat:'+d' }}
                         </span>

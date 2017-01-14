@@ -64,7 +64,11 @@
                                     <td class="col-md-3">
                                         <a class='link-white' href="{{ player_url }}"> {{ player.name }} </a>
                                     </td>
-                                    <td class="col-md-2">{{ player.mmr }}</td>
+                                    <td class="col-md-2">
+                                        <span data-toggle="tooltip" data-mmr="{{ player.mmr }}">
+                                            {{ player.mmr }}
+                                        </span>
+                                    </td>
                                     <td>
                                         <div class="color-bar">
                                             <div class="team{{ forloop.parentloop.counter }}" style="width: {{ player.mmr_percent }}%"></div>
@@ -108,7 +112,6 @@
             {% for player in team.players %}
                 {{ player.name }}: {{ player.mmr }}
                 <br>
-
             {% endfor %}
             <br>
         {% endfor %}

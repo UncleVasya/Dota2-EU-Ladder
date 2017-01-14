@@ -86,7 +86,9 @@
                         </div>
                     </td>
                     <td>
-                        {{ player.ladder_mmr }}
+                        <span data-toggle="tooltip" data-mmr="{{ player.ladder_mmr }}">
+                            {{ player.ladder_mmr }}
+                        </span>
                         <div class="color-bar">
                             <div class="score" style="width: {{ player.ladder_mmr_percent }}%"></div>
                         </div>

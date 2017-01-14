@@ -10,6 +10,20 @@ var main = function() {
             }
         }
     });
+
+    $('[data-toggle="tooltip"]').tooltip()
+
+    // mmr correlation tooltips
+    $('[data-mmr]').each(function(index) {
+        var mmr = $(this).data('mmr');
+        $(this).prop('title', 'Correlation: ' + Math.round(ladderToDotaMMR(mmr)) + ' MMR');
+    })
 };
+
+function ladderToDotaMMR(mmr) {
+    var avg_mmr = 4000;
+
+    return avg_mmr - (200 - mmr) * 1000 / 30;
+}
 
 $(document).ready(main);
