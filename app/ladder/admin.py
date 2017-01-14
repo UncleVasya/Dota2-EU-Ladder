@@ -39,6 +39,7 @@ class PlayerAdmin(admin.ModelAdmin):
         (None, {'fields': ['name', 'dota_mmr', 'dota_id', 'voice_issues', 'bot_access', 'banned']}),
         (None, {'fields': ['ladder_mmr', 'score']}),
         (None, {'fields': ['rank_ladder_mmr', 'rank_score']}),
+        (None, {'fields': ['min_allowed_mmr', 'max_allowed_mmr']}),
     ]
     readonly_fields = ('ladder_mmr', 'score', 'rank_ladder_mmr', 'rank_score')
 

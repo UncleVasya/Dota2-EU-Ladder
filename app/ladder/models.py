@@ -22,6 +22,10 @@ class Player(models.Model):
     banned = models.BooleanField(default=False)
     blacklist = models.ManyToManyField('self', symmetrical=False, related_name='blacklisted_by')
 
+    # boundaries for ladder mmr
+    min_allowed_mmr = models.PositiveIntegerField(default=0)
+    max_allowed_mmr = models.PositiveIntegerField(default=0)
+
     objects = PlayerManager()
 
     class Meta:

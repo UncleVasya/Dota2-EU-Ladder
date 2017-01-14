@@ -8,16 +8,18 @@ class PlayerManager(models.Manager):
     def init_score(player):
         from app.ladder.models import ScoreChange
 
-        avg_mmr = 4000
-        initial_mmr = 200 - 30 * (avg_mmr - player.dota_mmr) / 1000
-
+        initial_mmr = PlayerManager.dota_to_ladder_mmr(player.dota_mmr)
         score = ScoreChange.objects.create(
             player=player,
             score_change=25,
             mmr_change=initial_mmr,
             info='Season started',
         )
-        player.scorechange_set.add(score)
+        player.scorechange_set.add(score)  # TODO: looks like this line isn't needed
+
+        player.min_allowed_mmr = initial_mmr - 20
+        player.max_allowed_mmr = initial_mmr + 20
+        player.save()
 
     def update_ranks(self):
         # recalculate player rankings by particular field (ladder_mmr or score)
@@ -45,6 +47,11 @@ class PlayerManager(models.Manager):
         update_ranks_by('ladder_mmr')
         update_ranks_by('score')
 
+    @staticmethod
+    def dota_to_ladder_mmr(mmr):
+        avg_mmr = 4000
+        return 200 - 30 * (avg_mmr - mmr) / 1000
+
 
 class MatchManager(models.Manager):
     @staticmethod
@@ -70,6 +77,12 @@ class MatchManager(models.Manager):
 
             mmr_change = 7 * is_victory
             mmr_change += underdog_bonus * is_underdog
+
+            # make sure new ladder mmr is in boundaries
+            player = matchPlayer.player
+            new_mmr = player.ladder_mmr + mmr_change
+            new_mmr = max(player.min_allowed_mmr, min(new_mmr, player.max_allowed_mmr))
+            mmr_change = new_mmr - player.ladder_mmr
 
             ScoreChange.objects.create(
                 player=matchPlayer.player,
