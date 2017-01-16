@@ -1,4 +1,5 @@
 import itertools
+import random
 from app.ladder.models import Match
 
 
@@ -65,7 +66,7 @@ def balance_teams(players, mmr_exponent=3):
     # calc mmr differences for each pair of teams
     answers = [
         {
-            'teams': answer,
+            'teams': random.sample(answer, len(answer)),  # assign team side randomly (Radiant or Dire)
             'mmr_diff': abs(answer[0]['mmr'] - answer[1]['mmr']),
             'mmr_diff_exp': abs(answer[0]['mmr_exp'] - answer[1]['mmr_exp'])
         }
