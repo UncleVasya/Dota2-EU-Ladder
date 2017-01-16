@@ -52,6 +52,11 @@ class PlayerManager(models.Manager):
         avg_mmr = 4000
         return 200 - 30 * (avg_mmr - mmr) / 1000
 
+    @staticmethod
+    def ladder_to_dota_mmr(mmr):
+        avg_mmr = 4000
+        return avg_mmr - (200 - mmr) * 1000 / 30
+
 
 class MatchManager(models.Manager):
     @staticmethod

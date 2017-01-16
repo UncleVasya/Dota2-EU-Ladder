@@ -484,14 +484,16 @@ class Command(BaseCommand):
         ]
 
         dota_mmr = [' '.join(str(player.dota_mmr) for player in team) for team in teams]
-        ladder_mmr = [' '.join(str(player.ladder_mmr) for player in team) for team in teams]
+        correlation = [
+            ' '.join(str(PlayerManager.ladder_to_dota_mmr(player.ladder_mmr)) for player in team)
+            for team in teams]
 
         [bot.send_lobby_message(' | '.join(player.name for player in team))
          for team in teams]
-        bot.send_lobby_message('Ladder MMR:')
-        [bot.send_lobby_message(team) for team in ladder_mmr]
         bot.send_lobby_message('Dota MMR:')
         [bot.send_lobby_message(team) for team in dota_mmr]
+        bot.send_lobby_message('Correlation:')
+        [bot.send_lobby_message(team) for team in correlation]
 
     # swap 2 players in balance
     @staticmethod
@@ -771,7 +773,6 @@ class Command(BaseCommand):
             banned=True
         ).values_list('dota_id', flat=True)
 
-        print 'Problematic: %s' % problematic
 
         for player in problematic:
             bot.send_lobby_message('%s, you are banned.' % players_steam[int(player)].name)
