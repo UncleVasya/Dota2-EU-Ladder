@@ -30,11 +30,11 @@
     <nav class="menu-links">
         {% with request.resolver_match.url_name as page %}
         <ul>
-            <li class="{% if page == 'player-list' or page == 'index' %}active{% endif %}">
-                <a href="{{ player_list_url }}">Ladder MMR</a></li>
-
-            <li class="{% if page == 'player-list-score' %}active{% endif %}">
+            <li class="{% if page == 'player-list-score' or page == 'index' %}active{% endif %}">
                 <a href="{{ player_list_scores_url }}">Score</a></li>
+
+            <li class="{% if page == 'player-list' %}active{% endif %}">
+                <a href="{{ player_list_url }}">Ladder MMR</a></li>
         </ul>
         {% endwith %}
     </nav>
