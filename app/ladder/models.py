@@ -4,6 +4,7 @@ from django.db import models
 from app.balancer.models import BalanceAnswer
 from autoslug import AutoSlugField
 from app.ladder.managers import PlayerManager, ScoreChangeManager
+from solo.models import SingletonModel
 
 
 class Player(models.Model):
@@ -55,6 +56,7 @@ class Match(models.Model):
     winner = models.PositiveSmallIntegerField()
     balance = models.OneToOneField(BalanceAnswer, null=True)
     date = models.DateTimeField(auto_now_add=True)
+    season = models.PositiveSmallIntegerField(default=1)
 
 
 class MatchPlayer(models.Model):
@@ -77,9 +79,14 @@ class ScoreChange(models.Model):
     match = models.OneToOneField(MatchPlayer, null=True, blank=True)
     info = models.CharField(max_length=255)
     date = models.DateTimeField(auto_now_add=True)
+    season = models.PositiveSmallIntegerField(default=1)
 
     objects = ScoreChangeManager()
 
     class Meta:
         unique_together = ('player', 'match')
         ordering = ('-id', )
+
+
+class LadderSettings(SingletonModel):
+    current_season = models.PositiveSmallIntegerField(default=1)

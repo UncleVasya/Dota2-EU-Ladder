@@ -48,6 +48,7 @@ INSTALLED_APPS = [
 
     'pure_pagination',
     'debug_toolbar',
+    'solo.apps.SoloAppConfig',
 
     'app.ladder.apps.LadderConfig',
     'app.balancer.apps.BalancerConfig',

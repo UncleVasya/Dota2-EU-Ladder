@@ -1,8 +1,9 @@
 from django import forms
-from app.ladder.models import Player, Match, MatchPlayer, ScoreChange
+from app.ladder.models import Player, Match, MatchPlayer, ScoreChange, LadderSettings
 from django.contrib import admin
 from django.db.models import Prefetch
 from dal import autocomplete
+from solo.admin import SingletonModelAdmin
 
 
 class BlacklistInlineForm(forms.ModelForm):
@@ -76,7 +77,7 @@ class MatchAdmin(admin.ModelAdmin):
     model = Match
 
     fieldsets = [
-        (None, {'fields': ['date', 'winner']}),
+        (None, {'fields': ['date', 'winner', 'season']}),
     ]
     readonly_fields = ['date']
 
@@ -97,7 +98,7 @@ class ScoreChangeAdmin(admin.ModelAdmin):
     form = ScoreChangeAdminForm
 
     fieldsets = [
-        (None, {'fields': ['player', 'mmr_change', 'info']}),
+        (None, {'fields': ['player', 'mmr_change', 'info', 'season']}),
     ]
 
     list_display = ('date', 'player', 'mmr_change', 'info')
@@ -111,5 +112,7 @@ class ScoreChangeAdmin(admin.ModelAdmin):
 admin.site.register(Player, PlayerAdmin)
 admin.site.register(ScoreChange, ScoreChangeAdmin)
 admin.site.register(Match, MatchAdmin)
+
+admin.site.register(LadderSettings, SingletonModelAdmin)
 
 admin.site.register(Player.blacklist.through)

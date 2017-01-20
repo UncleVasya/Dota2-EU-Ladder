@@ -4,6 +4,7 @@ whitenoise==3.2.2
 django-autocomplete-light==3.2.1
 django-debug-toolbar==1.5
 django-autoslug==1.9.3
+django-solo==1.1.2
 
 pip==9.0.1
 setuptools==30.3.0

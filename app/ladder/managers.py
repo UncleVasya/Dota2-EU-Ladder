@@ -7,6 +7,7 @@ class PlayerManager(models.Manager):
     @staticmethod
     def init_score(player):
         from app.ladder.models import ScoreChange
+        from app.ladder.models import LadderSettings
 
         initial_mmr = PlayerManager.dota_to_ladder_mmr(player.dota_mmr)
         score = ScoreChange.objects.create(
@@ -14,6 +15,7 @@ class PlayerManager(models.Manager):
             score_change=25,
             mmr_change=initial_mmr,
             info='Season started',
+            season=LadderSettings.get_solo().current_season,
         )
         player.scorechange_set.add(score)  # TODO: looks like this line isn't needed
 
@@ -62,6 +64,7 @@ class MatchManager(models.Manager):
     @staticmethod
     def add_scores(match):
         from app.ladder.models import ScoreChange
+        from app.ladder.models import LadderSettings
 
         # TODO: make values like win/loss change and underdog bonus changeble in admin panel
         mmr_diff = match.balance.teams[0]['mmr'] - match.balance.teams[1]['mmr']
@@ -94,11 +97,13 @@ class MatchManager(models.Manager):
                 score_change=score_change,
                 mmr_change=mmr_change,
                 match=matchPlayer,
+                season=LadderSettings.get_solo().current_season,
             )
 
     @staticmethod
     def record_balance(answer, winner):
         from app.ladder.models import Player, Match, MatchPlayer
+        from app.ladder.models import LadderSettings
 
         players = [p[0] for t in answer.teams for p in t['players']]
         players = Player.objects.filter(name__in=players)
@@ -112,6 +117,7 @@ class MatchManager(models.Manager):
             match = Match.objects.create(
                 winner=winner,
                 balance=answer,
+                season=LadderSettings.get_solo().current_season,
             )
 
             for i, team in enumerate(answer.teams):
