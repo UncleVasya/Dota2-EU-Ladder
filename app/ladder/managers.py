@@ -9,15 +9,14 @@ class PlayerManager(models.Manager):
         from app.ladder.models import ScoreChange
         from app.ladder.models import LadderSettings
 
-        initial_mmr = PlayerManager.dota_to_ladder_mmr(player.dota_mmr)
-        score = ScoreChange.objects.create(
+        initial_mmr = 1000
+        ScoreChange.objects.create(
             player=player,
             score_change=25,
             mmr_change=initial_mmr,
             info='Season started',
             season=LadderSettings.get_solo().current_season,
         )
-        player.scorechange_set.add(score)  # TODO: looks like this line isn't needed
 
         player.min_allowed_mmr = initial_mmr - 20
         player.max_allowed_mmr = initial_mmr + 20
