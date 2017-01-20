@@ -3,7 +3,7 @@ from app.balancer.models import BalanceAnswer
 from django.core.management.base import BaseCommand
 from django.core.urlresolvers import reverse
 from app.balancer.managers import BalanceResultManager, BalanceAnswerManager
-from app.ladder.managers import MatchManager
+from app.ladder.managers import MatchManager, PlayerManager
 from enum import IntEnum
 import gevent
 from app.ladder.models import Player
