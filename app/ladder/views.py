@@ -275,11 +275,19 @@ class PlayerAutocomplete(autocomplete.Select2QuerySetView):
 
 
 class MatchList(ListView):
+    model = Match
     ordering = ['-date']
 
-    queryset = Match.objects.prefetch_related(
-        Prefetch('matchplayer_set',
-                 queryset=MatchPlayer.objects.select_related('player')))
+    def get_queryset(self):
+        qs = super(MatchList, self).get_queryset()
+
+        season = LadderSettings.get_solo().current_season
+        qs = qs.filter(matchplayer__match__season=season).distinct()\
+            .prefetch_related(Prefetch(
+                'matchplayer_set',
+                queryset=MatchPlayer.objects.select_related('match')
+            ))
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super(MatchList, self).get_context_data(**kwargs)
