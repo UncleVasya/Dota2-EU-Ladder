@@ -24,6 +24,8 @@ class PlayerManager(models.Manager):
         player.save()
 
     def update_ranks(self):
+        from app.ladder.models import LadderSettings
+
         # recalculate player rankings by particular field (ladder_mmr or score)
         def update_ranks_by(field):
             groups = defaultdict(list)
@@ -40,10 +42,8 @@ class PlayerManager(models.Manager):
                     setattr(player, 'rank_%s' % field, rank)
                     player.save()
 
-        # TODO: make 'active' field Player model
-        players = self.exclude(name__in=['hoxieloxie'])
-
-        players = players.filter(matchplayer__isnull=False).distinct()
+        season = LadderSettings.get_solo().current_season
+        players = self.filter(matchplayer__match__season=season).distinct()
         players = players or self.all()
 
         update_ranks_by('ladder_mmr')
@@ -86,11 +86,13 @@ class MatchManager(models.Manager):
             mmr_change = 7 * is_victory
             mmr_change += underdog_bonus * is_underdog
 
-            # make sure new ladder mmr is in boundaries
-            player = matchPlayer.player
-            new_mmr = player.ladder_mmr + mmr_change
-            new_mmr = max(player.min_allowed_mmr, min(new_mmr, player.max_allowed_mmr))
-            mmr_change = new_mmr - player.ladder_mmr
+            use_boundary = False  # TODO: get this values from LadderSettings
+            if use_boundary:
+                # make sure new ladder mmr is in boundaries
+                player = matchPlayer.player
+                new_mmr = player.ladder_mmr + mmr_change
+                new_mmr = max(player.min_allowed_mmr, min(new_mmr, player.max_allowed_mmr))
+                mmr_change = new_mmr - player.ladder_mmr
 
             ScoreChange.objects.create(
                 player=matchPlayer.player,
