@@ -1,7 +1,7 @@
 from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal
-from app.ladder.models import Player, MatchPlayer, Match
+from app.ladder.models import Player, MatchPlayer, Match, LadderSettings
 from dal import autocomplete
 from django.db.models import Max, Count, Prefetch, Case, When, F, ExpressionWrapper, FloatField
 from django.views.generic import ListView, DetailView
@@ -9,22 +9,25 @@ from pure_pagination import Paginator
 
 
 class PlayerList(ListView):
-    # those who played at least 1 game
-    # TODO make active players manager
-    queryset = Player.objects.exclude(name__in=['hoxieloxie'])\
-        .filter(matchplayer__isnull=False).distinct()
+    model = Player
+
+    def get_queryset(self):
+        qs = super(PlayerList, self).get_queryset()
+
+        season = LadderSettings.get_solo().current_season
+        qs = qs.filter(matchplayer__match__season=season).distinct()\
+            .prefetch_related(Prefetch(
+                'matchplayer_set',
+                queryset=MatchPlayer.objects.select_related('match'),
+                to_attr='matches'
+            ))
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super(PlayerList, self).get_context_data(**kwargs)
         players = context['player_list']
 
-        players = players or Player.objects.all()
-
-        players = players.prefetch_related(Prefetch(
-            'matchplayer_set',
-            queryset=MatchPlayer.objects.select_related('match'),
-            to_attr='matches'
-        )).annotate(
+        players = players.annotate(
             match_count=Count('matchplayer'),
             wins=Count(Case(
                 When(
@@ -36,6 +39,10 @@ class PlayerList(ListView):
                 output_field=FloatField()
             )
         )
+
+        if not players:
+            # no games this season yet, nothing to calc
+            return context
 
         max_vals = players.aggregate(Max('dota_mmr'), Max('score'), Max('ladder_mmr'))
         score_max = max_vals['score__max']
@@ -53,7 +60,6 @@ class PlayerList(ListView):
 
         context.update({
             'player_list': players,
-            'matches_count': Match.objects.count()
         })
 
         return context
