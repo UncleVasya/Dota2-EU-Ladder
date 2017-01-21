@@ -50,7 +50,6 @@ class PlayerList(ListView):
         ladder_mmr_max = max_vals['ladder_mmr__max']
 
         matches_max = max(player.match_count for player in players)
-        matches_max = max(matches_max, 1)
 
         for player in players:
             player.score_percent = float(player.score) / score_max * 100
@@ -67,23 +66,26 @@ class PlayerList(ListView):
 
 # TODO: inherit PlayersBest and PlayersSuccessful from PlayerList
 class PlayersSuccessful(ListView):
+    model = Player
     template_name = 'ladder/player_list_score.html'
-    # those who played at least 1 game
-    # TODO make active players manager
-    queryset = Player.objects.exclude(name__in=['hoxieloxie'])\
-        .filter(matchplayer__isnull=False).distinct()
+
+    def get_queryset(self):
+        qs = super(PlayersSuccessful, self).get_queryset()
+
+        season = LadderSettings.get_solo().current_season
+        qs = qs.filter(matchplayer__match__season=season).distinct()\
+            .prefetch_related(Prefetch(
+                'matchplayer_set',
+                queryset=MatchPlayer.objects.select_related('match'),
+                to_attr='matches'
+            ))
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super(PlayersSuccessful, self).get_context_data(**kwargs)
         players = context['player_list']
 
-        players = players or Player.objects.all()
-
-        players = players.prefetch_related(Prefetch(
-            'matchplayer_set',
-            queryset=MatchPlayer.objects.select_related('match'),
-            to_attr='matches'
-        )).annotate(
+        players = players.annotate(
             match_count=Count('matchplayer'),
             wins=Count(Case(
                 When(
@@ -93,18 +95,13 @@ class PlayersSuccessful(ListView):
             losses=F('match_count') - F('wins'),
         )
 
-        # TODO: something like this:
-        #       max_vals = players.aggregate(...).values_list(flat=True)
-        #       score_max, mmr_max, ... = max_vals
-
         max_vals = players.aggregate(Max('wins'), Max('losses'), Max('score'), Max('ladder_mmr'))
-        wins_max = max(1, max_vals['wins__max'])
-        losses_max = max(1, max_vals['losses__max'])
-        score_max = max(1, max_vals['score__max'])
-        ladder_mmr_max = max(1, max_vals['ladder_mmr__max'])
+        wins_max = max_vals['wins__max']
+        losses_max = max_vals['losses__max']
+        score_max = max_vals['score__max']
+        ladder_mmr_max = max_vals['ladder_mmr__max']
 
         matches_max = max(player.match_count for player in players)
-        matches_max = max(1, matches_max)
 
         for player in players:
             player.wins_percent = float(player.wins) / wins_max * 100
@@ -115,7 +112,6 @@ class PlayersSuccessful(ListView):
 
         context.update({
             'player_list': players,
-            'matches_count': Match.objects.count()
         })
 
         return context
