@@ -94,6 +94,10 @@ class PlayersSuccessful(ListView):
             ),
             losses=F('match_count') - F('wins'),
         )
+		
+        if not players:
+            # no games this season yet, nothing to calc
+            return context
 
         max_vals = players.aggregate(Max('wins'), Max('losses'), Max('score'), Max('ladder_mmr'))
         wins_max = max_vals['wins__max']
