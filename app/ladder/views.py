@@ -126,7 +126,12 @@ class PlayerDetail(DetailView):
 
     def get_object(self, queryset=None):
         player = super(PlayerDetail, self).get_object(queryset)
-        player.matches = player.matchplayer_set.select_related('match')
+
+        season = LadderSettings.get_solo().current_season
+        player.matches = player.matchplayer_set\
+            .filter(match__season=season)\
+            .select_related('match')
+
         return player
 
     def get_context_data(self, **kwargs):
@@ -150,8 +155,8 @@ class PlayerDetail(DetailView):
     def add_matches_data(self):
         player = self.object
 
-        player.matches = player.matchplayer_set.select_related(
-            'match', 'scorechange'
+        player.matches = player.matches.select_related(
+            'scorechange'
         ).prefetch_related(
             Prefetch('match__matchplayer_set',
                      queryset=MatchPlayer.objects.select_related('player'))
@@ -159,12 +164,17 @@ class PlayerDetail(DetailView):
 
     def score_history(self):
         player = self.object
-        score_changes = player.scorechange_set.select_related(
-            'match', 'match__match',
-            'match__match__balance', 'match__match__balance__result'
-        )
 
-        max_vals = Player.objects.aggregate(Max('score'), Max('ladder_mmr'))
+        season = LadderSettings.get_solo().current_season
+        score_changes = player.scorechange_set.filter(season=season)\
+            .select_related(
+                'match', 'match__match',
+                'match__match__balance', 'match__match__balance__result'
+            )
+
+        max_vals = Player.objects\
+            .filter(matchplayer__match__season=season).distinct()\
+            .aggregate(Max('score'), Max('ladder_mmr'))
         score_max = max(1, max_vals['score__max'])
         mmr_max = max(1, max_vals['ladder_mmr__max'])
 
