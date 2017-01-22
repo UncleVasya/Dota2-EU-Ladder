@@ -21,8 +21,8 @@
     </div>
 </div>
 
-{% include 'ladder/stats_row.html' with caption="All time" %}
-{% include 'ladder/stats_row.html' with caption="This season" %}
-{% include 'ladder/stats_row.html' with caption="Last 3 days" %}
+{% include 'ladder/stats_row.html' with caption="All time" stats=all_time %}
+{% include 'ladder/stats_row.html' with caption="This season" stats=this_season%}
+{% include 'ladder/stats_row.html' with caption="Last 3 days" stats=last_days%}
 
 {% endblock content %}

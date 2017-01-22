@@ -1,8 +1,10 @@
 from collections import defaultdict
 from decimal import Decimal
+from datetime import timedelta
 from app.ladder.models import Player, MatchPlayer, Match, LadderSettings
 from dal import autocomplete
-from django.db.models import Max, Count, Prefetch, Case, When, F, ExpressionWrapper, FloatField
+from django.db.models import Max, Count, Prefetch, Case, When, F, ExpressionWrapper, FloatField, Avg
+from django.utils.datetime_safe import datetime
 from django.views.generic import ListView, DetailView, TemplateView
 from pure_pagination import Paginator
 
@@ -320,3 +322,25 @@ class MatchList(ListView):
 
 class LadderStats(TemplateView):
     template_name = 'ladder/stats.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(LadderStats, self).get_context_data(**kwargs)
+
+        all_time = Match.objects.all()
+        this_season = Match.objects.filter(season=LadderSettings.get_solo().current_season)
+        last_days = Match.objects.filter(date__gte=datetime.now() - timedelta(days=3))
+
+        context.update({
+            'all_time': self.get_stats(all_time),
+            'this_season': self.get_stats(this_season),
+            'last_days': self.get_stats(last_days),
+        })
+        return context
+
+    @staticmethod
+    def get_stats(matches):
+        return matches.aggregate(
+            matches=Count('id', distinct=True),
+            players=Count('matchplayer__player', distinct=True),
+            mmr=Avg('matchplayer__player__dota_mmr'),
+        )

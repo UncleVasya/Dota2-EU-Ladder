@@ -4,38 +4,28 @@
     <div class="row stats-row">
         <div class="col-md-4 stats-element">
             <div class="stats-value">
-                <div class="cell-wrapper layout-widget-wrapper">
-                    <span> 750 </span>
-                </div>
+                <span> {{ stats.matches }} </span>
             </div>
             <div class="stats-caption">
-                <span>
-                    <p>Games played</p>
-                </span>
+                <p>Games played</p>
             </div>
         </div>
 
          <div class="col-md-4 stats-element">
             <div class="stats-value">
-                <span> 750 </span>
+                <span> {{ stats.players }} </span>
             </div>
             <div class="stats-caption">
-                <span>
-                    <p>Active players</p>
-                </span>
+                <p>Active players</p>
             </div>
         </div>
 
          <div class="col-md-4 stats-element">
             <div class="stats-value">
-                <div class="cell-wrapper layout-widget-wrapper">
-                    <span> 750 </span>
-                </div>
+                <span> {{ stats.mmr|floatformat:0 }} </span>
             </div>
             <div class="stats-caption">
-                <span>
-                    <p>Average MMR</p>
-                </span>
+                <p>Average MMR</p>
             </div>
         </div>
     </div>
