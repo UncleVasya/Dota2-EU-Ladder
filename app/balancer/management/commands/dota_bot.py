@@ -6,7 +6,7 @@ from app.balancer.managers import BalanceResultManager, BalanceAnswerManager
 from app.ladder.managers import MatchManager, PlayerManager
 from enum import IntEnum
 import gevent
-from app.ladder.models import Player
+from app.ladder.models import Player, LadderSettings
 import dota2
 import os
 
@@ -459,10 +459,14 @@ class Command(BaseCommand):
                     bot.send_lobby_message('%s: I don\'t know him' % member.name)
                     return
 
+                match_count = player.matchplayer_set.filter(
+                    match__season=LadderSettings.get_solo().current_season
+                ).count()
+
                 bot.send_lobby_message(
-                    '%s: %s, MMR: %d, Ladder MMR: %d, Score: %d, Games: %d' %
-                    (member.name, player.name, player.dota_mmr, player.ladder_mmr,
-                     player.score, player.matchplayer_set.count())
+                    '%s: %s, Ladder MMR: %d, Score: %d, Games: %d' %
+                    (member.name, player.name, player.ladder_mmr,
+                     player.score, match_count)
                 )
                 return
 
@@ -483,17 +487,12 @@ class Command(BaseCommand):
             for team in bot.balance_answer.teams
         ]
 
-        dota_mmr = [' '.join(str(player.dota_mmr) for player in team) for team in teams]
-        correlation = [
-            ' '.join(str(PlayerManager.ladder_to_dota_mmr(player.ladder_mmr)) for player in team)
-            for team in teams]
+        ladder_mmr = [' '.join(str(player.ladder_mmr) for player in team) for team in teams]
 
         [bot.send_lobby_message(' | '.join(player.name for player in team))
          for team in teams]
-        bot.send_lobby_message('Dota MMR:')
-        [bot.send_lobby_message(team) for team in dota_mmr]
-        bot.send_lobby_message('Correlation:')
-        [bot.send_lobby_message(team) for team in correlation]
+        bot.send_lobby_message('Ladder MMR:')
+        [bot.send_lobby_message(team) for team in ladder_mmr]
 
     # swap 2 players in balance
     @staticmethod
@@ -772,7 +771,6 @@ class Command(BaseCommand):
             dota_id__in=players_steam.keys(),
             banned=True
         ).values_list('dota_id', flat=True)
-
 
         for player in problematic:
             bot.send_lobby_message('%s, you are banned.' % players_steam[int(player)].name)
