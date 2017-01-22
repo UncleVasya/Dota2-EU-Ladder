@@ -1,10 +1,9 @@
 from collections import defaultdict
-from datetime import datetime
 from decimal import Decimal
 from app.ladder.models import Player, MatchPlayer, Match, LadderSettings
 from dal import autocomplete
 from django.db.models import Max, Count, Prefetch, Case, When, F, ExpressionWrapper, FloatField
-from django.views.generic import ListView, DetailView
+from django.views.generic import ListView, DetailView, TemplateView
 from pure_pagination import Paginator
 
 
@@ -317,3 +316,7 @@ class MatchList(ListView):
         })
 
         return context
+
+
+class LadderStats(TemplateView):
+    template_name = 'ladder/stats.html'

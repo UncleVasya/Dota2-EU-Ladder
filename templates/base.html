@@ -51,6 +51,10 @@
                         <li class="{% if 'match' in url_name %}active{% endif %}">
                             {% url 'ladder:match-list' as url %}
                             <a href="{{ url }}"> Match history </a></li>
+
+                        <li class="{% if url_name == 'stats' %}active{% endif %}">
+                            {% url 'ladder:stats' as url %}
+                            <a href="{{ url }}"> Ladder stats </a></li>
                     </ul>
                 </nav>
                 {% endwith %}

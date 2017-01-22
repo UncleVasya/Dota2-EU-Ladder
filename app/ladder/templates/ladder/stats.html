@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+
+{% block page_scripts %}
+{% endblock page_scripts %}
+
+{% block page_styles %}
+    <link href='//fonts.googleapis.com/css?family=Open+Sans:300,400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="{% static 'ladder/css/stats.css' %}">
+{% endblock page_styles %}
+
+{% block content %}
+
+<div class="page-overview">
+    <div class="page-overview-primary">
+        <div class="page-overview-title">
+            <h1> Ladder stats
+                <small>{% block player-page-title %} {% endblock %}</small>
+            </h1>
+        </div>
+    </div>
+</div>
+
+{% include 'ladder/stats_row.html' with caption="All time" %}
+{% include 'ladder/stats_row.html' with caption="This season" %}
+{% include 'ladder/stats_row.html' with caption="Last 3 days" %}
+
+{% endblock content %}

@@ -1,4 +1,4 @@
-from app.ladder.views import PlayerList, PlayersSuccessful, MatchList
+from app.ladder.views import PlayerList, PlayersSuccessful, MatchList, LadderStats
 from app.ladder.views import PlayerOverview, PlayerScores, PlayerTeammates, PlayerOpponents
 from app.ladder.views import PlayerAutocomplete
 from django.conf.urls import url
@@ -16,4 +16,5 @@ urlpatterns = [
     url(r'player-autocomplete', PlayerAutocomplete.as_view(), name='player-autocomplete'),
 
     url(r'^matches/$', MatchList.as_view(), name='match-list'),
+    url(r'^stats/$', LadderStats.as_view(), name='stats'),
 ]

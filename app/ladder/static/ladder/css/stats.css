@@ -1,0 +1,27 @@
+.stats-row {
+    font-family: "Open Sans", sans-serif;
+    margin: 20px 0;
+    text-align: center;
+    line-height: 145%;
+    font-weight: 300;
+}
+
+.stats-element {
+    padding-top: 44px;
+    padding-bottom: 24px;
+}
+
+.stats-element:not(:first-child) {
+    border-left: 1px solid #848992;
+}
+
+.stats-value {
+    font-size: 30px;
+    font-weight: bold;
+}
+
+.stats-caption {
+    margin-top: 20px;
+    font-size: 20px;
+    text-transform: uppercase;
+}
