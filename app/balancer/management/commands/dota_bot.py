@@ -473,26 +473,30 @@ class Command(BaseCommand):
         except (IndexError, ValueError):
             return
 
-        for member in bot.lobby.members:
-            if member.name.lower().startswith(name):
-                try:
-                    player = Player.objects.get(dota_id=SteamID(member.id).as_32)
-                except Player.DoesNotExist:
-                    bot.send_lobby_message('%s: I don\'t know him' % member.name)
-                    return
+        # first search with 'startswith' and if no one found repeat with 'contains'
+        member = next((m for m in bot.lobby.members if m.name.lower().startswith(name)), None)
+        if not member:
+            member = next((m for m in bot.lobby.members if name in m.name.lower()), None)
 
-                match_count = player.matchplayer_set.filter(
-                    match__season=LadderSettings.get_solo().current_season
-                ).count()
+        if not member:
+            bot.send_lobby_message('No such name.')
+            return
 
-                bot.send_lobby_message(
-                    '%s: %s, Ladder MMR: %d, Score: %d, Games: %d' %
-                    (member.name, player.name, player.ladder_mmr,
-                     player.score, match_count)
-                )
-                return
+        try:
+            player = Player.objects.get(dota_id=SteamID(member.id).as_32)
+        except Player.DoesNotExist:
+            bot.send_lobby_message('%s: I don\'t know him' % member.name)
+            return
 
-        bot.send_lobby_message('No such name.')
+        match_count = player.matchplayer_set.filter(
+            match__season=LadderSettings.get_solo().current_season
+        ).count()
+
+        bot.send_lobby_message(
+            '%s: %s, Ladder MMR: %d, Score: %d, Games: %d' %
+            (member.name, player.name, player.ladder_mmr,
+             player.score, match_count)
+        )
 
     @staticmethod
     def teams_command(bot, command):
