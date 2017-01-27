@@ -214,8 +214,9 @@ class Command(BaseCommand):
             '!swap': Command.swap_command,
             '!custom': Command.custom_command,
             '!ban': Command.ban_command,  # just a prank command atm
+            '!new': Command.new_command,  # just a prank command atm
         }
-        staff_only = ['!staff', '!forcestart', '!fs', '!swap', '!custom']
+        staff_only = ['!staff', '!forcestart', '!fs', '!swap', '!custom', '!new']
 
         # get player from DB using dota id
         try:
@@ -618,6 +619,16 @@ class Command(BaseCommand):
 
         gevent.sleep(1)
         bot.send_lobby_message('JUST A PRANK!')
+
+    @staticmethod
+    def new_command(bot, command):
+        print
+        print '!new command'
+
+        bot.send_lobby_message('Creating new lobby.')
+        bot.leave_practice_lobby()
+        gevent.sleep(5)
+        Command.create_new_lobby(bot)
 
     @staticmethod
     def process_game_result(bot):
