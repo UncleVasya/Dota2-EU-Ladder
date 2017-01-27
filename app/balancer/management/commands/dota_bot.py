@@ -816,10 +816,9 @@ class Command(BaseCommand):
 
         players_balance = [player for team in bot.balance_answer.teams
                            for player in team['players']]
-        players_balance = [
-            Player.objects.filter(name__in=[player[0] for player in players_balance])
-                          .values_list('dota_id', flat=True)
-        ]
+        players_balance = Player.objects\
+            .filter(name__in=[player[0] for player in players_balance])\
+            .values_list('dota_id', flat=True)
 
         for player in players_steam.keys():
             if str(player) not in players_balance:
