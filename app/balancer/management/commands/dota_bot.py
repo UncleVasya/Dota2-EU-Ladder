@@ -262,6 +262,15 @@ class Command(BaseCommand):
         print
         print 'Balancing players'
 
+        # check if this is reset command
+        try:
+            if command.split(' ')[1] == 'off':
+                bot.balance_answer = False
+                bot.send_lobby_message('Balance cleared.')
+                return
+        except (IndexError, ValueError):
+            pass
+
         # convert steam64 into 32bit dota id and build a dic of {id: player}
         players_steam = {
             SteamID(player.id).as_32: player for player in bot.lobby.members
