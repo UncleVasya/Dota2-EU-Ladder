@@ -216,7 +216,7 @@ class Command(BaseCommand):
             '!ban': Command.ban_command,  # just a prank command atm
             '!new': Command.new_command,  # just a prank command atm
         }
-        staff_only = ['!staff', '!forcestart', '!fs', '!swap', '!custom', '!new']
+        staff_only = ['!staff', '!forcestart', '!fs', '!new', '!ban']
 
         # get player from DB using dota id
         try:
@@ -248,12 +248,6 @@ class Command(BaseCommand):
             if command in staff_only:
                 bot.send_lobby_message('%s, this command is staff-only.' % msg.persona_name)
                 return
-
-        # joke command for ulafzs
-        # TODO: remove this eventually
-        if command == '!ban' and player.name.lower() != 'ulafzs':
-            bot.send_lobby_message('%s, only master ulafzs can use this command.' % msg.persona_name)
-            return
 
         # user can use this command
         commands[command](bot, text)
