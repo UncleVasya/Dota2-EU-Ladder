@@ -214,7 +214,9 @@ class Command(BaseCommand):
             '!swap': Command.swap_command,
             '!custom': Command.custom_command,
             '!ban': Command.ban_command,  # just a prank command atm
-            '!new': Command.new_command,  # just a prank command atm
+            '!new': Command.new_command,
+            '!help': Command.help_command,
+            '!commands': Command.help_command,
         }
         staff_only = ['!staff', '!forcestart', '!fs', '!new', '!ban']
 
@@ -623,6 +625,12 @@ class Command(BaseCommand):
         bot.leave_practice_lobby()
         gevent.sleep(5)
         Command.create_new_lobby(bot)
+
+    @staticmethod
+    def help_command(bot, command):
+        bot.send_lobby_message(
+            'Documentation is coming. '
+            'It\'s not coming in your lifetime, but it\'s coming.')
 
     @staticmethod
     def process_game_result(bot):
