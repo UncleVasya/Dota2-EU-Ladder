@@ -230,9 +230,20 @@ class Command(BaseCommand):
 
         # check permissions when needed
         if not player.bot_access:
+            # after balance only players and staff can use bot
+            if bot.balance_answer:
+                names = [p[0] for team in bot.balance_answer.teams
+                         for p in team['players']]
+                if player.name not in names:
+                    bot.send_lobby_message('%s, this lobby is full. Join another one.' % msg.persona_name)
+                    return
+
+            # in staff mode only staff can use bot
             if bot.staff_mode:
                 bot.send_lobby_message('%s, I am in staff-only mode.' % msg.persona_name)
                 return
+
+            # only staff can use this commands
             if command in staff_only:
                 bot.send_lobby_message('%s, this command is staff-only.' % msg.persona_name)
                 return
