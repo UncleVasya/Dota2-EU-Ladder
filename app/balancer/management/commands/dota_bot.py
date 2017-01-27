@@ -137,6 +137,8 @@ class Command(BaseCommand):
                 # check if all players have right to play
                 Command.kick_banned(dota)
                 # Command.kick_blacklisted(dota)
+                if dota.balance_answer:
+                    Command.kick_unbalanced(dota)
                 if dota.voice_required:
                     Command.kick_voice_issues(dota)
                 if dota.min_mmr > 0:
@@ -775,3 +777,22 @@ class Command(BaseCommand):
         for player in problematic:
             bot.send_lobby_message('%s, you are banned.' % players_steam[int(player)].name)
             bot.practice_lobby_kick_from_team(int(player))
+
+    @staticmethod
+    def kick_unbalanced(bot):
+        players_steam = {
+            SteamID(player.id).as_32: player for player in bot.lobby.members
+            if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)
+        }
+
+        players_balance = [player for team in bot.balance_answer.teams
+                           for player in team['players']]
+        players_balance = [
+            Player.objects.filter(name__in=[player[0] for player in players_balance])
+                          .values_list('dota_id', flat=True)
+        ]
+
+        for player in players_steam.keys():
+            if str(player) not in players_balance:
+                bot.send_lobby_message('%s, this lobby is full. Join another one.' % players_steam[player].name)
+                bot.practice_lobby_kick_from_team(player)
