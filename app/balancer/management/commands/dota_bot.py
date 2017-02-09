@@ -740,13 +740,7 @@ class Command(BaseCommand):
             dota_id__in=players_steam.keys()
         ).values_list('dota_id', flat=True)
 
-        if bot.min_mmr > 1000:
-            # this is dota mmr
-            problematic = players.filter(dota_mmr__lt=bot.min_mmr)
-        else:
-            # this is ladder mmr
-            problematic = players.filter(ladder_mmr__lt=bot.min_mmr)
-
+        problematic = players.filter(ladder_mmr__lt=bot.min_mmr)
         print 'Problematic: %s' % problematic
 
         for player in problematic:
