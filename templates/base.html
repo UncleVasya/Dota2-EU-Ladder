@@ -41,7 +41,7 @@
                 <nav class="menu-links">
                     <ul>
                         <li class="{% if 'player' in url_name or url_name == 'index' %}active{% endif %}">
-                            {% url 'ladder:player-list-score' as url %}
+                            {% url 'ladder:player-list' as url %}
                             <a href="{{ url }}"> Leaderboards </a></li>
 
                         <li class="{% if 'balancer' in url_name %}active{% endif %}">

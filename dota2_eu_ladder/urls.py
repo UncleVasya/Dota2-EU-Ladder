@@ -14,7 +14,7 @@ Including another URLconf
     2. Import the include() function: from django.conf.urls import url, include
     3. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
 """
-from app.ladder.views import PlayersSuccessful
+from app.ladder.views import PlayerList
 from django.conf.urls import url, include
 from django.contrib import admin
 
@@ -24,7 +24,7 @@ from dota2_eu_ladder import settings
 
 
 urlpatterns = [
-    url(r'^$', PlayersSuccessful.as_view(), name='index'),
+    url(r'^$', PlayerList.as_view(), name='index'),
 
     url(r'^', include(ladder_urls, namespace='ladder')),
     url(r'^balancer/', include(balancer_urls, namespace='balancer')),
