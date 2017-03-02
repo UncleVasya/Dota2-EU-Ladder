@@ -489,9 +489,10 @@ class Command(BaseCommand):
             match__season=LadderSettings.get_solo().current_season
         ).count()
 
+        correlation = PlayerManager.ladder_to_dota_mmr(player.ladder_mmr)
         bot.send_lobby_message(
-            '%s: %s, Ladder MMR: %d, Score: %d, Games: %d' %
-            (member.name, player.name, player.ladder_mmr,
+            '%s: %s, MMR: %d, Ladder MMR: %d, Correlation: %d, Score: %d, Games: %d' %
+            (member.name, player.name, player.dota_mmr, player.ladder_mmr, correlation,
              player.score, match_count)
         )
 
@@ -510,12 +511,17 @@ class Command(BaseCommand):
             for team in bot.balance_answer.teams
         ]
 
-        ladder_mmr = [' '.join(str(player.ladder_mmr) for player in team) for team in teams]
+        dota_mmr = [' '.join(str(player.dota_mmr) for player in team) for team in teams]
+        correlation = [
+            ' '.join(str(PlayerManager.ladder_to_dota_mmr(player.ladder_mmr)) for player in team)
+            for team in teams]
 
         [bot.send_lobby_message(' | '.join(player.name for player in team))
          for team in teams]
-        bot.send_lobby_message('Ladder MMR:')
-        [bot.send_lobby_message(team) for team in ladder_mmr]
+        bot.send_lobby_message('Dota MMR:')
+        [bot.send_lobby_message(team) for team in dota_mmr]
+        bot.send_lobby_message('Correlation:')
+        [bot.send_lobby_message(team) for team in correlation]
 
     # swap 2 players in balance
     @staticmethod

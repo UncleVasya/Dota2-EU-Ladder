@@ -9,7 +9,7 @@ class PlayerManager(models.Manager):
         from app.ladder.models import ScoreChange
         from app.ladder.models import LadderSettings
 
-        initial_mmr = 1000
+        initial_mmr = PlayerManager.dota_to_ladder_mmr(player.dota_mmr)
         ScoreChange.objects.create(
             player=player,
             score_change=25,
@@ -68,12 +68,12 @@ class MatchManager(models.Manager):
         # TODO: make values like win/loss change and underdog bonus changeble in admin panel
         mmr_diff = match.balance.teams[0]['mmr'] - match.balance.teams[1]['mmr']
         underdog = 0 if mmr_diff <= 0 else 1
-        underdog_bonus = abs(mmr_diff) / 25  # 1 point for each 25 avg. mmr diff
-        underdog_bonus = min(5, underdog_bonus)  # but no more than 5
+        underdog_bonus = abs(mmr_diff) / 10  # 1 point for each 10 avg. mmr diff
+        underdog_bonus = min(1, underdog_bonus)  # but no more than 1
 
         print 'mmr diff: %d' % mmr_diff
         print 'underdog: %d' % underdog
-        print 'underdog bonus: %d / 50 = %d' % (abs(mmr_diff), underdog_bonus)
+        print 'underdog bonus: %d' % underdog_bonus
         print ''
 
         for matchPlayer in match.matchplayer_set.all():
@@ -82,7 +82,7 @@ class MatchManager(models.Manager):
 
             score_change = 1 * is_victory
 
-            mmr_change = 25 * is_victory
+            mmr_change = 4 * is_victory
             mmr_change += underdog_bonus * is_underdog
 
             use_boundary = False  # TODO: get this values from LadderSettings
