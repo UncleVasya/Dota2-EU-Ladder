@@ -174,7 +174,7 @@ class Command(BaseCommand):
         bot.players = {}
         bot.lobby_options = {
             'game_name': Command.generate_lobby_name(bot),
-            'game_mode': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_CD,
+            'game_mode': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_CM,
             'server_region': GameServers[bot.server],
             'fill_with_bots': False,
             'allow_spectating': True,
