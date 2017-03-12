@@ -709,7 +709,7 @@ class Command(BaseCommand):
 
     @staticmethod
     def generate_lobby_name(bot):
-        lobby_name = 'Ladder %s' %\
+        lobby_name = 'dotalv %s' %\
                      re.search('(\d+)$', bot.steam.username).group(0)
 
         if bot.min_mmr > 0:
