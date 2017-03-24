@@ -23,22 +23,22 @@
     </div>
 </div>
 
-{#<div class="page-menu">#}
-{#    {% url 'ladder:player-list' as player_list_url %}#}
-{#    {% url 'ladder:player-list-score' as player_list_scores_url %}#}
-{##}
-{#    <nav class="menu-links">#}
-{#        {% with request.resolver_match.url_name as page %}#}
-{#        <ul>#}
-{#            <li class="{% if page == 'player-list-score' or page == 'index' %}active{% endif %}">#}
-{#                <a href="{{ player_list_scores_url }}">Score</a></li>#}
-{##}
-{#            <li class="{% if page == 'player-list' %}active{% endif %}">#}
-{#                <a href="{{ player_list_url }}">Ladder MMR</a></li>#}
-{#        </ul>#}
-{#        {% endwith %}#}
-{#    </nav>#}
-{#</div>#}
+<div class="page-menu">
+    {% url 'ladder:player-list' as player_list_url %}
+    {% url 'ladder:player-list-score' as player_list_scores_url %}
+
+    <nav class="menu-links">
+        {% with request.resolver_match.url_name as page %}
+        <ul>
+            <li class="{% if page == 'player-list-score' or page == 'index' %}active{% endif %}">
+                <a href="{{ player_list_scores_url }}">Score</a></li>
+
+            <li class="{% if page == 'player-list' %}active{% endif %}">
+                <a href="{{ player_list_url }}">Ladder MMR</a></li>
+        </ul>
+        {% endwith %}
+    </nav>
+</div>
 
 <section>
 <article>
