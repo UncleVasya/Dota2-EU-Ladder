@@ -5,11 +5,16 @@ from django.db import models, transaction
 class PlayerManager(models.Manager):
     # gives player initial score and mmr
     @staticmethod
-    def init_score(player):
+    def init_score(player, reset_mmr=False):
         from app.ladder.models import ScoreChange
         from app.ladder.models import LadderSettings
 
-        initial_mmr = PlayerManager.dota_to_ladder_mmr(player.dota_mmr)
+        if reset_mmr:
+            initial_mmr = PlayerManager.dota_to_ladder_mmr(player.dota_mmr)
+        else:
+            # take mmr from last season
+            initial_mmr = player.ladder_mmr
+
         ScoreChange.objects.create(
             player=player,
             score_change=25,
