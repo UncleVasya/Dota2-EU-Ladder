@@ -198,9 +198,16 @@ class PlayerDetail(DetailView):
     def teammates_stats(self, matches_min=3, opponents=False):
         player = self.object
 
+        matches = player.matchplayer_set\
+            .select_related('match', 'scorechange')\
+            .prefetch_related(Prefetch(
+                'match__matchplayer_set',
+                queryset=MatchPlayer.objects.select_related('player')
+            ))
+
         # gather initial teammate stats
         teammates = defaultdict(lambda: defaultdict(int))
-        for matchPlayer in player.matches:
+        for matchPlayer in matches:
             match = matchPlayer.match
             changes = matchPlayer.scorechange
             for mp in match.matchplayer_set.all():  # all players for this match
