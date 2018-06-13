@@ -1,1 +1,2 @@
 UPGRADE_PIP_TO_LATEST=true
+OPENSHIFT_DATA_DIR=/opt/app-root/src/data
