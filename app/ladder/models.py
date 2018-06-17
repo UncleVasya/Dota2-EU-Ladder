@@ -48,7 +48,7 @@ class Player(models.Model):
 
         # give player initial score and mmr
         if created:
-            PlayerManager.init_score(self)
+            PlayerManager.init_score(self, reset_mmr=True)
 
 
 class Match(models.Model):
