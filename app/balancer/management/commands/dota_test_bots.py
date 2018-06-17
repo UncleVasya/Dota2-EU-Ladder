@@ -1,3 +1,5 @@
+import random
+from app.ladder.models import Player
 from django.core.management.base import BaseCommand
 import gevent
 import dota2
@@ -60,9 +62,31 @@ class Command(BaseCommand):
         def start_dota():
             dota.launch()
 
+        # TODO: don't try to relogin if we disconnected by KeyboardInterrupt
+        @client.on('disconnected')
+        def handle_disconnect():
+            print 'Disconnected: %s' % credentials['login']
+
+            delay = 30
+            print 'Trying to login again in %d sec...' % delay
+            gevent.sleep(delay)
+
+            client.login(credentials['login'], credentials['password'])
+            client.run_forever()
+
         @dota.on('ready')
         def dota_started():
             print 'Logged in: %s %s' % (dota.steam.username, dota.account_id)
+
+            # register this bot as a player in db
+            player, created = Player.objects.get_or_create(
+                name=dota.steam.username,
+                defaults={
+                    'dota_mmr': random.randrange(3000, 6000, 500),
+                    'dota_id': dota.account_id}
+            )
+            print 'Bot %s (%d MMR, %s), was already in DB: %s' % (
+                  player.name, player.dota_mmr, player.dota_id, not created)
 
             # if lobby is hung up from previous session, leave it
             dota.leave_practice_lobby()
