@@ -179,7 +179,6 @@ class Command(BaseCommand):
             'dota_tv_delay': 0,  # TODO: this is LobbyDotaTV_10
             'pause_setting': 0,  # TODO: LobbyDotaPauseSetting_Unlimited
         }
-
         bot.create_practice_lobby(
             password=os.environ.get('LOBBY_PASSWORD', ''),
             options=bot.lobby_options)
@@ -213,8 +212,15 @@ class Command(BaseCommand):
             '!new': Command.new_command,
             '!help': Command.help_command,
             '!commands': Command.help_command,
+            '!register': Command.register_command,
         }
+        free_for_all = ['!register']
         staff_only = ['!staff', '!forcestart', '!fs', '!new', '!ban']
+
+        # if command is free for all, no other checks required
+        if command in free_for_all:
+            commands[command](bot, msg)
+            return
 
         # get player from DB using dota id
         try:
@@ -248,10 +254,11 @@ class Command(BaseCommand):
                 return
 
         # user can use this command
-        commands[command](bot, text)
+        commands[command](bot, msg)
 
     @staticmethod
-    def balance_command(bot, command):
+    def balance_command(bot, msg):
+        command = msg.text
         print
         print 'Balancing players'
 
@@ -312,7 +319,7 @@ class Command(BaseCommand):
     # TODO: get command from kwargs, so I don't have to add
     #       command argument for when I don't need it
     @staticmethod
-    def start_command(bot, command):
+    def start_command(bot, msg):
         if not bot.balance_answer:
             bot.send_lobby_message('Please balance teams first.')
             return
@@ -325,7 +332,8 @@ class Command(BaseCommand):
         bot.launch_practice_lobby()
 
     @staticmethod
-    def mmr_command(bot, command):
+    def mmr_command(bot, msg):
+        command = msg.text
         print
         print 'Setting lobby MMR: '
         print command
@@ -343,7 +351,8 @@ class Command(BaseCommand):
         bot.send_lobby_message('Min MMR set to %d' % min_mmr)
 
     @staticmethod
-    def voice_command(bot, command):
+    def voice_command(bot, msg):
+        command = msg.text
         print
         print 'Voice command: '
         print command
@@ -364,7 +373,8 @@ class Command(BaseCommand):
         bot.send_lobby_message('Voice required set to %s' % bot.voice_required)
 
     @staticmethod
-    def teamkick_command(bot, command):
+    def teamkick_command(bot, msg):
+        command = msg.text
         print
         print 'Teamkick command'
         print command
@@ -383,7 +393,7 @@ class Command(BaseCommand):
 
     # this command checks if all lobby members are known to bot
     @staticmethod
-    def check_command(bot, command):
+    def check_command(bot, msg):
         players_steam = {
             SteamID(player.id).as_32: player for player in bot.lobby.members
         }
@@ -403,12 +413,13 @@ class Command(BaseCommand):
             bot.send_lobby_message('I know everybody here.')
 
     @staticmethod
-    def forcestart_command(bot, command):
+    def forcestart_command(bot, msg):
             Command.balance_answer = None
             bot.launch_practice_lobby()
 
     @staticmethod
-    def mode_command(bot, command):
+    def mode_command(bot, msg):
+        command = msg.text
         print
         print 'Mode command'
         print command
@@ -424,7 +435,8 @@ class Command(BaseCommand):
         bot.send_lobby_message('Game mode set to %s' % mode)
 
     @staticmethod
-    def server_command(bot, command):
+    def server_command(bot, msg):
+        command = msg.text
         print
         print 'Server command'
         print command
@@ -441,7 +453,8 @@ class Command(BaseCommand):
         bot.send_lobby_message('Game server set to %s' % server)
 
     @staticmethod
-    def staff_command(bot, command):
+    def staff_command(bot, msg):
+        command = msg.text
         print
         print 'Staff command: '
         print command
@@ -456,7 +469,8 @@ class Command(BaseCommand):
         bot.send_lobby_message('Staff mode set to %s' % bot.staff_mode)
 
     @staticmethod
-    def whois_command(bot, command):
+    def whois_command(bot, msg):
+        command = msg.text
         print
         print 'Whois command:'
         print command
@@ -493,7 +507,7 @@ class Command(BaseCommand):
         )
 
     @staticmethod
-    def teams_command(bot, command):
+    def teams_command(bot, msg):
         print 'Teams command'
 
         if not bot.balance_answer:
@@ -521,7 +535,8 @@ class Command(BaseCommand):
 
     # swap 2 players in balance
     @staticmethod
-    def swap_command(bot, command):
+    def swap_command(bot, msg):
+        command = msg.text
         print 'Swap command:'
         print command
 
@@ -558,7 +573,7 @@ class Command(BaseCommand):
     # TODO: refactor this code to decrese repetition
     # TODO: between this func, balance_command() and check_teams()
     @staticmethod
-    def custom_command(bot, command):
+    def custom_command(bot, msg):
         print '!custom command'
 
         # convert steam64 into 32bit dota id and build a dic of {id: player}
@@ -600,7 +615,8 @@ class Command(BaseCommand):
                 (i+1, team['mmr'], ' | '.join(player_names)))
 
     @staticmethod
-    def ban_command(bot, command):
+    def ban_command(bot, msg):
+        command = msg.text
         print
         print 'Ban command:'
         print command
@@ -619,7 +635,7 @@ class Command(BaseCommand):
         bot.send_lobby_message('JUST A PRANK!')
 
     @staticmethod
-    def new_command(bot, command):
+    def new_command(bot, msg):
         print
         print '!new command'
 
@@ -629,10 +645,54 @@ class Command(BaseCommand):
         Command.create_new_lobby(bot)
 
     @staticmethod
-    def help_command(bot, command):
+    def help_command(bot, msg):
         bot.send_lobby_message(
             'Documentation is coming. '
             'It\'s not coming in your lifetime, but it\'s coming.')
+
+    @staticmethod
+    def register_command(bot, msg):
+        command = msg.text
+        print
+        print '!register command'
+        print command
+
+        min_allowed_mmr = 1000
+        max_allowed_mmr = 7000
+
+        try:
+            name = command.split(' ')[1]
+            mmr = int(command.split(' ')[2])
+        except (IndexError, ValueError):
+            bot.send_lobby_message('Wrong command usage. Example: !register Uvs 3000')
+            return
+
+        # check if we can register this player
+        if Player.objects.filter(dota_id=msg.account_id).exists():
+            bot.send_lobby_message('Already registered, bro.')
+            return
+
+        if Player.objects.filter(name=name).exists():
+            bot.send_lobby_message('This name is already taken. Try another or talk to admins.')
+            return
+
+        if mmr < min_allowed_mmr:
+            bot.send_lobby_message('MMR is too small. Ask admins to register you.')
+            return
+
+        if mmr > max_allowed_mmr:
+            bot.send_lobby_message('MMR is too high. Ask admins to register you.')
+            return
+
+        # all is good, can register
+        Player.objects.create(
+            name=name,
+            dota_mmr=mmr,
+            dota_id=msg.account_id,
+        )
+        Player.objects.update_ranks()
+
+        bot.send_lobby_message('Welcome to ladder, %s! You can play now.' % name)
 
     @staticmethod
     def process_game_result(bot):
