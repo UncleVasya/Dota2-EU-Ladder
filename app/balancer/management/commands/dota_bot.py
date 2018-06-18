@@ -171,6 +171,7 @@ class Command(BaseCommand):
             'game_name': Command.generate_lobby_name(bot),
             'game_mode': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_CM,
             'server_region': GameServers[bot.server],
+            'leagueid': int(os.environ.get('LEAGUE_ID', -1)),
             'fill_with_bots': False,
             'allow_spectating': True,
             'allow_cheats': False,
