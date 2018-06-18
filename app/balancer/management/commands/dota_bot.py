@@ -96,22 +96,17 @@ class Command(BaseCommand):
         def logged_on():
             dota.launch()
 
-        @client.on('channel_secured')
-        def send_login():
-            if client.relogin_available:
-                client.relogin()
-
-        @client.on('reconnect')
-        def handle_reconnect(delay):
-            print 'Reconnect in %ds...' % delay
-
+        # TODO: don't try to relogin if we disconnected by KeyboardInterrupt
         @client.on('disconnected')
         def handle_disconnect():
-            print 'Disconnected.'
+            print 'Disconnected: %s' % credentials['login']
 
-            if client.relogin_available:
-                print 'Reconnecting...'
-                client.reconnect(maxdelay=30)
+            delay = 30
+            print 'Trying to login again in %d sec...' % delay
+            gevent.sleep(delay)
+
+            client.login(credentials['login'], credentials['password'])
+            client.run_forever()
 
         @client.friends.on(SteamFriendlist.EVENT_FRIEND_INVITE)
         def friend_invite(user):
