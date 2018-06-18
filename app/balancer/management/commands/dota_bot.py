@@ -765,7 +765,8 @@ class Command(BaseCommand):
 
     @staticmethod
     def generate_lobby_name(bot):
-        lobby_name = 'Ladder %s' %\
+        # TODO: get lobby name from env
+        lobby_name = 'RD2L Ladder %s' %\
                      re.search('(\d+)$', bot.steam.username).group(0)
 
         if bot.min_mmr > 0:
