@@ -116,6 +116,10 @@ class Command(BaseCommand):
         def dota_started():
             print 'Logged in: %s %s' % (dota.steam.username, dota.account_id)
 
+            # every second lobby is for high mmr players
+            if self.bots.index(dota) % 2 == 0:
+                Command.set_min_mmr(dota, 4500)
+
             self.create_new_lobby(dota)
 
         @dota.on(dota2.features.Lobby.EVENT_LOBBY_NEW)
@@ -344,10 +348,7 @@ class Command(BaseCommand):
         except (IndexError, ValueError):
             return
 
-        bot.min_mmr = min_mmr
-        bot.lobby_options['game_name'] = Command.generate_lobby_name(bot)
-        bot.config_practice_lobby(bot.lobby_options)
-
+        Command.set_min_mmr(bot, min_mmr)
         bot.send_lobby_message('Min MMR set to %d' % min_mmr)
 
     @staticmethod
@@ -894,3 +895,9 @@ class Command(BaseCommand):
             if str(player) not in players_balance:
                 bot.send_lobby_message('%s, this lobby is full. Join another one.' % players_steam[player].name)
                 bot.practice_lobby_kick_from_team(player)
+
+    @staticmethod
+    def set_min_mmr(bot, mmr):
+        bot.min_mmr = mmr
+        bot.lobby_options['game_name'] = Command.generate_lobby_name(bot)
+        bot.config_practice_lobby(bot.lobby_options)
