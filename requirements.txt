@@ -1,29 +1,10 @@
-asn1crypto==0.21.1
-cffi==1.9.1
-cryptography==1.8.1
 Django==1.9
+jsonfield==1.0.3
+whitenoise==3.2.2
 django-autocomplete-light==3.2.1
-django-autoslug==1.9.3
 django-debug-toolbar==1.5
+django-autoslug==1.9.3
 django-solo==1.1.2
 
 git+git://github.com/unclevasya/django-pure-pagination.git@disablable_margins
 git+git://github.com/unclevasya/dota2.git@basic_chat_support
-enum34==1.1.6
-gevent==1.2.1
-gevent-eventemitter==2.0
-greenlet==0.4.12
-idna==2.5
-ipaddress==1.0.18
-jsonfield==1.0.3
-packaging==16.8
-protobuf==3.2.0 --no-binary=protobuf
-pyasn1==0.2.3
-pycparser==2.17
-pyparsing==2.2.0
-requests==2.13.0
-six==1.10.0
-sqlparse==0.2.3
-steam==0.8.15
-vdf==2.2
-whitenoise==3.2.2
