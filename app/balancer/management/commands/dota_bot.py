@@ -678,11 +678,11 @@ class Command(BaseCommand):
             return
 
         if mmr < min_allowed_mmr:
-            bot.send_lobby_message('MMR is too small. Ask admins to register you.')
+            bot.send_lobby_message('Your dick is too small. Ask admins to register you.')
             return
 
         if mmr > max_allowed_mmr:
-            bot.send_lobby_message('MMR is too high. Ask admins to register you.')
+            bot.send_lobby_message('Your dick is too big. Show it to admins!')
             return
 
         # all is good, can register
