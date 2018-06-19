@@ -22,7 +22,7 @@
 
          <div class="col-md-4 stats-element">
             <div class="stats-value">
-                <span> {{ stats.mmr|floatformat:0 }} </span>
+                <span> {{ stats.mmr|floatformat:0|default:0 }} </span>
             </div>
             <div class="stats-caption">
                 <p>Average MMR</p>
