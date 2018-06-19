@@ -127,7 +127,7 @@ class Command(BaseCommand):
             print '%s joined lobby %s' % (dota.steam.username, lobby.lobby_id)
 
             dota.join_practice_lobby_team()  # jump to unassigned players
-            dota.join_lobby_chat()
+            dota.channels.join_lobby_channel()
 
         @dota.on(dota2.features.Lobby.EVENT_LOBBY_CHANGED)
         def lobby_changed(lobby):
@@ -148,13 +148,14 @@ class Command(BaseCommand):
                 self.process_game_result(dota)
                 self.create_new_lobby(dota)
 
-        @dota.on(dota2.features.Chat.EVENT_CHAT_JOINED)
+        @dota.channels.on(dota2.features.chat.ChannelManager.EVENT_JOINED_CHANNEL)
         def chat_joined(channel):
-            print '%s joined chat channel %s' % (dota.steam.username, channel.channel_name)
+            print '%s joined chat channel %s' % (dota.steam.username, channel.name)
 
-        @dota.on(dota2.features.Chat.EVENT_CHAT_MESSAGE)
-        def chat_message(channel, sender, text, msg_obj):
-            if channel.channel_type != DOTAChatChannelType_t.DOTAChannelType_Lobby:
+        @dota.channels.on(dota2.features.chat.ChannelManager.EVENT_MESSAGE)
+        def chat_message(channel, msg_obj):
+            text = msg_obj.text
+            if channel.type != DOTAChatChannelType_t.DOTAChannelType_Lobby:
                 return  # ignore postgame and other chats
 
             if text.startswith('!'):
@@ -230,11 +231,11 @@ class Command(BaseCommand):
         try:
             player = Player.objects.get(dota_id=msg.account_id)
         except Player.DoesNotExist:
-            bot.send_lobby_message('%s, who the fuck are you?' % msg.persona_name)
+            bot.channels.lobby.send('%s, who the fuck are you?' % msg.persona_name)
             return
 
         if player.banned:
-            bot.send_lobby_message('%s, you are banned.' % msg.persona_name)
+            bot.channels.lobby.send('%s, you are banned.' % msg.persona_name)
             return
 
         # check permissions when needed
@@ -244,17 +245,17 @@ class Command(BaseCommand):
                 names = [p[0] for team in bot.balance_answer.teams
                          for p in team['players']]
                 if player.name not in names:
-                    bot.send_lobby_message('%s, this lobby is full. Join another one.' % msg.persona_name)
+                    bot.channels.lobby.send('%s, this lobby is full. Join another one.' % msg.persona_name)
                     return
 
             # in staff mode only staff can use bot
             if bot.staff_mode:
-                bot.send_lobby_message('%s, I am in staff-only mode.' % msg.persona_name)
+                bot.channels.lobby.send('%s, I am in staff-only mode.' % msg.persona_name)
                 return
 
             # only staff can use this commands
             if command in staff_only:
-                bot.send_lobby_message('%s, this command is staff-only.' % msg.persona_name)
+                bot.channels.lobby.send('%s, this command is staff-only.' % msg.persona_name)
                 return
 
         # user can use this command
@@ -270,7 +271,7 @@ class Command(BaseCommand):
         try:
             if command.split(' ')[1] == 'off':
                 bot.balance_answer = False
-                bot.send_lobby_message('Balance cleared.')
+                bot.channels.lobby.send('Balance cleared.')
                 return
         except (IndexError, ValueError):
             pass
@@ -282,7 +283,7 @@ class Command(BaseCommand):
         }
 
         if len(players_steam) < 10:
-            bot.send_lobby_message('We don\'t have 10 players')
+            bot.channels.lobby.send('We don\'t have 10 players')
             return
 
         # get players from DB using dota id
@@ -293,7 +294,7 @@ class Command(BaseCommand):
                         if str(p) not in players]
 
         if unregistered:
-            bot.send_lobby_message('I don\'t know these guys: %s' %
+            bot.channels.lobby.send('I don\'t know these guys: %s' %
                                    ', '.join(unregistered))
             return
 
@@ -316,23 +317,23 @@ class Command(BaseCommand):
         bot.balance_answer = answer = result.answers.all()[answer_num-1]
         for i, team in enumerate(answer.teams):
             player_names = [p[0] for p in team['players']]
-            bot.send_lobby_message('Team %d (avg. %d): %s' %
+            bot.channels.lobby.send('Team %d (avg. %d): %s' %
                                    (i+1, team['mmr'], ' | '.join(player_names)))
-        bot.send_lobby_message(url)
+        bot.channels.lobby.send(url)
 
     # TODO: get command from kwargs, so I don't have to add
     #       command argument for when I don't need it
     @staticmethod
     def start_command(bot, msg):
         if not bot.balance_answer:
-            bot.send_lobby_message('Please balance teams first.')
+            bot.channels.lobby.send('Please balance teams first.')
             return
 
         if not Command.check_teams_setup(bot):
-            bot.send_lobby_message('Please join slots according to balance.')
+            bot.channels.lobby.send('Please join slots according to balance.')
             return
 
-        bot.send_lobby_message('Ready to start')
+        bot.channels.lobby.send('Ready to start')
         bot.launch_practice_lobby()
 
     @staticmethod
@@ -349,7 +350,7 @@ class Command(BaseCommand):
             return
 
         Command.set_min_mmr(bot, min_mmr)
-        bot.send_lobby_message('Min MMR set to %d' % min_mmr)
+        bot.channels.lobby.send('Min MMR set to %d' % min_mmr)
 
     @staticmethod
     def voice_command(bot, msg):
@@ -371,7 +372,7 @@ class Command(BaseCommand):
         bot.lobby_options['game_name'] = Command.generate_lobby_name(bot)
         bot.config_practice_lobby(bot.lobby_options)
 
-        bot.send_lobby_message('Voice required set to %s' % bot.voice_required)
+        bot.channels.lobby.send('Voice required set to %s' % bot.voice_required)
 
     @staticmethod
     def teamkick_command(bot, msg):
@@ -408,10 +409,10 @@ class Command(BaseCommand):
                         if str(p) not in players]
 
         if unregistered:
-            bot.send_lobby_message('I don\'t know these guys: %s' %
+            bot.channels.lobby.send('I don\'t know these guys: %s' %
                                    ', '.join(unregistered))
         else:
-            bot.send_lobby_message('I know everybody here.')
+            bot.channels.lobby.send('I know everybody here.')
 
     @staticmethod
     def forcestart_command(bot, msg):
@@ -433,7 +434,7 @@ class Command(BaseCommand):
         bot.lobby_options['game_mode'] = GameModes[mode]
         bot.config_practice_lobby(bot.lobby_options)
 
-        bot.send_lobby_message('Game mode set to %s' % mode)
+        bot.channels.lobby.send('Game mode set to %s' % mode)
 
     @staticmethod
     def server_command(bot, msg):
@@ -451,7 +452,7 @@ class Command(BaseCommand):
         bot.lobby_options['server_region'] = GameServers[server]
         bot.config_practice_lobby(bot.lobby_options)
 
-        bot.send_lobby_message('Game server set to %s' % server)
+        bot.channels.lobby.send('Game server set to %s' % server)
 
     @staticmethod
     def staff_command(bot, msg):
@@ -467,7 +468,7 @@ class Command(BaseCommand):
         except (IndexError, ValueError):
             pass
 
-        bot.send_lobby_message('Staff mode set to %s' % bot.staff_mode)
+        bot.channels.lobby.send('Staff mode set to %s' % bot.staff_mode)
 
     @staticmethod
     def whois_command(bot, msg):
@@ -487,13 +488,13 @@ class Command(BaseCommand):
             member = next((m for m in bot.lobby.members if name in m.name.lower()), None)
 
         if not member:
-            bot.send_lobby_message('No such name.')
+            bot.channels.lobby.send('No such name.')
             return
 
         try:
             player = Player.objects.get(dota_id=SteamID(member.id).as_32)
         except Player.DoesNotExist:
-            bot.send_lobby_message('%s: I don\'t know him' % member.name)
+            bot.channels.lobby.send('%s: I don\'t know him' % member.name)
             return
 
         match_count = player.matchplayer_set.filter(
@@ -501,7 +502,7 @@ class Command(BaseCommand):
         ).count()
 
         correlation = PlayerManager.ladder_to_dota_mmr(player.ladder_mmr)
-        bot.send_lobby_message(
+        bot.channels.lobby.send(
             '%s: %s, MMR: %d, Ladder MMR: %d, Correlation: %d, Score: %d, Games: %d' %
             (member.name, player.name, player.dota_mmr, player.ladder_mmr, correlation,
              player.score, match_count)
@@ -512,7 +513,7 @@ class Command(BaseCommand):
         print 'Teams command'
 
         if not bot.balance_answer:
-            bot.send_lobby_message('Please balance teams first.')
+            bot.channels.lobby.send('Please balance teams first.')
             return
 
         teams = [
@@ -527,12 +528,12 @@ class Command(BaseCommand):
             ' '.join(str(PlayerManager.ladder_to_dota_mmr(player.ladder_mmr)) for player in team)
             for team in teams]
 
-        [bot.send_lobby_message(' | '.join(player.name for player in team))
+        [bot.channels.lobby.send(' | '.join(player.name for player in team))
          for team in teams]
-        bot.send_lobby_message('Dota MMR:')
-        [bot.send_lobby_message(team) for team in dota_mmr]
-        bot.send_lobby_message('Correlation:')
-        [bot.send_lobby_message(team) for team in correlation]
+        bot.channels.lobby.send('Dota MMR:')
+        [bot.channels.lobby.send(team) for team in dota_mmr]
+        bot.channels.lobby.send('Correlation:')
+        [bot.channels.lobby.send(team) for team in correlation]
 
     # swap 2 players in balance
     @staticmethod
@@ -542,7 +543,7 @@ class Command(BaseCommand):
         print command
 
         if not bot.balance_answer:
-            bot.send_lobby_message('Please balance teams first.')
+            bot.channels.lobby.send('Please balance teams first.')
             return
 
         # get player indexes
@@ -552,7 +553,7 @@ class Command(BaseCommand):
             if not 0 <= player_1 < 5 or not 0 <= player_2 < 5:
                 raise ValueError
         except (IndexError, ValueError):
-            bot.send_lobby_message('Can\'t do that')
+            bot.channels.lobby.send('Can\'t do that')
             return
 
         teams = [team['players'] for team in bot.balance_answer.teams]
@@ -566,7 +567,7 @@ class Command(BaseCommand):
 
         for i, team in enumerate(bot.balance_answer.teams):
             player_names = [p[0] for p in team['players']]
-            bot.send_lobby_message(
+            bot.channels.lobby.send(
                 'Team %d (avg. %d): %s' %
                 (i+1, team['mmr'], ' | '.join(player_names)))
 
@@ -584,7 +585,7 @@ class Command(BaseCommand):
         }
 
         if len(players_steam) < 10:
-            bot.send_lobby_message('We don\'t have 10 players')
+            bot.channels.lobby.send('We don\'t have 10 players')
             return
 
         # get players from DB using dota id
@@ -595,7 +596,7 @@ class Command(BaseCommand):
                         if str(p) not in players]
 
         if unregistered:
-            bot.send_lobby_message('I don\'t know these guys: %s' %
+            bot.channels.lobby.send('I don\'t know these guys: %s' %
                                    ', '.join(unregistered))
             return
 
@@ -611,7 +612,7 @@ class Command(BaseCommand):
         # TODO and use it in here, balance_command(), teams_command(), swap_command()
         for i, team in enumerate(bot.balance_answer.teams):
             player_names = [p[0] for p in team['players']]
-            bot.send_lobby_message(
+            bot.channels.lobby.send(
                 'Team %d (avg. %d): %s' %
                 (i+1, team['mmr'], ' | '.join(player_names)))
 
@@ -627,27 +628,27 @@ class Command(BaseCommand):
         except (IndexError, ValueError):
             return
 
-        bot.send_lobby_message('Banning %s in...' % name)
+        bot.channels.lobby.send('Banning %s in...' % name)
         for i in range(5, 0, -1):
             gevent.sleep(1)
-            bot.send_lobby_message('%d' % i)
+            bot.channels.lobby.send('%d' % i)
 
         gevent.sleep(1)
-        bot.send_lobby_message('JUST A PRANK!')
+        bot.channels.lobby.send('JUST A PRANK!')
 
     @staticmethod
     def new_command(bot, msg):
         print
         print '!new command'
 
-        bot.send_lobby_message('Creating new lobby.')
+        bot.channels.lobby.send('Creating new lobby.')
         bot.leave_practice_lobby()
         gevent.sleep(5)
         Command.create_new_lobby(bot)
 
     @staticmethod
     def help_command(bot, msg):
-        bot.send_lobby_message(
+        bot.channels.lobby.send(
             'Documentation is coming. '
             'It\'s not coming in your lifetime, but it\'s coming.')
 
@@ -665,24 +666,24 @@ class Command(BaseCommand):
             name = command.split(' ')[1]
             mmr = int(command.split(' ')[2])
         except (IndexError, ValueError):
-            bot.send_lobby_message('Wrong command usage. Example: !register Uvs 3000')
+            bot.channels.lobby.send('Wrong command usage. Example: !register Uvs 3000')
             return
 
         # check if we can register this player
         if Player.objects.filter(dota_id=msg.account_id).exists():
-            bot.send_lobby_message('Already registered, bro.')
+            bot.channels.lobby.send('Already registered, bro.')
             return
 
         if Player.objects.filter(name=name).exists():
-            bot.send_lobby_message('This name is already taken. Try another or talk to admins.')
+            bot.channels.lobby.send('This name is already taken. Try another or talk to admins.')
             return
 
         if mmr < min_allowed_mmr:
-            bot.send_lobby_message('Your dick is too small. Ask admins to register you.')
+            bot.channels.lobby.send('Your dick is too small. Ask admins to register you.')
             return
 
         if mmr > max_allowed_mmr:
-            bot.send_lobby_message('Your dick is too big. Show it to admins!')
+            bot.channels.lobby.send('Your dick is too big. Show it to admins!')
             return
 
         # all is good, can register
@@ -693,7 +694,7 @@ class Command(BaseCommand):
         )
         Player.objects.update_ranks()
 
-        bot.send_lobby_message('Welcome to ladder, %s! You can play now.' % name)
+        bot.channels.lobby.send('Welcome to ladder, %s! You can play now.' % name)
 
     @staticmethod
     def process_game_result(bot):
@@ -857,7 +858,7 @@ class Command(BaseCommand):
 
             # tell player he collides with other players
             collision = [old_players[c].name for c in collision]
-            bot.send_lobby_message('%s, you can\'t play with: %s' %
+            bot.channels.lobby.send('%s, you can\'t play with: %s' %
                                    (p.name, ', '.join(collision)))
 
             bot.practice_lobby_kick_from_team(int(p.dota_id))
@@ -875,7 +876,7 @@ class Command(BaseCommand):
         ).values_list('dota_id', flat=True)
 
         for player in problematic:
-            bot.send_lobby_message('%s, you are banned.' % players_steam[int(player)].name)
+            bot.channels.lobby.send('%s, you are banned.' % players_steam[int(player)].name)
             bot.practice_lobby_kick_from_team(int(player))
 
     @staticmethod
@@ -893,7 +894,7 @@ class Command(BaseCommand):
 
         for player in players_steam.keys():
             if str(player) not in players_balance:
-                bot.send_lobby_message('%s, this lobby is full. Join another one.' % players_steam[player].name)
+                bot.channels.lobby.send('%s, this lobby is full. Join another one.' % players_steam[player].name)
                 bot.practice_lobby_kick_from_team(player)
 
     @staticmethod
