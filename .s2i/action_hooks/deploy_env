@@ -1,0 +1,4 @@
+PATH=$APP_ROOT/local/bin:$PATH
+
+echo " -----> Added $APP_ROOT/local/bin to PATH"
+echo " -----> PATH: $PATH"
