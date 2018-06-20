@@ -1,2 +1,8 @@
-UPGRADE_PIP_TO_LATEST=true
 OPENSHIFT_DATA_DIR=/opt/app-root/src/data
+
+# old pip can't install my dependencies
+UPGRADE_PIP_TO_LATEST=true
+
+# needed for action hooks
+S2I_SCRIPTS_PATH=/usr/libexec/s2i
+S2I_BASH_ENV=/opt/app-root/etc/scl_enable
