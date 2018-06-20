@@ -33,4 +33,12 @@ pwd
 
 echo " -----> Initial contents of the current working directory."
 
+echo " -----> Installing tmux."
+
+curl -fsSL https://gist.githubusercontent.com/elfosardo/b23058f9d609fcb0878fc42f5b6c935d/raw/7320fd718e15da3039a9784d81d3f0c0400b6c6a/tmux_local_install.sh | bash -e
+PATH=$APP_ROOT/local/bin:$PATH
+
+echo " -----> Added $APP_ROOT/local/bin to PATH"
+echo " -----> PATH: $PATH"
+
 
