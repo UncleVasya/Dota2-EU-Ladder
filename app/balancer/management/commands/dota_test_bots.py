@@ -100,7 +100,7 @@ class Command(BaseCommand):
 
             if ind == 0:
                 # let first bot listen to lobby chat
-                dota.join_lobby_chat()
+                dota.channels.join_lobby_channel()
 
             team = ind / 5
             slot = ind % 5 + 1
@@ -121,9 +121,10 @@ class Command(BaseCommand):
                 print 'All bots jumped to unassigned'
                 self.join_balance_slots()
 
-        @dota.on(dota2.features.Chat.EVENT_CHAT_MESSAGE)
-        def chat_message(channel, sender, text, msg_obj):
-            if channel.channel_type != DOTAChatChannelType_t.DOTAChannelType_Lobby:
+        @dota.channels.on(dota2.features.chat.ChannelManager.EVENT_MESSAGE)
+        def chat_message(channel, msg_obj):
+            text = msg_obj.text
+            if channel.type != DOTAChatChannelType_t.DOTAChannelType_Lobby:
                 return  # ignore postgame and other chats
 
             # process known commands
