@@ -156,12 +156,13 @@ class Command(BaseCommand):
 
         @dota.channels.on(dota2.features.chat.ChannelManager.EVENT_MESSAGE)
         def chat_message(channel, msg_obj):
-            text = msg_obj.text
             if channel.type != DOTAChatChannelType_t.DOTAChannelType_Lobby:
                 return  # ignore postgame and other chats
 
-            if text.startswith('!'):
-                # look like this is bot command
+            # strip whitespaces so bot can handle strings like " !register   Bob   4000"
+            msg_obj.text = " ".join(msg_obj.text.split())
+            if msg_obj.text.startswith('!'):
+                # looks like this is bot command
                 Command.bot_cmd(dota, msg_obj)
 
         client.login(credentials['login'], credentials['password'])
@@ -192,8 +193,7 @@ class Command(BaseCommand):
 
     @staticmethod
     def bot_cmd(bot, msg):
-        text = msg.text
-        command = text.split(' ')[0]
+        command = msg.text.split(' ')[0]
 
         commands = {
             '!balance': Command.balance_command,
