@@ -37,4 +37,4 @@ echo " -----> Installing tmux."
 
 curl -fsSL https://gist.githubusercontent.com/elfosardo/b23058f9d609fcb0878fc42f5b6c935d/raw/7320fd718e15da3039a9784d81d3f0c0400b6c6a/tmux_local_install.sh | bash -e
 
-ln -s $HOME/local/bin/tmux $HOME/.local/bin/tmux
+ln -s $APP_ROOT/src/local/bin/tmux tmux
