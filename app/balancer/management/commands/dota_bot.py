@@ -403,6 +403,7 @@ class Command(BaseCommand):
     def check_command(bot, msg):
         players_steam = {
             SteamID(player.id).as_32: player for player in bot.lobby.members
+            if SteamID(player.id).as_32 != bot.account_id
         }
 
         # get players from DB using dota id
