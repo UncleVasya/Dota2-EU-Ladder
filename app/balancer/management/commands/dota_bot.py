@@ -387,7 +387,7 @@ class Command(BaseCommand):
         print command
 
         try:
-            name = command.split(' ')[1].lower()
+            name = command.split(None, 1)[1].lower()
         except (IndexError, ValueError):
             return
 
@@ -483,7 +483,7 @@ class Command(BaseCommand):
         print command
 
         try:
-            name = command.split(' ')[1].lower()
+            name = command.split(None, 1)[1].lower()
         except (IndexError, ValueError):
             return
 
@@ -629,7 +629,7 @@ class Command(BaseCommand):
         print command
 
         try:
-            name = command.split(' ')[1]
+            name = command.split(None, 1)[1]
         except (IndexError, ValueError):
             return
 
