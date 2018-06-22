@@ -53,9 +53,12 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('-n', '--number',
                             nargs='?', type=int, default=2, const=2)
+        parser.add_argument('-f', '--first_bot',
+                            nargs='?', type=int, default=1, const=1)
 
     def handle(self, *args, **options):
         bots_num = options['number']
+        first_bot = options['first_bot']
 
         bot_login = os.environ.get('BOT_LOGIN', '')
         bot_password = os.environ.get('BOT_PASSWORD', '')
@@ -63,7 +66,7 @@ class Command(BaseCommand):
             {
                 'login': '%s%d' % (bot_login, i),
                 'password': '%s%d' % (bot_password, i),
-            } for i in xrange(1, bots_num+1)
+            } for i in xrange(first_bot, first_bot + bots_num)
         ]
 
         try:
