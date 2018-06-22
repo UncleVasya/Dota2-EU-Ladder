@@ -668,8 +668,9 @@ class Command(BaseCommand):
         max_allowed_mmr = 7000
 
         try:
-            name = command.split(' ')[1]
-            mmr = int(command.split(' ')[2])
+            params = command.split(None, 1)[1]
+            name = params.rsplit(None, 1)[0]
+            mmr = int(params.rsplit(None, 1)[1])
         except (IndexError, ValueError):
             bot.channels.lobby.send('Wrong command usage. Example: !register Uvs 3000')
             return
