@@ -120,6 +120,8 @@ class Command(BaseCommand):
             if self.bots.index(dota) % 2 == 0:
                 Command.set_min_mmr(dota, 4500)
 
+            # if lobby is hung up from previous session, leave it
+            dota.leave_practice_lobby()
             self.create_new_lobby(dota)
 
         @dota.on(dota2.features.Lobby.EVENT_LOBBY_NEW)
