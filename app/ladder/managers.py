@@ -107,7 +107,7 @@ class MatchManager(models.Manager):
             )
 
     @staticmethod
-    def record_balance(answer, winner):
+    def record_balance(answer, winner, dota_id=None):
         from app.ladder.models import Player, Match, MatchPlayer
         from app.ladder.models import LadderSettings
 
@@ -124,6 +124,7 @@ class MatchManager(models.Manager):
                 winner=winner,
                 balance=answer,
                 season=LadderSettings.get_solo().current_season,
+                dota_id=dota_id,
             )
 
             for i, team in enumerate(answer.teams):

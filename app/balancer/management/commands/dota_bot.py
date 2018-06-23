@@ -712,12 +712,13 @@ class Command(BaseCommand):
             print 'No balance exists (probably !forcestart)'
             return
 
+        # TODO: write smth like "record_balance(answer, 0 if RadVictory else 1, match_id)"
         if bot.lobby.match_outcome == EMatchOutcome.RadVictory:
             print 'Radiant won!'
-            MatchManager.record_balance(bot.balance_answer, 0)
+            MatchManager.record_balance(bot.balance_answer, 0, bot.lobby.match_id)
         elif bot.lobby.match_outcome == EMatchOutcome.DireVictory:
             print 'Dire won!'
-            MatchManager.record_balance(bot.balance_answer, 1)
+            MatchManager.record_balance(bot.balance_answer, 1, bot.lobby.match_id)
 
     # checks if teams are setup according to balance
     @staticmethod

@@ -57,6 +57,7 @@ class Match(models.Model):
     balance = models.OneToOneField(BalanceAnswer, null=True)
     date = models.DateTimeField(auto_now_add=True)
     season = models.PositiveSmallIntegerField(default=1)
+    dota_id = models.CharField(max_length=255, null=True)
 
 
 class MatchPlayer(models.Model):
