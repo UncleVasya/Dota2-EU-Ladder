@@ -77,13 +77,13 @@ class MatchAdmin(admin.ModelAdmin):
     model = Match
 
     fieldsets = [
-        (None, {'fields': ['date', 'winner', 'season']}),
+        (None, {'fields': ['date', 'winner', 'season', 'dota_id']}),
     ]
     readonly_fields = ['date']
 
     inlines = (MatchPlayerInline, )
 
-    list_display = ('date', )
+    list_display = ('date', 'dota_id')
 
 
 class ScoreChangeAdminForm(forms.ModelForm):
