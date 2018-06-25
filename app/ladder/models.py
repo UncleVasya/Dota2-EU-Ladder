@@ -20,12 +20,21 @@ class Player(models.Model):
 
     voice_issues = models.BooleanField(default=False)
     bot_access = models.BooleanField(default=False)
-    banned = models.BooleanField(default=False)
     blacklist = models.ManyToManyField('self', symmetrical=False, related_name='blacklisted_by')
 
     # boundaries for ladder mmr
     min_allowed_mmr = models.PositiveIntegerField(default=0)
     max_allowed_mmr = models.PositiveIntegerField(default=0)
+
+    # ban levels
+    BAN_PLAYING = 1
+    BAN_PLAYING_AND_LOBBY = 2
+    BAN_CHOICES = (
+        (None, "Not banned"),
+        (BAN_PLAYING, 'Banned from playing only'),
+        (BAN_PLAYING_AND_LOBBY, 'Banned from playing and lobby'),
+    )
+    banned = models.PositiveSmallIntegerField(choices=BAN_CHOICES)
 
     objects = PlayerManager()
 

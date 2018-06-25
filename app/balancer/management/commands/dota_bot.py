@@ -139,7 +139,8 @@ class Command(BaseCommand):
             if int(lobby.state) == LobbyState.UI:
                 # game isn't launched yet;
                 # check if all players have right to play
-                Command.kick_banned(dota)
+                Command.kick_banned_from_lobby(dota)
+                Command.kick_banned_from_playing(dota)
                 # Command.kick_blacklisted(dota)
                 if dota.balance_answer:
                     Command.kick_unbalanced(dota)
@@ -872,7 +873,7 @@ class Command(BaseCommand):
             bot.practice_lobby_kick_from_team(int(p.dota_id))
 
     @staticmethod
-    def kick_banned(bot):
+    def kick_banned_from_playing(bot):
         players_steam = {
             SteamID(player.id).as_32: player for player in bot.lobby.members
             if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)
@@ -880,12 +881,24 @@ class Command(BaseCommand):
 
         problematic = Player.objects.filter(
             dota_id__in=players_steam.keys(),
-            banned=True
+            banned=Player.BAN_PLAYING
         ).values_list('dota_id', flat=True)
 
         for player in problematic:
-            bot.channels.lobby.send('%s, you are banned.' % players_steam[int(player)].name)
+            bot.channels.lobby.send('%s, you are banned from playing.' % players_steam[int(player)].name)
             bot.practice_lobby_kick_from_team(int(player))
+
+    @staticmethod
+    def kick_banned_from_lobby(bot):
+        players_steam = {SteamID(player.id).as_32: player for player in bot.lobby.members}
+
+        problematic = Player.objects.filter(
+            dota_id__in=players_steam.keys(),
+            banned=Player.BAN_PLAYING_AND_LOBBY
+        ).values_list('dota_id', flat=True)
+
+        for player in problematic:
+            bot.practice_lobby_kick(int(player))
 
     @staticmethod
     def kick_unbalanced(bot):
