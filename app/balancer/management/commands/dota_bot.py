@@ -208,6 +208,8 @@ class Command(BaseCommand):
             '!voice': Command.voice_command,
             '!teamkick': Command.teamkick_command,
             '!tk': Command.teamkick_command,
+            '!lobbykick': Command.lobbykick_command,
+            '!lk': Command.lobbykick_command,
             '!check': Command.check_command,
             '!forcestart': Command.forcestart_command,
             '!fs': Command.forcestart_command,
@@ -226,7 +228,7 @@ class Command(BaseCommand):
             '!register': Command.register_command,
         }
         free_for_all = ['!register']
-        staff_only = ['!staff', '!forcestart', '!fs', '!new', '!ban']
+        staff_only = ['!staff', '!forcestart', '!fs', '!new', '!lobbykick', '!lk']
 
         # if command is free for all, no other checks required
         if command in free_for_all:
@@ -398,6 +400,49 @@ class Command(BaseCommand):
             if player.name.lower().startswith(name):
                 print 'kicking %s' % player.name
                 bot.practice_lobby_kick_from_team(SteamID(player.id).as_32)
+
+    @staticmethod
+    def lobbykick_command(bot, msg):
+        """
+        Sets a lobby auto-kick for a specific player (based on his dota_id)
+
+        :param bot: bot that executes current command (Dota2Client object)
+        :param msg: a message from dota server (dictionary). We are interested in msg.text - this is a command text.
+                    msg.text can be in 2 formats:
+                        - enable auto-kick:  !lobbykick DOTA_ID
+                        - disable auto-kick: !lobbykick off DOTA_ID
+        """
+        command = msg.text
+        print
+        print 'Lobbykick command'
+        print command
+
+        try:
+            dota_id = int(command.split()[-1])
+            off = (command.split()[1] == 'off')
+        except (IndexError, ValueError):
+            bot.channels.lobby.send('Can\'t do that')
+            return
+
+        player = None
+        try:
+            player = Player.objects.get(dota_id=dota_id)
+            player.banned = None if off else Player.BAN_PLAYING_AND_LOBBY
+            player.save()
+        except Player.DoesNotExist:
+            # this player isn't in DB, so we create a dummy account with 'banned' flag for him
+            if not off:
+                Player.objects.create(
+                    name='Banned_%s' % dota_id,
+                    dota_mmr=0,
+                    dota_id=str(dota_id),
+                    banned=Player.BAN_PLAYING_AND_LOBBY,
+                )
+        if not off:
+            bot.practice_lobby_kick(dota_id)
+
+        bot.channels.lobby.send('%s auto-kick for %s' %
+                                ('DISABLED' if off else 'ENABLED', player.name if player else dota_id))
 
     # this command checks if all lobby members are known to bot
     @staticmethod
