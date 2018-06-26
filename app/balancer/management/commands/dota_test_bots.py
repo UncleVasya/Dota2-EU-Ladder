@@ -84,10 +84,10 @@ class Command(BaseCommand):
 
             # register this bot as a player in db
             player, created = Player.objects.get_or_create(
-                name=dota.steam.username,
+                dota_id=dota.account_id,
                 defaults={
-                    'dota_mmr': random.randrange(3000, 6000, 500),
-                    'dota_id': dota.account_id}
+                    'name': dota.steam.username,
+                    'dota_mmr': random.randrange(3000, 6000, 500)}
             )
             print 'Bot %s (%d MMR, %s), was already in DB: %s' % (
                   player.name, player.dota_mmr, player.dota_id, not created)
