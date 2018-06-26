@@ -34,7 +34,7 @@ class Player(models.Model):
         (BAN_PLAYING, 'Banned from playing only'),
         (BAN_PLAYING_AND_LOBBY, 'Banned from playing and lobby'),
     )
-    banned = models.PositiveSmallIntegerField(choices=BAN_CHOICES)
+    banned = models.PositiveSmallIntegerField(choices=BAN_CHOICES, null=True, blank=True)
 
     objects = PlayerManager()
 
