@@ -88,7 +88,7 @@ class Command(BaseCommand):
         dota.voice_required = False
         dota.staff_mode = False
         dota.server = 'EU'
-        dota.players = {}
+        dota.players = {}  # TODO: this isn't used atm, make use of it
 
         self.bots.append(dota)
 
@@ -105,11 +105,20 @@ class Command(BaseCommand):
             print 'Disconnected: %s' % credentials['login']
 
             delay = 30
-            print 'Trying to login again in %d sec...' % delay
-            gevent.sleep(delay)
+            if client.relogin_available:
+                print 'Reconnecting...'
+                client.reconnect(maxdelay=delay)
+            else:
+                print 'Trying to login again in %d sec...' % delay
+                gevent.sleep(delay)
 
-            client.login(credentials['login'], credentials['password'])
-            client.run_forever()
+                client.login(credentials['login'], credentials['password'])
+                client.run_forever()
+
+        @client.on('channel_secured')
+        def send_login():
+            if client.relogin_available:
+                client.relogin()
 
         @client.friends.on(SteamFriendlist.EVENT_FRIEND_INVITE)
         def friend_invite(user):
