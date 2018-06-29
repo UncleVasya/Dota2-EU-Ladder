@@ -1,6 +1,7 @@
 from collections import defaultdict
 from decimal import Decimal
 from datetime import timedelta
+from django.core.cache import cache
 from app.ladder.models import Player, MatchPlayer, Match, LadderSettings
 from dal import autocomplete
 from django.db.models import Max, Count, Prefetch, Case, When, F, ExpressionWrapper, FloatField, Avg
@@ -351,3 +352,16 @@ class LadderStats(TemplateView):
             players=Count('matchplayer__player', distinct=True),
             mmr=Avg('matchplayer__player__dota_mmr'),
         )
+
+
+class LobbyStatus(TemplateView):
+    template_name = 'ladder/lobby.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(LobbyStatus, self).get_context_data(**kwargs)
+
+        lobbies = [cache.get(bot) for bot in cache.get('bots')]
+        context.update({
+            'lobbies': lobbies
+        })
+        return context

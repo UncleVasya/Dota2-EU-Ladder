@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+
+{% block page_scripts %}
+{% endblock page_scripts %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'ladder/css/lobby.css' %}">
+{% endblock page_styles %}
+
+{% block content %}
+
+<div class="page-overview">
+    <div class="page-overview-primary">
+        <div class="page-overview-title">
+            <h1> Lobby status
+                <small>{% block player-page-title %} {% endblock %}</small>
+            </h1>
+        </div>
+    </div>
+</div>
+
+{% for lobby in lobbies %}
+    <h3>{{ lobby.game_name }}</h3>
+    <br><br> State: {{ lobby.state }}
+    <br><br> Members:
+    {% for member in lobby.members %}
+        &nbsp;{{ member.name }},
+    {% endfor %}
+    <br><br>
+{% endfor %}
+
+{% endblock content %}
