@@ -1,6 +1,7 @@
 import re
 from app.balancer.models import BalanceAnswer
 from django.core.management.base import BaseCommand
+from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from app.balancer.managers import BalanceResultManager, BalanceAnswerManager
 from app.ladder.managers import MatchManager, PlayerManager
@@ -68,6 +69,7 @@ class Command(BaseCommand):
                 'password': '%s%d' % (bot_password, i),
             } for i in xrange(first_bot, first_bot + bots_num)
         ]
+        cache.set('bots', [c['login'] for c in credentials])
 
         try:
             gevent.joinall([
@@ -162,6 +164,8 @@ class Command(BaseCommand):
                 # game ended, process result and create new lobby
                 self.process_game_result(dota)
                 self.create_new_lobby(dota)
+
+            self.cache_lobby_status(dota)
 
         @dota.channels.on(dota2.features.chat.ChannelManager.EVENT_JOINED_CHANNEL)
         def chat_joined(channel):
@@ -977,3 +981,18 @@ class Command(BaseCommand):
         bot.min_mmr = mmr
         bot.lobby_options['game_name'] = Command.generate_lobby_name(bot)
         bot.config_practice_lobby(bot.lobby_options)
+
+    @staticmethod
+    def cache_lobby_status(bot):
+        lobby = bot.lobby
+        lobby = {
+            'game_name': lobby.game_name,
+            'state': 'ready' if int(lobby.state) == LobbyState.UI else 'game',
+            'game_started': '',
+            'members': [{
+                'dota_id': SteamID(player.id).as_32,
+                'name': player.name
+            } for player in lobby.members if SteamID(player.id).as_32 != bot.account_id],
+            'lobby_str': str(lobby)
+        }
+        cache.set(bot.steam.username, lobby)
