@@ -355,13 +355,38 @@ class LadderStats(TemplateView):
 
 
 class LobbyStatus(TemplateView):
-    template_name = 'ladder/lobby.html'
+    template_name = 'ladder/lobby_status.html'
 
     def get_context_data(self, **kwargs):
         context = super(LobbyStatus, self).get_context_data(**kwargs)
 
-        lobbies = [cache.get(bot) for bot in cache.get('bots')]
+        # get current lobbies from cache
+        bots = cache.get('bots')
+        lobbies = []
+        if bots:
+            lobbies = [cache.get(bot) for bot in bots]
+
+        # get players info from db
+        # TODO: get a simple list of dota_id from bot, then filter in 1 query and work with result
+        # TODO: this will also help with getting avg MMR (2nd query)
+        for lobby in lobbies:
+            players_num = total_mmr = 0
+            for team in lobby['teams']:
+                for slot, player in enumerate(team):
+                    print 'slot: %s   player: %s' % (slot, player)
+                    try:
+                        team[slot] = Player.objects.get(dota_id=player['dota_id'])
+                        players_num += 1
+                        total_mmr += team[slot].dota_mmr
+                    except (TypeError, Player.DoesNotExist):
+                        # empty slot or unregistered player, it's fine
+                        pass
+            if players_num:
+                lobby['average_mmr'] = total_mmr / players_num
+
         context.update({
-            'lobbies': lobbies
+            'lobbies': lobbies,
+            'lobbies_ready': sum(lobby['state'] == 'ready' for lobby in lobbies),
+            'lobbies_game': sum(lobby['state'] == 'game' for lobby in lobbies),
         })
         return context

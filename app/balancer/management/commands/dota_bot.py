@@ -76,6 +76,7 @@ class Command(BaseCommand):
                 gevent.spawn(self.start_bot, c) for c in credentials
             ])
         finally:
+            cache.delete('bots')
             for bot in self.bots:
                 bot.exit()
                 bot.steam.logout()
@@ -985,14 +986,32 @@ class Command(BaseCommand):
     @staticmethod
     def cache_lobby_status(bot):
         lobby = bot.lobby
+
+        # filter out bot account
+        members = [player for player in lobby.members if SteamID(player.id).as_32 != bot.account_id]
+
+        players = [player for player in members
+                   if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)]
+        # 2 teams with 5 slots each, None for empty slot
+        teams = [[None]*5 for _ in xrange(2)]
+        for player in players:
+            teams[player.team][player.slot-1] = {
+                'dota_id': SteamID(player.id).as_32,
+                'name': player.name,
+            }
+
+        unassigned = [{
+            'dota_id': SteamID(player.id).as_32,
+            'name': player.name,
+        } for player in members
+            if player.team not in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)]
+
         lobby = {
             'game_name': lobby.game_name,
             'state': 'ready' if int(lobby.state) == LobbyState.UI else 'game',
             'game_started': '',
-            'members': [{
-                'dota_id': SteamID(player.id).as_32,
-                'name': player.name
-            } for player in lobby.members if SteamID(player.id).as_32 != bot.account_id],
+            'teams': teams,
+            'unassigned': unassigned,
             'lobby_str': str(lobby)
         }
         cache.set(bot.steam.username, lobby)
