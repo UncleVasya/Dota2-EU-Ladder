@@ -311,6 +311,7 @@ tbody tr {
 .table>thead>tr>td,
 .table>thead>tr>th {
     line-height: 15px;
+    height: 25px;
     padding: 5px 4px;
     vertical-align: middle;
 }

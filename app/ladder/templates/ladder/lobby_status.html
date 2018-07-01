@@ -5,7 +5,7 @@
 {% endblock page_scripts %}
 
 {% block page_styles %}
-    <link rel="stylesheet" href="{% static 'ladder/css/lobby.css' %}">
+    <link rel="stylesheet" href="{% static 'ladder/css/lobby_status.css' %}">
 {% endblock page_styles %}
 
 {% block content %}
@@ -18,16 +18,23 @@
             </h1>
         </div>
     </div>
+
+    <div class="page-overview-secondary">
+            <dl>
+                <dd>{{ lobbies_ready }}</dd>
+                <dt> Ready </dt>
+            </dl>
+            <dl>
+                <dd>{{ lobbies_game }}</dd>
+                <dt> In game </dt>
+            </dl>
+    </div>
 </div>
 
 {% for lobby in lobbies %}
-    <h3>{{ lobby.game_name }}</h3>
-    <br><br> State: {{ lobby.state }}
-    <br><br> Members:
-    {% for member in lobby.members %}
-        &nbsp;{{ member.name }},
-    {% endfor %}
-    <br><br>
+    <div class="col-md-6">
+        {% include 'ladder/lobby_status_table.html' %}
+    </div>
 {% endfor %}
 
 {% endblock content %}

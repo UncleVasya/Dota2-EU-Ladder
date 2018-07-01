@@ -1,0 +1,53 @@
+<section>
+    <header>
+        {{ lobby.game_name }}
+        <div>
+            <small class="left">
+                {% if lobby.state == 'ready' %}
+                    <span class="ready"> Ready </span>
+                {% else %}
+                     <span class="game"> In game </span>
+                {% endif %}
+            </small>
+            <small class="right">
+                Average MMR: <span class="average-mmr"> {{ lobby.average_mmr|default:0 }} </span>
+            </small>
+        </div>
+    </header>
+<article>
+    <div class="row">
+    {% for team in lobby.teams %}
+        <div class="col-xs-6">
+            <div class="table-responsive table-borderless">
+                <table class="table table-borderless">
+                    <tbody>
+                    {% for player in team %}
+                        {% url 'ladder:player-overview' player.name|slugify as player_url %}
+
+                        <tr data-link="{{ player_url }}">
+                            <td class="col-xs-8">
+                                <a class='link-white' href="{{ player_url }}"> {{ player.name }} </a>
+                            </td>
+                            <td class="col-xs-1">
+                                <span data-toggle="tooltip" data-mmr="{{ player.ladder_mmr }}">
+                                    {{ player.dota_mmr }}
+                                </span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+    <div class="unassigned">
+        <small>
+            <span> Others: </span>
+            {% for member in lobby.unassigned %}
+                <span> {{ member.name }} {% if not forloop.last %}, {% endif %} </span>
+            {% endfor %}
+        </small>
+    </div>
+</article>
+</section>

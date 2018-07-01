@@ -44,17 +44,21 @@
                             {% url 'ladder:player-list-score' as url %}
                             <a href="{{ url }}"> Leaderboards </a></li>
 
-                        <li class="{% if 'balancer' in url_name %}active{% endif %}">
-                            {% url 'balancer:balancer-input' as url %}
-                            <a href="{{ url }}"> Team balancer </a></li>
-
                         <li class="{% if 'match' in url_name %}active{% endif %}">
                             {% url 'ladder:match-list' as url %}
                             <a href="{{ url }}"> Match history </a></li>
 
+                        <li class="{% if url_name == 'lobby-status' %}active{% endif %}">
+                            {% url 'ladder:lobby-status' as url %}
+                            <a href="{{ url }}"> Lobby status </a></li>
+
                         <li class="{% if url_name == 'stats' %}active{% endif %}">
                             {% url 'ladder:stats' as url %}
                             <a href="{{ url }}"> Ladder stats </a></li>
+
+                        <li class="{% if 'balancer' in url_name %}active{% endif %}">
+                            {% url 'balancer:balancer-input' as url %}
+                            <a href="{{ url }}"> Team balancer </a></li>
                     </ul>
                 </nav>
                 {% endwith %}
