@@ -985,6 +985,10 @@ class Command(BaseCommand):
 
     @staticmethod
     def cache_lobby_status(bot):
+        def cache_member(member):
+            return {'dota_id': SteamID(member.id).as_32,
+                    'name': member.name}
+
         lobby = bot.lobby
 
         # filter out bot account
@@ -995,16 +999,10 @@ class Command(BaseCommand):
         # 2 teams with 5 slots each, None for empty slot
         teams = [[None]*5 for _ in xrange(2)]
         for player in players:
-            teams[player.team][player.slot-1] = {
-                'dota_id': SteamID(player.id).as_32,
-                'name': player.name,
-            }
+            teams[player.team][player.slot-1] = cache_member(player)
 
-        unassigned = [{
-            'dota_id': SteamID(player.id).as_32,
-            'name': player.name,
-        } for player in members
-            if player.team not in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)]
+        unassigned = [cache_member(member) for member in members
+                      if member.team not in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)]
 
         lobby = {
             'game_name': lobby.game_name,
