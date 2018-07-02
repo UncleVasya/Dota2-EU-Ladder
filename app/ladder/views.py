@@ -2,6 +2,7 @@ from collections import defaultdict
 from decimal import Decimal
 from datetime import timedelta
 from django.core.cache import cache
+import itertools
 from app.ladder.models import Player, MatchPlayer, Match, LadderSettings
 from dal import autocomplete
 from django.db.models import Max, Count, Prefetch, Case, When, F, ExpressionWrapper, FloatField, Avg
@@ -366,22 +367,25 @@ class LobbyStatus(TemplateView):
         if bots:
             lobbies = [cache.get(bot) for bot in bots]
 
+        # list of all members in all lobbies
+        members = itertools.chain(*[lobby['members'] for lobby in lobbies])
+        members = Player.objects.filter(dota_id__in=members)
+
         # get players info from db
-        # TODO: get a simple list of dota_id from bot, then filter in 1 query and work with result
-        # TODO: this will also help with getting avg MMR (2nd query)
         for lobby in lobbies:
             players_num = total_mmr = 0
             for team in lobby['teams']:
                 for slot, player in enumerate(team):
                     print 'slot: %s   player: %s' % (slot, player)
                     try:
-                        team[slot] = Player.objects.get(dota_id=player['dota_id'])
+                        player = next(p for p in members if p.dota_id == str(player['dota_id']))
+                        team[slot] = player
                         players_num += 1
-                        total_mmr += team[slot].dota_mmr
-                    except (TypeError, Player.DoesNotExist):
+                        total_mmr += player.dota_mmr
+                    except (TypeError, StopIteration):
                         # empty slot or unregistered player, it's fine
                         pass
-            if players_num:
+            if players_num > 0:
                 lobby['average_mmr'] = total_mmr / players_num
 
         context.update({

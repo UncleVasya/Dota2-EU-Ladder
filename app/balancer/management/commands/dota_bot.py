@@ -1008,6 +1008,7 @@ class Command(BaseCommand):
             'game_name': lobby.game_name,
             'state': 'ready' if int(lobby.state) == LobbyState.UI else 'game',
             'game_started': '',
+            'members': [SteamID(member.id).as_32 for member in members],
             'teams': teams,
             'unassigned': unassigned,
             'lobby_str': str(lobby)
