@@ -22,15 +22,22 @@
                 <table class="table table-borderless">
                     <tbody>
                     {% for player in team %}
-                        {% url 'ladder:player-overview' player.name|slugify as player_url %}
+                        {% if player.dota_mmr %}  {# only if player registered #}
+                            {% url 'ladder:player-overview' player.name|slugify as player_url %}
+                        {% endif %}
 
-                        <tr data-link="{{ player_url }}">
-                            <td class="col-xs-8">
+                        <tr class="{% if player and not player.dota_mmr %} unregistered {% endif %}"
+                            data-link="{{ player_url }}">
+                            <td class="col-xs-6">
                                 <a class='link-white' href="{{ player_url }}"> {{ player.name }} </a>
                             </td>
-                            <td class="col-xs-1">
-                                <span data-toggle="tooltip" data-mmr="{{ player.ladder_mmr }}">
-                                    {{ player.dota_mmr }}
+                            <td class="col-xs-5">
+                                <span class="mmr">
+                                    {% if player.dota_mmr %}
+                                        {{ player.dota_mmr }}
+                                    {% elif player %}
+                                        Not registered
+                                    {% endif %}
                                 </span>
                             </td>
                         </tr>

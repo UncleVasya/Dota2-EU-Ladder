@@ -43,3 +43,8 @@ section header .right {
 .game {
     color: #39CCCC;
 }
+
+.unregistered a,
+.unregistered span {
+    color: #FBB829 !important;
+}
