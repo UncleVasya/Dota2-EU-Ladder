@@ -40,6 +40,27 @@ section header .right {
     color: white;
 }
 
+.mmr-weak {
+    /*color: #C23C2A;*/
+}
+
+.mmr-strong {
+   /*color: #39CCCC;*/
+}
+
+.mmr-img {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    width: 25px;
+    height: 25px;
+}
+
+.mmr-img-placeholder {
+    display: inline-block;
+    margin-right: 22px;
+}
+
 .game {
     color: #39CCCC;
     margin-right: 5px;
@@ -55,3 +76,8 @@ section header .right {
 .unregistered span {
     color: #FBB829 !important;
 }
+
+span.mmr {
+    float: right;
+}
+

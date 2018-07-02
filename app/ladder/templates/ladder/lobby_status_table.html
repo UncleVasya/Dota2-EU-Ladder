@@ -1,3 +1,5 @@
+{% load staticfiles %}
+
 <section>
     <header>
         {{ lobby.game_name }}
@@ -14,7 +16,23 @@
                 {% endif %}
             </small>
             <small class="right">
-                Average MMR: <span class="average-mmr"> {{ lobby.average_mmr|default:0 }} </span>
+                <span> Average MMR: </span>
+                <span class="average-mmr
+                    {% if  lobby.average_mmr and lobby.average_mmr < 4750 %}
+                        mmr-weak
+                    {% elif lobby.average_mmr > 5250 %}
+                        mmr-strong
+                    {% endif %}
+                ">
+                    {{ lobby.average_mmr|default:0 }}
+                </span>
+                {% if  lobby.average_mmr and lobby.average_mmr < 4750 %}
+                    <img class="mmr-img" src="{% static 'img/DansGame.png' %}">
+                    <span class="mmr-img-placeholder"></span>
+                {% elif lobby.average_mmr > 5250 %}
+                    <img class="mmr-img" src="{% static 'img/BlessRNG.png' %}">
+                    <span class="mmr-img-placeholder"></span>
+                {% endif %}
             </small>
         </div>
     </header>
