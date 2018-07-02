@@ -5,6 +5,9 @@
             <small class="left">
                 {% if lobby.state == 'ready' %}
                     <span class="ready"> Ready </span>
+                    {% if lobby.free_slots < 6 %}
+                        <span class="free_slots"> +{{ lobby.free_slots }}</span>
+                    {% endif %}
                 {% else %}
                      <span class="game"> In game </span>
                 {% endif %}

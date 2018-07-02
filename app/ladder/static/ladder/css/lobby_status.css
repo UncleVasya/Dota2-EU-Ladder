@@ -44,6 +44,12 @@ section header .right {
     color: #39CCCC;
 }
 
+.free_slots {
+    color: #39CCCC;
+    font-weight: bold;
+    margin-left: 5px
+}
+
 .unregistered a,
 .unregistered span {
     color: #FBB829 !important;

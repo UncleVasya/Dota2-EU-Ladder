@@ -385,6 +385,7 @@ class LobbyStatus(TemplateView):
                     except (TypeError, StopIteration):
                         # empty slot or unregistered player, it's fine
                         pass
+            lobby['free_slots'] = 10 - players_num
             if players_num > 0:
                 lobby['average_mmr'] = total_mmr / players_num
 
