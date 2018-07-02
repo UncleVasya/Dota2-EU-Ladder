@@ -11,13 +11,13 @@ var main = function() {
         }
     });
 
-    $('[data-toggle="tooltip"]').tooltip()
+    $('[data-toggle="tooltip"]').tooltip();
 
     // mmr correlation tooltips
     $('[data-mmr]').each(function(index) {
         var mmr = $(this).data('mmr');
         $(this).prop('title', 'Correlation: ' + Math.round(ladderToDotaMMR(mmr)) + ' MMR');
-    })
+    });
 };
 
 function ladderToDotaMMR(mmr) {

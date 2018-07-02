@@ -47,8 +47,7 @@
                             <time class="timeago"
                                   datetime="{{ last_played.match.date|date:'c' }}"
                                   title="{{ last_played.match.date }}">
-                                {{ last_played.match.date|date:'c'|default:'-' }}
-                            {{ last_played.match.date }}
+                                {{ last_played.match.date|default:'-' }}
                             </time>
                         {% endwith %}
                     </div>

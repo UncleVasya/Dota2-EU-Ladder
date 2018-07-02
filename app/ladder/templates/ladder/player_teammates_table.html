@@ -34,8 +34,7 @@
                             <time class="timeago"
                                   datetime="{{ teammate.last_played|date:'c' }}"
                                   title="{{ teammate.last_played }}">
-                                {{ teammate.last_played|date:'c'|default:'-' }}
-                            {{ teammate.last_played }}
+                                {{ teammate.last_played|default:'-' }}
                             </time>
                         </div>
                 </td>
