@@ -5,6 +5,7 @@ from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from app.balancer.managers import BalanceResultManager, BalanceAnswerManager
 from app.ladder.managers import MatchManager, PlayerManager
+from django.utils.datetime_safe import datetime
 from enum import IntEnum
 import gevent
 from app.ladder.models import Player, LadderSettings
@@ -90,6 +91,7 @@ class Command(BaseCommand):
         dota.lobby_options = {}
         dota.voice_required = False
         dota.staff_mode = False
+        dota.game_start_time = None
         dota.server = 'EU'
         dota.players = {}  # TODO: this isn't used atm, make use of it
 
@@ -163,6 +165,7 @@ class Command(BaseCommand):
 
             if int(lobby.state) == LobbyState.POSTGAME:
                 # game ended, process result and create new lobby
+                dota.game_start_time = None
                 self.process_game_result(dota)
                 self.create_new_lobby(dota)
 
@@ -356,7 +359,7 @@ class Command(BaseCommand):
             return
 
         bot.channels.lobby.send('Ready to start')
-        bot.launch_practice_lobby()
+        Command.start_game(bot)
 
     @staticmethod
     def mmr_command(bot, msg):
@@ -483,7 +486,7 @@ class Command(BaseCommand):
     @staticmethod
     def forcestart_command(bot, msg):
             Command.balance_answer = None
-            bot.launch_practice_lobby()
+            Command.start_game(bot)
 
     @staticmethod
     def mode_command(bot, msg):
@@ -1007,10 +1010,15 @@ class Command(BaseCommand):
         lobby = {
             'game_name': lobby.game_name,
             'state': 'ready' if int(lobby.state) == LobbyState.UI else 'game',
-            'game_started': '',
+            'game_start_time': bot.game_start_time,
             'members': [SteamID(member.id).as_32 for member in members],
             'teams': teams,
             'unassigned': unassigned,
             'lobby_str': str(lobby)
         }
         cache.set(bot.steam.username, lobby)
+
+    @staticmethod
+    def start_game(bot):
+        bot.game_start_time = datetime.now()
+        bot.launch_practice_lobby()

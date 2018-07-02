@@ -9,7 +9,8 @@
                         <span class="free_slots"> +{{ lobby.free_slots }}</span>
                     {% endif %}
                 {% else %}
-                     <span class="game"> In game </span>
+                    <span class="game"> In game </span>
+                    <span> {{ lobby.game_duration_mins }} min </span>
                 {% endif %}
             </small>
             <small class="right">
