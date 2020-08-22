@@ -4,8 +4,8 @@ from django.core.management.base import BaseCommand
 import gevent
 import dota2
 import os
-from steam import SteamClient
-from dota2 import Dota2Client
+from steam.client import SteamClient
+from dota2.client import Dota2Client
 from dota2.enums import DOTAChatChannelType_t, DOTA_GC_TEAM
 
 
