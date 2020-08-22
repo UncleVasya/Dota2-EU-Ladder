@@ -76,10 +76,10 @@ class MatchManager(models.Manager):
         underdog_bonus = abs(mmr_diff) / 10  # 1 point for each 10 avg. mmr diff
         underdog_bonus = min(1, underdog_bonus)  # but no more than 1
 
-        print 'mmr diff: %d' % mmr_diff
-        print 'underdog: %d' % underdog
-        print 'underdog bonus: %d' % underdog_bonus
-        print ''
+        print('mmr diff: %d' % mmr_diff)
+        print('underdog: %d' % underdog)
+        print('underdog bonus: %d' % underdog_bonus)
+        print('')
 
         for matchPlayer in match.matchplayer_set.all():
             is_victory = 1 if matchPlayer.team == match.winner else -1

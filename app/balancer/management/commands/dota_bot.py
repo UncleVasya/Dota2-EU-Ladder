@@ -68,7 +68,7 @@ class Command(BaseCommand):
             {
                 'login': '%s%d' % (bot_login, i),
                 'password': '%s%d' % (bot_password, i),
-            } for i in xrange(first_bot, first_bot + bots_num)
+            } for i in range(first_bot, first_bot + bots_num)
         ]
         cache.set('bots', [c['login'] for c in credentials])
 
@@ -107,14 +107,14 @@ class Command(BaseCommand):
         # TODO: don't try to relogin if we disconnected by KeyboardInterrupt
         @client.on('disconnected')
         def handle_disconnect():
-            print 'Disconnected: %s' % credentials['login']
+            print('Disconnected: %s' % credentials['login'])
 
             delay = 30
             if client.relogin_available:
-                print 'Reconnecting...'
+                print('Reconnecting...')
                 client.reconnect(maxdelay=delay)
             else:
-                print 'Trying to login again in %d sec...' % delay
+                print('Trying to login again in %d sec...' % delay)
                 gevent.sleep(delay)
 
                 client.login(credentials['login'], credentials['password'])
@@ -131,7 +131,7 @@ class Command(BaseCommand):
 
         @dota.on('ready')
         def dota_started():
-            print 'Logged in: %s %s' % (dota.steam.username, dota.account_id)
+            print('Logged in: %s %s' % (dota.steam.username, dota.account_id))
 
             # every second lobby is for high mmr players
             if self.bots.index(dota) % 2 == 0:
@@ -143,7 +143,7 @@ class Command(BaseCommand):
 
         @dota.on(dota2.features.Lobby.EVENT_LOBBY_NEW)
         def lobby_new(lobby):
-            print '%s joined lobby %s' % (dota.steam.username, lobby.lobby_id)
+            print('%s joined lobby %s' % (dota.steam.username, lobby.lobby_id))
 
             dota.join_practice_lobby_team()  # jump to unassigned players
             dota.channels.join_lobby_channel()
@@ -173,7 +173,7 @@ class Command(BaseCommand):
 
         @dota.channels.on(dota2.features.chat.ChannelManager.EVENT_JOINED_CHANNEL)
         def chat_joined(channel):
-            print '%s joined chat channel %s' % (dota.steam.username, channel.name)
+            print('%s joined chat channel %s' % (dota.steam.username, channel.name))
 
         @dota.channels.on(dota2.features.chat.ChannelManager.EVENT_MESSAGE)
         def chat_message(channel, msg_obj):
@@ -191,7 +191,7 @@ class Command(BaseCommand):
 
     @staticmethod
     def create_new_lobby(bot):
-        print 'Making new lobby\n'
+        print('Making new lobby\n')
 
         bot.balance_answer = None
         bot.staff_mode = False
@@ -289,8 +289,8 @@ class Command(BaseCommand):
     @staticmethod
     def balance_command(bot, msg):
         command = msg.text
-        print
-        print 'Balancing players'
+        print()
+        print('Balancing players')
 
         # check if this is reset command
         try:
@@ -323,7 +323,7 @@ class Command(BaseCommand):
                                    ', '.join(unregistered))
             return
 
-        print players
+        print(players)
 
         players = [(p.name, p.ladder_mmr) for p in players.values()]
         result = BalanceResultManager.balance_teams(players)
@@ -364,9 +364,9 @@ class Command(BaseCommand):
     @staticmethod
     def mmr_command(bot, msg):
         command = msg.text
-        print
-        print 'Setting lobby MMR: '
-        print command
+        print()
+        print('Setting lobby MMR: ')
+        print(command)
 
         try:
             min_mmr = int(command.split(' ')[1])
@@ -380,9 +380,9 @@ class Command(BaseCommand):
     @staticmethod
     def voice_command(bot, msg):
         command = msg.text
-        print
-        print 'Voice command: '
-        print command
+        print()
+        print('Voice command: ')
+        print(command)
 
         bot.voice_required = True
         try:
@@ -402,9 +402,9 @@ class Command(BaseCommand):
     @staticmethod
     def teamkick_command(bot, msg):
         command = msg.text
-        print
-        print 'Teamkick command'
-        print command
+        print()
+        print('Teamkick command')
+        print(command)
 
         try:
             name = command.split(None, 1)[1].lower()
@@ -415,7 +415,7 @@ class Command(BaseCommand):
             if player.team not in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS):
                 continue
             if player.name.lower().startswith(name):
-                print 'kicking %s' % player.name
+                print('kicking %s' % player.name)
                 bot.practice_lobby_kick_from_team(SteamID(player.id).as_32)
 
     @staticmethod
@@ -430,9 +430,9 @@ class Command(BaseCommand):
                         - disable auto-kick: !lobbykick off DOTA_ID
         """
         command = msg.text
-        print
-        print 'Lobbykick command'
-        print command
+        print()
+        print('Lobbykick command')
+        print(command)
 
         try:
             dota_id = int(command.split()[-1])
@@ -491,9 +491,9 @@ class Command(BaseCommand):
     @staticmethod
     def mode_command(bot, msg):
         command = msg.text
-        print
-        print 'Mode command'
-        print command
+        print()
+        print('Mode command')
+        print(command)
 
         try:
             mode = command.split(' ')[1].upper()
@@ -508,9 +508,9 @@ class Command(BaseCommand):
     @staticmethod
     def server_command(bot, msg):
         command = msg.text
-        print
-        print 'Server command'
-        print command
+        print()
+        print('Server command')
+        print(command)
 
         try:
             server = command.split(' ')[1].upper()
@@ -526,9 +526,9 @@ class Command(BaseCommand):
     @staticmethod
     def staff_command(bot, msg):
         command = msg.text
-        print
-        print 'Staff command: '
-        print command
+        print()
+        print('Staff command: ')
+        print(command)
 
         bot.staff_mode = True
         try:
@@ -542,9 +542,9 @@ class Command(BaseCommand):
     @staticmethod
     def whois_command(bot, msg):
         command = msg.text
-        print
-        print 'Whois command:'
-        print command
+        print()
+        print('Whois command:')
+        print(command)
 
         try:
             name = command.split(None, 1)[1].lower()
@@ -579,7 +579,7 @@ class Command(BaseCommand):
 
     @staticmethod
     def teams_command(bot, msg):
-        print 'Teams command'
+        print('Teams command')
 
         if not bot.balance_answer:
             bot.channels.lobby.send('Please balance teams first.')
@@ -608,8 +608,8 @@ class Command(BaseCommand):
     @staticmethod
     def swap_command(bot, msg):
         command = msg.text
-        print 'Swap command:'
-        print command
+        print('Swap command:')
+        print(command)
 
         if not bot.balance_answer:
             bot.channels.lobby.send('Please balance teams first.')
@@ -645,7 +645,7 @@ class Command(BaseCommand):
     # TODO: between this func, balance_command() and check_teams()
     @staticmethod
     def custom_command(bot, msg):
-        print '!custom command'
+        print('!custom command')
 
         # convert steam64 into 32bit dota id and build a dic of {id: player}
         players_steam = {
@@ -670,9 +670,9 @@ class Command(BaseCommand):
             return
 
         # create balance record for these players
-        radiant = [(p.name, p.ladder_mmr) for key, p in players.iteritems()
+        radiant = [(p.name, p.ladder_mmr) for key, p in players.items()
                    if players_steam[int(key)].team == DOTA_GC_TEAM.GOOD_GUYS]
-        dire = [(p.name, p.ladder_mmr) for key, p in players.iteritems()
+        dire = [(p.name, p.ladder_mmr) for key, p in players.items()
                 if players_steam[int(key)].team == DOTA_GC_TEAM.BAD_GUYS]
 
         bot.balance_answer = BalanceAnswerManager.balance_custom([radiant, dire])
@@ -688,9 +688,9 @@ class Command(BaseCommand):
     @staticmethod
     def ban_command(bot, msg):
         command = msg.text
-        print
-        print 'Ban command:'
-        print command
+        print()
+        print('Ban command:')
+        print(command)
 
         try:
             name = command.split(None, 1)[1]
@@ -707,8 +707,8 @@ class Command(BaseCommand):
 
     @staticmethod
     def new_command(bot, msg):
-        print
-        print '!new command'
+        print()
+        print('!new command')
 
         bot.channels.lobby.send('Creating new lobby.')
         bot.leave_practice_lobby()
@@ -724,9 +724,9 @@ class Command(BaseCommand):
     @staticmethod
     def register_command(bot, msg):
         command = msg.text
-        print
-        print '!register command'
-        print command
+        print()
+        print('!register command')
+        print(command)
 
         min_allowed_mmr = 1000
         max_allowed_mmr = 7000
@@ -768,25 +768,25 @@ class Command(BaseCommand):
 
     @staticmethod
     def process_game_result(bot):
-        print 'Game is finished!\n'
-        print bot.lobby
+        print('Game is finished!\n')
+        print(bot.lobby)
 
         if not bot.balance_answer:
-            print 'No balance exists (probably !forcestart)'
+            print('No balance exists (probably !forcestart)')
             return
 
         # TODO: write smth like "record_balance(answer, 0 if RadVictory else 1, match_id)"
         if bot.lobby.match_outcome == EMatchOutcome.RadVictory:
-            print 'Radiant won!'
+            print('Radiant won!')
             MatchManager.record_balance(bot.balance_answer, 0, bot.lobby.match_id)
         elif bot.lobby.match_outcome == EMatchOutcome.DireVictory:
-            print 'Dire won!'
+            print('Dire won!')
             MatchManager.record_balance(bot.balance_answer, 1, bot.lobby.match_id)
 
     # checks if teams are setup according to balance
     @staticmethod
     def check_teams_setup(bot):
-        print 'Checking teams setup\n'
+        print('Checking teams setup\n')
 
         # get teams from game (player ids)
         # TODO: make function game_members_to_ids(lobby)
@@ -796,8 +796,8 @@ class Command(BaseCommand):
                 player_id = str(SteamID(player.id).as_32)  # TODO: models.Player.dota_id should be int, not str
                 game_teams[player.team].add(player_id)
 
-        print 'Game teams:'
-        print game_teams
+        print('Game teams:')
+        print(game_teams)
 
         # get teams from balance result (player ids)
         # TODO: make function balance_teams_to_ids(balance_answer)
@@ -807,26 +807,26 @@ class Command(BaseCommand):
             for team in bot.balance_answer.teams
         ]
 
-        print 'Balancer teams:'
-        print balancer_teams
+        print('Balancer teams:')
+        print(balancer_teams)
 
         # compare teams from game to teams from balancer
         if game_teams == balancer_teams:
-            print 'Teams are correct'
+            print('Teams are correct')
             return True
         elif game_teams == list(reversed(balancer_teams)):
-            print 'Teams are correct (reversed)'
+            print('Teams are correct (reversed)')
 
             # reverse teams in balance answer
             bot.balance_answer.teams = list(reversed(bot.balance_answer.teams))
             bot.balance_answer.save()
 
-            print 'Corrected balance result:'
-            print bot.balance_answer.teams
+            print('Corrected balance result:')
+            print(bot.balance_answer.teams)
 
             return True
 
-        print 'Teams don\'t match'
+        print('Teams don\'t match')
 
         # kick people from wrong slots
         for i, team in enumerate(game_teams):
@@ -861,7 +861,7 @@ class Command(BaseCommand):
             voice_issues=True
         ).values_list('dota_id', flat=True)
 
-        print 'Problematic: %s' % problematic
+        print('Problematic: %s' % problematic)
 
         for player in problematic:
             bot.practice_lobby_kick_from_team(int(player))
@@ -873,7 +873,7 @@ class Command(BaseCommand):
             if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)
         }
         players = Player.objects.filter(
-            dota_id__in=players_steam.keys()
+            dota_id__in=list(players_steam.keys())
         ).values_list('dota_id', flat=True)
 
         if bot.min_mmr > 1000:
@@ -882,7 +882,7 @@ class Command(BaseCommand):
         else:
             # this is ladder mmr
             problematic = players.filter(ladder_mmr__lt=bot.min_mmr)
-        print 'Problematic: %s' % problematic
+        print('Problematic: %s' % problematic)
 
         for player in problematic:
             bot.practice_lobby_kick_from_team(int(player))
@@ -897,8 +897,8 @@ class Command(BaseCommand):
 
         bot.players = current_players
 
-        print 'Old players: %s' % old_players
-        print 'Current players: %s' % current_players
+        print('Old players: %s' % old_players)
+        print('Current players: %s' % current_players)
 
         if not old_players or not current_players:
             return
@@ -909,20 +909,20 @@ class Command(BaseCommand):
             dota_id__in=joined_players
         ).prefetch_related('blacklist', 'blacklisted_by')
 
-        print 'New guys: %s' % players
+        print('New guys: %s' % players)
 
         for p in players:
-            print 'Player: %s' % p
-            print 'Blacklist: %s' % p.blacklist.all()
-            print 'Blacklisted by: %s' % p.blacklisted_by.all()
+            print('Player: %s' % p)
+            print('Blacklist: %s' % p.blacklist.all())
+            print('Blacklisted by: %s' % p.blacklisted_by.all())
 
             blacklist = list(p.blacklist.all()) + list(p.blacklisted_by.all())
             blacklist = [int(b.dota_id) for b in blacklist]
             blacklist = set(blacklist)
 
-            print 'Set: %s' % blacklist
+            print('Set: %s' % blacklist)
             collision = blacklist.intersection(set(old_players.keys()))
-            print 'Collision: %s' % collision
+            print('Collision: %s' % collision)
 
             if not collision:
                 continue  # this guy can play
@@ -1000,7 +1000,7 @@ class Command(BaseCommand):
         players = [player for player in members
                    if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)]
         # 2 teams with 5 slots each, None for empty slot
-        teams = [[None]*5 for _ in xrange(2)]
+        teams = [[None]*5 for _ in range(2)]
         for player in players:
             teams[player.team][player.slot-1] = cache_member(player)
 

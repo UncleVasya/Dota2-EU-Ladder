@@ -5,4 +5,4 @@ class LadderConfig(AppConfig):
     name = 'app.ladder'
 
     def ready(self):
-        import signals
+        from . import signals

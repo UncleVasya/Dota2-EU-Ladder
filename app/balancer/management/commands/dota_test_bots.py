@@ -41,7 +41,7 @@ class Command(BaseCommand):
             {
                 'login': '%s%d' % (bot_login, i),
                 'password': '%s%d' % (bot_password, i),
-            } for i in xrange(first_bot, first_bot + bots_num)
+            } for i in range(first_bot, first_bot + bots_num)
         ]
 
         try:
@@ -69,10 +69,10 @@ class Command(BaseCommand):
         # TODO: don't try to relogin if we disconnected by KeyboardInterrupt
         @client.on('disconnected')
         def handle_disconnect():
-            print 'Disconnected: %s' % credentials['login']
+            print('Disconnected: %s' % credentials['login'])
 
             delay = 30
-            print 'Trying to login again in %d sec...' % delay
+            print('Trying to login again in %d sec...' % delay)
             gevent.sleep(delay)
 
             client.login(credentials['login'], credentials['password'])
@@ -80,7 +80,7 @@ class Command(BaseCommand):
 
         @dota.on('ready')
         def dota_started():
-            print 'Logged in: %s %s' % (dota.steam.username, dota.account_id)
+            print('Logged in: %s %s' % (dota.steam.username, dota.account_id))
 
             # register this bot as a player in db
             player, created = Player.objects.get_or_create(
@@ -89,8 +89,8 @@ class Command(BaseCommand):
                     'name': dota.steam.username,
                     'dota_mmr': random.randrange(3000, 6000, 500)}
             )
-            print 'Bot %s (%d MMR, %s), was already in DB: %s' % (
-                  player.name, player.dota_mmr, player.dota_id, not created)
+            print('Bot %s (%d MMR, %s), was already in DB: %s' % (
+                  player.name, player.dota_mmr, player.dota_id, not created))
 
             # if lobby is hung up from previous session, leave it
             dota.leave_practice_lobby()
@@ -98,7 +98,7 @@ class Command(BaseCommand):
 
         @dota.on(dota2.features.Lobby.EVENT_LOBBY_NEW)
         def lobby_new(lobby):
-            print '%s joined lobby %s' % (dota.steam.username, lobby.lobby_id)
+            print('%s joined lobby %s' % (dota.steam.username, lobby.lobby_id))
 
             ind = self.bots.index(dota)
 
@@ -121,8 +121,8 @@ class Command(BaseCommand):
             ]
 
             if len(players) == 0 and self.balance_team1:
-                print
-                print 'All bots jumped to unassigned'
+                print()
+                print('All bots jumped to unassigned')
                 self.join_balance_slots()
 
         @dota.channels.on(dota2.features.chat.ChannelManager.EVENT_MESSAGE)
@@ -139,18 +139,18 @@ class Command(BaseCommand):
         client.run_forever()
 
     def balance_ready(self, team1_text):
-        print
-        print 'Balance is ready'
+        print()
+        print('Balance is ready')
 
         self.balance_team1 = team1_text.split(': ')[1].split(' | ')
 
-        print 'Telling bots to free slots'
+        print('Telling bots to free slots')
         for bot in self.bots:
             bot.join_practice_lobby_team()
 
     def join_balance_slots(self):
-        print
-        print 'Joining balanced slots'
+        print()
+        print('Joining balanced slots')
 
         players_joined = [0, 0]
         for bot in self.bots:

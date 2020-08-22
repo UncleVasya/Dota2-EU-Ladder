@@ -143,7 +143,7 @@ class Command(BaseCommand):
         Player.objects.all().delete()
 
         for i, player in enumerate(PLAYERS):
-            print 'Processing player: %d / %d' % (i, len(PLAYERS))
+            print('Processing player: %d / %d' % (i, len(PLAYERS)))
 
             Player(
                 name=player[0],

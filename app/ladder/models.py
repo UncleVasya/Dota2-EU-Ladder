@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+
 
 from django.db import models
 from app.balancer.models import BalanceAnswer
@@ -42,7 +42,7 @@ class Player(models.Model):
         ordering = ['rank_ladder_mmr']
 
     def __unicode__(self):
-        return u'%s' % self.name
+        return '%s' % self.name
 
     def save(self, *args, **kwargs):
         # TODO: Move this to clean_fields() later

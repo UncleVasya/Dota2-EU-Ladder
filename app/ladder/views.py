@@ -232,7 +232,7 @@ class PlayerDetail(DetailView):
         if teammates:
             matches_max = max(t['match_count'] for t in teammates.values())
 
-        for name, teammate in teammates.iteritems():
+        for name, teammate in teammates.items():
             teammate['name'] = name
             teammate['winrate'] = float(teammate['wins']) / teammate['match_count'] * 100
             teammate['matches_percent'] = float(teammate['match_count']) / matches_max * 100
@@ -376,7 +376,7 @@ class LobbyStatus(TemplateView):
             players_num = total_mmr = 0
             for team in lobby['teams']:
                 for slot, player in enumerate(team):
-                    print 'slot: %s   player: %s' % (slot, player)
+                    print('slot: %s   player: %s' % (slot, player))
                     try:
                         player = next(p for p in members if p.dota_id == str(player['dota_id']))
                         team[slot] = player

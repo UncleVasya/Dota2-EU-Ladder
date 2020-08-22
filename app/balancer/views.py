@@ -33,8 +33,8 @@ class BalancerInputCustom(FormView):
     template_name = 'balancer/balancer-input-custom.html'
 
     def form_valid(self, form):
-        players = [form.cleaned_data['player_%s' % i] for i in xrange(1, 11)]
-        mmrs = [form.cleaned_data['MMR_%s' % i] for i in xrange(1, 11)]
+        players = [form.cleaned_data['player_%s' % i] for i in range(1, 11)]
+        mmrs = [form.cleaned_data['MMR_%s' % i] for i in range(1, 11)]
 
         self.result = BalanceResultManager.balance_teams(zip(players, mmrs))
 
