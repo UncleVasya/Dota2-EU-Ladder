@@ -41,7 +41,7 @@ class Command(BaseCommand):
             {
                 'login': '%s%d' % (bot_login, i),
                 'password': '%s%d' % (bot_password, i),
-            } for i in range(first_bot, first_bot + bots_num)
+            } for i in range(first_bot, first_bot + bots_num + 1)
         ]
 
         try:
