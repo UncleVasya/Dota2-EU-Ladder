@@ -106,7 +106,7 @@ class Command(BaseCommand):
                 # let first bot listen to lobby chat
                 dota.channels.join_lobby_channel()
 
-            team = ind / 5
+            team = ind // 5
             slot = ind % 5 + 1
             dota.join_practice_lobby_team(slot, team)
 

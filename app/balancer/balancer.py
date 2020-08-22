@@ -28,7 +28,7 @@ def balance_teams(players, mmr_exponent=3):
     :return: a list of team pairs with some meta data
     """
 
-    team_players = len(players) / 2
+    team_players = len(players) // 2
 
     # sort players by mmr
     players.sort(key=lambda x: -x[1])
@@ -44,14 +44,14 @@ def balance_teams(players, mmr_exponent=3):
     teams = [
         {
             'players': team,
-            'mmr': sum(player[1] for player in team) / team_players,
-            'mmr_exp': sum(player[1] ** mmr_exponent for player in team) / team_players
+            'mmr': sum(player[1] for player in team) // team_players,
+            'mmr_exp': sum(player[1] ** mmr_exponent for player in team) // team_players
         }
         for team in teams
     ]
 
     # combine teams into pairs against each other
-    half = len(teams) / 2
+    half = len(teams) // 2
     answers = zip(teams[:half], list(reversed(teams[half:])))
 
     # discard answers that place top 2 or lowest 2 players in the same team
@@ -111,8 +111,8 @@ def balance_from_teams(teams, mmr_exponent=3):
     teams = [
         {
             'players': team,
-            'mmr': sum(player[1] for player in team) / len(team),
-            'mmr_exp': sum(player[1] ** mmr_exponent for player in team) / len(team)
+            'mmr': sum(player[1] for player in team) // len(team),
+            'mmr_exp': sum(player[1] ** mmr_exponent for player in team) // len(team)
         }
         for team in teams
     ]

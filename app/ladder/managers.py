@@ -56,12 +56,12 @@ class PlayerManager(models.Manager):
     @staticmethod
     def dota_to_ladder_mmr(mmr):
         avg_mmr = 4000
-        return 200 - 30 * (avg_mmr - mmr) / 1000
+        return 200 - 30 * (avg_mmr - mmr) // 1000
 
     @staticmethod
     def ladder_to_dota_mmr(mmr):
         avg_mmr = 4000
-        return avg_mmr - (200 - mmr) * 1000 / 30
+        return avg_mmr - (200 - mmr) * 1000 // 30
 
 
 class MatchManager(models.Manager):
@@ -73,7 +73,7 @@ class MatchManager(models.Manager):
         # TODO: make values like win/loss change and underdog bonus changeble in admin panel
         mmr_diff = match.balance.teams[0]['mmr'] - match.balance.teams[1]['mmr']
         underdog = 0 if mmr_diff <= 0 else 1
-        underdog_bonus = abs(mmr_diff) / 10  # 1 point for each 10 avg. mmr diff
+        underdog_bonus = abs(mmr_diff) // 10  # 1 point for each 10 avg. mmr diff
         underdog_bonus = min(1, underdog_bonus)  # but no more than 1
 
         print('mmr diff: %d' % mmr_diff)

@@ -387,12 +387,12 @@ class LobbyStatus(TemplateView):
                         pass
             lobby['free_slots'] = 10 - players_num
             if players_num > 0:
-                lobby['average_mmr'] = total_mmr / players_num
+                lobby['average_mmr'] = total_mmr // players_num
 
         # calc duration for started games
         for lobby in lobbies:
             if lobby['state'] == 'game':
-                lobby['game_duration_mins'] = (datetime.now() - lobby['game_start_time']).seconds / 60
+                lobby['game_duration_mins'] = (datetime.now() - lobby['game_start_time']).seconds // 60
 
         context.update({
             'lobbies': lobbies,
