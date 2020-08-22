@@ -12,8 +12,8 @@ from app.ladder.models import Player, LadderSettings
 import dota2
 import os
 
-from steam import SteamClient, SteamID
-from dota2 import Dota2Client
+from steam.client import SteamClient, SteamID
+from dota2.client import Dota2Client
 
 from dota2.enums import DOTA_GC_TEAM, EMatchOutcome, DOTAChatChannelType_t
 from steam.client.builtins.friends import SteamFriendlist
