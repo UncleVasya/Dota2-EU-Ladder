@@ -49,8 +49,8 @@ class Player(models.Model):
         # TODO: (can't do it atm, because of empty dota_id in test data).
         # TODO: Or even better move this to manager.update_scores()
         # TODO  (this will allow us bulk_update in future)
-        self.score = max(self.score, 0)
-        self.ladder_mmr = max(self.ladder_mmr, 0)
+        self.score = max(self.score or 0, 0)
+        self.ladder_mmr = max(self.ladder_mmr or 0, 0)
 
         created = not self.pk
         super(Player, self).save(*args, **kwargs)
