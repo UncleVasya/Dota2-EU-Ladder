@@ -11,6 +11,7 @@ class Player(models.Model):
     name = models.CharField(max_length=200, unique=True)
     dota_mmr = models.PositiveIntegerField()
     dota_id = models.CharField(max_length=200, null=True, blank=True)
+    discord_id = models.CharField(max_length=200, null=True, blank=True)
     slug = AutoSlugField(populate_from='name')
 
     ladder_mmr = models.PositiveIntegerField(default=0)
@@ -20,6 +21,7 @@ class Player(models.Model):
 
     voice_issues = models.BooleanField(default=False)
     bot_access = models.BooleanField(default=False)
+    vouched = models.BooleanField(default=False)
     blacklist = models.ManyToManyField('self', symmetrical=False, related_name='blacklisted_by')
 
     # boundaries for ladder mmr

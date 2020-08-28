@@ -37,14 +37,14 @@ class PlayerAdmin(admin.ModelAdmin):
     model = Player
 
     fieldsets = [
-        (None, {'fields': ['name', 'dota_mmr', 'dota_id', 'voice_issues', 'bot_access', 'banned']}),
+        (None, {'fields': ['name', 'dota_mmr', 'dota_id', 'discord_id', 'voice_issues', 'bot_access', 'vouched', 'banned']}),
         (None, {'fields': ['ladder_mmr', 'score']}),
         (None, {'fields': ['rank_ladder_mmr', 'rank_score']}),
         (None, {'fields': ['min_allowed_mmr', 'max_allowed_mmr']}),
     ]
     readonly_fields = ('ladder_mmr', 'score', 'rank_ladder_mmr', 'rank_score')
 
-    list_display = ('name', 'rank_ladder_mmr', 'score', 'dota_mmr', 'dota_id')
+    list_display = ('name', 'rank_ladder_mmr', 'score', 'dota_mmr', 'dota_id', 'discord_id', 'vouched')
     search_fields = ('=name',)
 
     inlines = (BlacklistInline, BlacklistedByInline)
