@@ -1,5 +1,6 @@
 from django import forms
-from app.ladder.models import Player, Match, MatchPlayer, ScoreChange, LadderSettings, LadderQueue, QueuePlayer
+from app.ladder.models import Player, Match, MatchPlayer, ScoreChange, LadderSettings, LadderQueue, QueuePlayer, \
+    QueueChannel
 from django.contrib import admin
 from django.db.models import Prefetch
 from dal import autocomplete
@@ -130,19 +131,31 @@ class LadderQueueAdmin(admin.ModelAdmin):
     model = LadderQueue
 
     fieldsets = [
-        (None, {'fields': ['date', 'active', 'min_mmr', 'lobby_name']}),
+        (None, {'fields': ['date', 'active', 'min_mmr', 'lobby_name', 'channel']}),
     ]
     readonly_fields = ['date']
 
     inlines = (QueuePlayerInline, )
 
-    list_display = ('date', 'active', 'min_mmr', 'lobby_name')
+    list_display = ('date', 'active', 'min_mmr', 'lobby_name', 'channel')
+
+
+class QueueChannelAdmin(admin.ModelAdmin):
+    model = QueueChannel
+
+    fieldsets = [
+        (None, {'fields': ['name', 'min_mmr', 'discord_id']}),
+    ]
+
+    list_display = ('name', 'min_mmr', 'discord_id')
 
 
 admin.site.register(Player, PlayerAdmin)
 admin.site.register(ScoreChange, ScoreChangeAdmin)
 admin.site.register(Match, MatchAdmin)
+
 admin.site.register(LadderQueue, LadderQueueAdmin)
+admin.site.register(QueueChannel, QueueChannelAdmin)
 
 admin.site.register(LadderSettings, SingletonModelAdmin)
 

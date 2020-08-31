@@ -102,18 +102,31 @@ class ScoreChange(models.Model):
 
 class LadderSettings(SingletonModel):
     current_season = models.PositiveSmallIntegerField(default=1)
+    use_queue = models.BooleanField(default=True)
+    normal_queue_discord_channel = models.PositiveIntegerField(null=True)
+    open_queue_discord_channel = models.PositiveIntegerField(null=True)
+
+
+class QueueChannel(models.Model):
+    name = models.CharField(max_length=200)
+    min_mmr = models.PositiveSmallIntegerField(default=0)
+    discord_id = models.PositiveIntegerField()
+
+    def __str__(self):
+        return self.name
 
 
 class LadderQueue(models.Model):
     players = models.ManyToManyField(Player, through='QueuePlayer')
     active = models.BooleanField(default=True)
     date = models.DateTimeField(auto_now_add=True)
-    min_mmr = models.PositiveIntegerField(default=0)
-    lobby_name = models.CharField(max_length=200, null=True)
-    balance = models.OneToOneField(BalanceAnswer, null=True)
+    channel = models.ForeignKey(QueueChannel)
+    min_mmr = models.PositiveSmallIntegerField(default=0)
+    lobby_name = models.CharField(max_length=200, null=True, blank=True)
+    balance = models.OneToOneField(BalanceAnswer, null=True, blank=True)
 
     def __str__(self):
-        return f'Queue #{self.id}'
+        return f'Queue #{self.id}' + f'{self.min_mmr}+' if self.min_mmr > 0 else ''
 
 
 class QueuePlayer(models.Model):
@@ -123,5 +136,3 @@ class QueuePlayer(models.Model):
 
     class Meta:
         unique_together = ('player', 'queue')
-
-

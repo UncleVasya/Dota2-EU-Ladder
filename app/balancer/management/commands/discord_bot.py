@@ -5,7 +5,7 @@ import os
 from django.db.models import Q, Count
 
 from app.ladder.managers import PlayerManager
-from app.ladder.models import Player, LadderSettings, LadderQueue, QueuePlayer
+from app.ladder.models import Player, LadderSettings, LadderQueue, QueuePlayer, QueueChannel
 
 
 class Command(BaseCommand):
@@ -194,20 +194,34 @@ class Command(BaseCommand):
         player = kwargs['player']
         print(f'Join command from {player}:\n {command}')
 
+        # check if this is a queue channel
+        try:
+            channel = QueueChannel.objects.get(discord_id=msg.channel.id)
+        except QueueChannel.DoesNotExist:
+            return
+
         # check that player is not in a queue already
         if player.ladderqueue_set.filter(active=True):
             await msg.channel.send('Already queued, friend.')
+            return
+
+        # check that player has enough MMR
+        if player.dota_mmr < channel.min_mmr:
+            await msg.channel.send('Your dick is too small. Grow a bigger one.')
             return
 
         # get an available active queue
         queue = LadderQueue.objects\
             .filter(active=True)\
             .annotate(Count('players'))\
-            .filter(players__count__lt=10)\
+            .filter(players__count__lt=10, channel=channel)\
             .first()
 
         if not queue:
-            queue = LadderQueue.objects.create()
+            queue = LadderQueue.objects.create(
+                min_mmr=channel.min_mmr,  # todo this should be done automatically when saving a new queue instance
+                channel=channel
+            )
 
         # add player to the queue
         QueuePlayer.objects.create(
@@ -256,15 +270,23 @@ class Command(BaseCommand):
             await msg.channel.send(f'{player} is already in a queue')
             return
 
+        # check if this is a queue channel
+        try:
+            channel = QueueChannel.objects.get(discord_id=msg.channel.id)
+        except QueueChannel.DoesNotExist:
+            return
+
         # get an available active queue
         queue = LadderQueue.objects \
             .filter(active=True) \
             .annotate(Count('players')) \
-            .filter(players__count__lt=10) \
+            .filter(players__count__lt=10, channel=channel) \
             .first()
 
         if not queue:
-            queue = LadderQueue.objects.create()
+            queue = LadderQueue.objects.create(
+                min_mmr=channel.min_mmr,
+                channel=channel)
 
         # add player to the queue
         QueuePlayer.objects.create(
