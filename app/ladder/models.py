@@ -43,7 +43,7 @@ class Player(models.Model):
     class Meta:
         ordering = ['rank_ladder_mmr']
 
-    def __unicode__(self):
+    def __str__(self):
         return '%s' % self.name
 
     def save(self, *args, **kwargs):
@@ -102,3 +102,26 @@ class ScoreChange(models.Model):
 
 class LadderSettings(SingletonModel):
     current_season = models.PositiveSmallIntegerField(default=1)
+
+
+class LadderQueue(models.Model):
+    players = models.ManyToManyField(Player, through='QueuePlayer')
+    active = models.BooleanField(default=True)
+    date = models.DateTimeField(auto_now_add=True)
+    min_mmr = models.PositiveIntegerField(default=0)
+    lobby_name = models.CharField(max_length=200, null=True)
+    balance = models.OneToOneField(BalanceAnswer, null=True)
+
+    def __str__(self):
+        return f'Queue #{self.id}'
+
+
+class QueuePlayer(models.Model):
+    queue = models.ForeignKey(LadderQueue)
+    player = models.ForeignKey(Player)
+    joined_date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('player', 'queue')
+
+

@@ -2,10 +2,10 @@ import discord
 from django.core.management.base import BaseCommand
 import os
 
-from django.db.models import Q
+from django.db.models import Q, Count
 
 from app.ladder.managers import PlayerManager
-from app.ladder.models import Player, LadderSettings
+from app.ladder.models import Player, LadderSettings, LadderQueue, QueuePlayer
 
 
 class Command(BaseCommand):
@@ -45,11 +45,11 @@ class Command(BaseCommand):
             '!vouch': self.vouch_command,
             '!wh': self.whois_command,
             '!whois': self.whois_command,
-        #     '!q+': Command.join_queue,
-        #     '!q-': Command.leave_queue,
-        #     '!q': Command.show_queue,
-        #     '!add': Command.add_to_queue,
-        #     '!kick': Command.kick_from_queue,
+            '!q+': self.join_queue,
+            '!q-': self.leave_queue,
+            '!q': self.show_queues,
+            '!add': self.add_to_queue,
+            '!kick': self.kick_from_queue,
         }
         free_for_all = ['!register']
         staff_only = ['!vouch', '!add', '!kick']
@@ -78,9 +78,9 @@ class Command(BaseCommand):
                 return
 
         # user can use this command
-        await commands[command](msg)
+        await commands[command](msg, **{'player': player})
 
-    async def register_command(self, msg):
+    async def register_command(self, msg, **kwargs):
         command = msg.content
         print()
         print('!register command')
@@ -95,9 +95,9 @@ class Command(BaseCommand):
             dota_id = str(int(params[2]))  # check that id is a number
         except (IndexError, ValueError):
             await msg.channel.send(
-                """Wrong command usage. 
-                Format: "!register %username% %mmr% %dota_id%". Example: 
-                    !register Uvs 3000 444510529"""
+                'Wrong command usage.\n' 
+                'Format: "!register username mmr dota_id". Example: \n' 
+                '!register Uvs 3000 444510529'
             )
             return
 
@@ -107,7 +107,9 @@ class Command(BaseCommand):
             return
 
         if Player.objects.filter(name__iexact=name).exists():
-            await msg.channel.send('This name is already taken. Try another or talk to admins.')
+            await msg.channel.send(
+                'This name is already taken. Try another or talk to admins.'
+            )
             return
 
         # all is good, can register
@@ -125,7 +127,7 @@ class Command(BaseCommand):
             \nYou can ping their lazy asses if it takes too long ;)"""
         )
 
-    async def vouch_command(self, msg):
+    async def vouch_command(self, msg, **kwargs):
         command = msg.content
         print()
         print('Vouch command:')
@@ -146,9 +148,11 @@ class Command(BaseCommand):
         player.save()
 
         player_discord = self.bot.get_user(int(player.discord_id))
-        await msg.channel.send(f'{player_discord.mention} has been vouched. He can play now!')
+        await msg.channel.send(
+            f'{player_discord.mention} has been vouched. He can play now!'
+        )
 
-    async def whois_command(self, msg):
+    async def whois_command(self, msg, **kwargs):
         command = msg.content
         print()
         print('Whois command:')
@@ -184,3 +188,124 @@ class Command(BaseCommand):
             f'Vouched: {"yes" if player.vouched else "no"}\n'
             f'```'
         )
+
+    async def join_queue(self, msg, **kwargs):
+        command = msg.content
+        player = kwargs['player']
+        print(f'Join command from {player}:\n {command}')
+
+        # check that player is not in a queue already
+        if player.ladderqueue_set.filter(active=True):
+            await msg.channel.send('Already queued, friend.')
+            return
+
+        # get an available active queue
+        queue = LadderQueue.objects\
+            .filter(active=True)\
+            .annotate(Count('players'))\
+            .filter(players__count__lt=10)\
+            .first()
+
+        if not queue:
+            queue = LadderQueue.objects.create()
+
+        # add player to the queue
+        QueuePlayer.objects.create(
+            queue=queue,
+            player=player
+        )
+
+        await msg.channel.send(
+            f'{player} joined inhouse queue #{queue.id}.\n' +
+            Command.queue_str(queue)
+        )
+
+    async def leave_queue(self, msg, **kwargs):
+        command = msg.content
+        player = kwargs['player']
+        print(f'Leave command from {player}:\n {command}')
+
+        QueuePlayer.objects.filter(player=player, queue__active=True).delete()
+
+        await msg.channel.send(f'{player} left the queue.\n')
+
+    async def show_queues(self, msg, **kwargs):
+        queues = LadderQueue.objects.filter(active=True)
+        await msg.channel.send(
+            ''.join(Command.queue_str(q) for q in queues)
+        )
+
+    async def add_to_queue(self, msg, **kwargs):
+        command = msg.content
+        print(f'add_to_queue command from:\n {command}')
+
+        try:
+            name = command.split(None, 1)[1]
+        except (IndexError, ValueError):
+            return
+
+        # get player from db
+        try:
+            player = Player.objects.get(name__iexact=name)
+        except Player.DoesNotExist:
+            await msg.channel.send(f'{name}: I don\'t know him')
+            return
+
+        # check that player is not in a queue already
+        if player.ladderqueue_set.filter(active=True):
+            await msg.channel.send(f'{player} is already in a queue')
+            return
+
+        # get an available active queue
+        queue = LadderQueue.objects \
+            .filter(active=True) \
+            .annotate(Count('players')) \
+            .filter(players__count__lt=10) \
+            .first()
+
+        if not queue:
+            queue = LadderQueue.objects.create()
+
+        # add player to the queue
+        QueuePlayer.objects.create(
+            queue=queue,
+            player=player
+        )
+
+        player_discord = self.bot.get_user(int(player.discord_id))
+        mention = player_discord.mention if player_discord else player.name
+        await msg.channel.send(
+            f'By a shameless abuse of power {msg.author.name} '
+            f'forcefully added {mention} to the inhouse queue. Have fun! ;)'
+        )
+
+    async def kick_from_queue(self, msg, **kwargs):
+        command = msg.content
+        print(f'Kick command:\n {command}')
+
+        try:
+            name = command.split(None, 1)[1]
+        except (IndexError, ValueError):
+            return
+
+        # get player from db
+        try:
+            player = Player.objects.get(name__iexact=name)
+        except Player.DoesNotExist:
+            await msg.channel.send(f'{name}: I don\'t know him')
+            return
+
+        QueuePlayer.objects.filter(player=player, queue__active=True).delete()
+
+        player_discord = self.bot.get_user(int(player.discord_id))
+        mention = player_discord.mention if player_discord else player.name
+        await msg.channel.send(f'{mention} was kicked from the queue.')
+
+    @staticmethod
+    def queue_str(q: LadderQueue):
+        return f'```\n' + \
+               f'Queue #{q.id}\n' + \
+               f'Min MMR: {q.min_mmr}\n' + \
+               f'Players: {q.players.count()} (' + \
+               f' | '.join(p.name for p in q.players.all()) + ')\n\n' + \
+               f'```\n'

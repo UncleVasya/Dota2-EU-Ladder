@@ -1,5 +1,5 @@
 from django import forms
-from app.ladder.models import Player, Match, MatchPlayer, ScoreChange, LadderSettings
+from app.ladder.models import Player, Match, MatchPlayer, ScoreChange, LadderSettings, LadderQueue, QueuePlayer
 from django.contrib import admin
 from django.db.models import Prefetch
 from dal import autocomplete
@@ -18,7 +18,7 @@ class BlacklistInlineForm(forms.ModelForm):
 
     class Meta:
         model = Player.blacklist.through
-        fields = ('__all__')
+        fields = '__all__'
 
 
 class BlacklistInline(admin.TabularInline):
@@ -63,7 +63,7 @@ class MatchPlayerInlineForm(forms.ModelForm):
 
     class Meta:
         model = Player
-        fields = ('__all__')
+        fields = '__all__'
 
 
 class MatchPlayerInline(admin.TabularInline):
@@ -109,9 +109,40 @@ class ScoreChangeAdmin(admin.ModelAdmin):
         Player.objects.update_ranks()
 
 
+class QueuePlayerInlineForm(forms.ModelForm):
+    player = forms.ModelChoiceField(
+        queryset=Player.objects.all(),
+        widget=autocomplete.ModelSelect2(url='ladder:player-autocomplete')
+    )
+
+    class Meta:
+        model = Player
+        fields = '__all__'
+
+
+class QueuePlayerInline(admin.TabularInline):
+    model = QueuePlayer
+    form = QueuePlayerInlineForm
+    max_num = 10
+
+
+class LadderQueueAdmin(admin.ModelAdmin):
+    model = LadderQueue
+
+    fieldsets = [
+        (None, {'fields': ['date', 'active', 'min_mmr', 'lobby_name']}),
+    ]
+    readonly_fields = ['date']
+
+    inlines = (QueuePlayerInline, )
+
+    list_display = ('date', 'active', 'min_mmr', 'lobby_name')
+
+
 admin.site.register(Player, PlayerAdmin)
 admin.site.register(ScoreChange, ScoreChangeAdmin)
 admin.site.register(Match, MatchAdmin)
+admin.site.register(LadderQueue, LadderQueueAdmin)
 
 admin.site.register(LadderSettings, SingletonModelAdmin)
 
