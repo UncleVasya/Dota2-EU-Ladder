@@ -8,7 +8,7 @@ from app.ladder.managers import MatchManager, PlayerManager
 from django.utils.datetime_safe import datetime
 from enum import IntEnum
 import gevent
-from app.ladder.models import Player, LadderSettings
+from app.ladder.models import Player, LadderSettings, LadderQueue
 import dota2
 import os
 
@@ -73,9 +73,10 @@ class Command(BaseCommand):
         cache.set('bots', [c['login'] for c in credentials])
 
         try:
-            gevent.joinall([
-                gevent.spawn(self.start_bot, c) for c in credentials
-            ])
+            gevent.joinall(
+                [gevent.spawn(self.start_bot, c) for c in credentials] +
+                [gevent.spawn(self.sync_queue)]
+            )
         finally:
             cache.delete('bots')
             for bot in self.bots:
@@ -94,6 +95,8 @@ class Command(BaseCommand):
         dota.game_start_time = None
         dota.server = 'EU'
         dota.players = {}  # TODO: this isn't used atm, make use of it
+        dota.queue = None
+        dota.use_queue = LadderSettings.get_solo().use_queue
 
         self.bots.append(dota)
 
@@ -134,7 +137,7 @@ class Command(BaseCommand):
             print('Logged in: %s %s' % (dota.steam.username, dota.account_id))
 
             # every second lobby is for high mmr players
-            if self.bots.index(dota) % 2 == 0:
+            if self.bots.index(dota) % 2 == 0 and not dota.use_queue:
                 Command.set_min_mmr(dota, 4500)
 
             # if lobby is hung up from previous session, leave it
@@ -194,6 +197,7 @@ class Command(BaseCommand):
         print('Making new lobby\n')
 
         bot.balance_answer = None
+        bot.queue = None
         bot.staff_mode = False
         bot.players = {}
         bot.lobby_options = {
@@ -243,9 +247,18 @@ class Command(BaseCommand):
             '!help': Command.help_command,
             '!commands': Command.help_command,
             '!register': Command.register_command,
+            '!queue': Command.show_queue_command,
+            '!q': Command.show_queue_command
         }
         free_for_all = ['!register']
         staff_only = ['!staff', '!forcestart', '!fs', '!new', '!lobbykick', '!lk']
+
+        disabled_by_queue = [
+            '!register', '!b', '!balance', '!mmr', '!swap', '!voice',
+        ]
+        if bot.use_queue and command in disabled_by_queue:
+            bot.channels.lobby.send('Bots are taken hostages by discord queue.')
+            return
 
         # if command is free for all, no other checks required
         if command in free_for_all:
@@ -375,7 +388,7 @@ class Command(BaseCommand):
             return
 
         Command.set_min_mmr(bot, min_mmr)
-        bot.channels.lobby.send('Min MMR set to %d' % min_mmr)
+        bot.channels.lobby.send(f'Min MMR set to {min_mmr}')
 
     @staticmethod
     def voice_command(bot, msg):
@@ -767,6 +780,20 @@ class Command(BaseCommand):
         bot.channels.lobby.send('Welcome to ladder, %s! You can play now.' % name)
 
     @staticmethod
+    def show_queue_command(bot, msg):
+        q = bot.queue
+        if not q:
+            bot.channels.lobby.send('No queue assigned to this bot.')
+            return
+
+        bot.channels.lobby.send(f'Queue #{q.id}')
+        bot.channels.lobby.send(f'Min MMR: {q.min_mmr}')
+        bot.channels.lobby.send(
+            f'Players: {q.players.count()} (' +
+            f' | '.join(p.name for p in q.players.all()) + ')'
+        )
+
+    @staticmethod
     def process_game_result(bot):
         print('Game is finished!\n')
         print(bot.lobby)
@@ -846,6 +873,15 @@ class Command(BaseCommand):
             lobby_name += ' %d+' % bot.min_mmr
         if bot.voice_required:
             lobby_name += ' Voice'
+
+        return lobby_name
+
+    @staticmethod
+    def generate_lobby_queue_name(bot):
+        lobby_name = f'RD2L Queue #{bot.queue.id}'
+
+        if bot.queue.min_mmr > 0:
+            lobby_name += f' {bot.queue.min_mmr}+'
 
         return lobby_name
 
@@ -1022,3 +1058,44 @@ class Command(BaseCommand):
     def start_game(bot):
         bot.game_start_time = datetime.now()
         bot.launch_practice_lobby()
+
+    @staticmethod
+    def assign_queue_to_bot(bot, queue):
+        bot.queue = queue
+        bot.lobby_options['game_name'] = Command.generate_lobby_queue_name(bot)
+        bot.config_practice_lobby(bot.lobby_options)
+
+    def sync_queue(self):
+        while True:
+            print('===========sync_queue=============')
+            queues = LadderQueue.objects.filter(active=True)
+            queues = {q.id: q for q in queues}
+
+            print('Active queues: ' + ' | '.join(str(q) for q in queues.values()))
+
+            # first update assigned queues in bots
+            # at this step some of the bots might turn free
+            busy_bots = [b for b in self.bots if b.queue and b.lobby]
+
+            print('Busy bots:\n' +
+                  '\n'.join(f'{b.lobby.game_name}: {b.queue}' for b in busy_bots))
+
+            for bot in busy_bots:
+                bot.queue = queues.pop(bot.queue.id, None)
+                # bot became free
+                if not bot.queue:
+                    bot.leave_practice_lobby()
+                    gevent.sleep(5)
+                    Command.create_new_lobby(bot)
+
+            # now assign new queues to free bots
+            free_bots = [b for b in self.bots if not b.queue and b.lobby]
+
+            print('Free bots: ' + ' | '.join(b.lobby.game_name for b in free_bots))
+
+            for bot in free_bots:
+                if len(queues) > 0:
+                    _, q = queues.popitem()
+                    Command.assign_queue_to_bot(bot, q)
+
+            gevent.sleep(30)

@@ -126,7 +126,7 @@ class LadderQueue(models.Model):
     balance = models.OneToOneField(BalanceAnswer, null=True, blank=True)
 
     def __str__(self):
-        return f'Queue #{self.id}' + f'{self.min_mmr}+' if self.min_mmr > 0 else ''
+        return f'Queue #{self.id}'
 
 
 class QueuePlayer(models.Model):
