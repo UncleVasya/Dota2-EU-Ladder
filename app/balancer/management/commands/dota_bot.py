@@ -160,6 +160,8 @@ class Command(BaseCommand):
                 Command.kick_banned_from_lobby(dota)
                 Command.kick_banned_from_playing(dota)
                 # Command.kick_blacklisted(dota)
+                if dota.use_queue:
+                    Command.kick_not_in_queue(dota)
                 if dota.balance_answer:
                     Command.kick_unbalanced(dota)
                 if dota.voice_required:
@@ -1031,6 +1033,24 @@ class Command(BaseCommand):
         for player in players_steam.keys():
             if str(player) not in players_balance:
                 bot.channels.lobby.send('%s, this lobby is full. Join another one.' % players_steam[player].name)
+                bot.practice_lobby_kick_from_team(player)
+
+    @staticmethod
+    def kick_not_in_queue(bot):
+        players_steam = {
+            SteamID(player.id).as_32: player for player in bot.lobby.members
+            if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)
+        }
+
+        players_queue = []
+        if bot.queue:
+            players_queue = bot.queue.players.all()\
+                .values_list('dota_id', flat=True)
+
+        for player in players_steam.keys():
+            if str(player) not in players_queue:
+                bot.channels.lobby.send(
+                    f'{players_steam[player].name}, You are not in this queue.')
                 bot.practice_lobby_kick_from_team(player)
 
     @staticmethod
