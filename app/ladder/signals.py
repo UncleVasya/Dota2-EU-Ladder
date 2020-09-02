@@ -29,3 +29,7 @@ def qplayer_change(instance, **kwargs):
     queue = instance.queue
     if queue.players.count() < 1:
         queue.delete()
+
+    if queue.players.count() < 10:
+        queue.balance = None
+        queue.save()

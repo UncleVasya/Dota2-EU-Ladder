@@ -97,6 +97,7 @@ class Command(BaseCommand):
         dota.players = {}  # TODO: this isn't used atm, make use of it
         dota.queue = None
         dota.use_queue = LadderSettings.get_solo().use_queue
+        dota.player_draft = False
 
         self.bots.append(dota)
 
@@ -198,6 +199,7 @@ class Command(BaseCommand):
 
         bot.balance_answer = None
         bot.queue = None
+        bot.player_draft = False
         bot.staff_mode = False
         bot.players = {}
         bot.lobby_options = {
@@ -248,7 +250,9 @@ class Command(BaseCommand):
             '!commands': Command.help_command,
             '!register': Command.register_command,
             '!queue': Command.show_queue_command,
-            '!q': Command.show_queue_command
+            '!q': Command.show_queue_command,
+            '!playerdraft': Command.player_draft_command,
+            '!pd': Command.player_draft_command,
         }
         free_for_all = ['!register']
         staff_only = ['!staff', '!forcestart', '!fs', '!new', '!lobbykick', '!lk']
@@ -781,6 +785,8 @@ class Command(BaseCommand):
 
     @staticmethod
     def show_queue_command(bot, msg):
+        print('\n!queue command.')
+
         q = bot.queue
         if not q:
             bot.channels.lobby.send('No queue assigned to this bot.')
@@ -792,6 +798,17 @@ class Command(BaseCommand):
             f'Players: {q.players.count()} (' +
             f' | '.join(p.name for p in q.players.all()) + ')'
         )
+
+    @staticmethod
+    def player_draft_command(bot, msg):
+        print('\n!playerdraft command.')
+
+        bot.player_draft = not bot.player_draft
+        if bot.player_draft:
+            bot.balance_answer = None
+
+        bot.channels.lobby.send(
+            f'Player draft is turned {"ON" if bot.player_draft else "OFF"}')
 
     @staticmethod
     def process_game_result(bot):
@@ -1062,6 +1079,8 @@ class Command(BaseCommand):
     @staticmethod
     def assign_queue_to_bot(bot, queue):
         bot.queue = queue
+        if not bot.player_draft:
+            bot.balance_answer = queue.balance
         bot.lobby_options['game_name'] = Command.generate_lobby_queue_name(bot)
         bot.config_practice_lobby(bot.lobby_options)
 
@@ -1081,7 +1100,8 @@ class Command(BaseCommand):
                   '\n'.join(f'{b.lobby.game_name}: {b.queue}' for b in busy_bots))
 
             for bot in busy_bots:
-                bot.queue = queues.pop(bot.queue.id, None)
+                q = queues.pop(bot.queue.id, None)
+                Command.assign_queue_to_bot(bot, q)
                 # bot became free
                 if not bot.queue:
                     bot.leave_practice_lobby()
