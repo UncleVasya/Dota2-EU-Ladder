@@ -616,8 +616,9 @@ class Command(BaseCommand):
             ' '.join(str(PlayerManager.ladder_to_dota_mmr(player.ladder_mmr)) for player in team)
             for team in teams]
 
-        [bot.channels.lobby.send(' | '.join(player.name for player in team))
-         for team in teams]
+        [bot.channels.lobby.send(
+            f'Team {i+1}: ' + f' | '.join(player.name for player in team))
+         for i, team in enumerate(teams)]
         bot.channels.lobby.send('Dota MMR:')
         [bot.channels.lobby.send(team) for team in dota_mmr]
         bot.channels.lobby.send('Correlation:')
