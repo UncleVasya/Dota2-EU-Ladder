@@ -1095,6 +1095,9 @@ class Command(BaseCommand):
     @staticmethod
     def start_game(bot):
         bot.game_start_time = datetime.now()
+        if bot.queue:
+            bot.queue.active = False
+            bot.queue.save()
         bot.launch_practice_lobby()
 
     @staticmethod
