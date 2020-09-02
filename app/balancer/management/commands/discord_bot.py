@@ -53,9 +53,10 @@ class Command(BaseCommand):
             '!q': self.show_queues_command,
             '!add': self.add_to_queue_command,
             '!kick': self.kick_from_queue_command,
+            '!mmr': self.mmr_command,
         }
         free_for_all = ['!register']
-        staff_only = ['!vouch', '!add', '!kick']
+        staff_only = ['!vouch', '!add', '!kick', '!mmr']
 
         # if command is free for all, no other checks required
         if command in free_for_all:
@@ -302,6 +303,31 @@ class Command(BaseCommand):
         player_discord = self.bot.get_user(int(player.discord_id))
         mention = player_discord.mention if player_discord else player.name
         await msg.channel.send(f'{mention} was kicked from the queue.')
+
+    async def mmr_command(self, msg, **kwargs):
+        command = msg.content
+        print(f'\n!mmr command:\n{command}')
+
+        try:
+            min_mmr = int(command.split(' ')[1])
+            min_mmr = max(0, min(9000, min_mmr))
+        except (IndexError, ValueError):
+            return
+
+        try:
+            channel = QueueChannel.objects.get(discord_id=msg.channel.id)
+        except QueueChannel.DoesNotExist:
+            return
+
+        if LadderQueue.objects.filter(channel=channel, active=True).exists():
+            await msg.channel.send(
+                f'Cannot change MMR when there are active queue in the channel')
+            return
+
+        channel.min_mmr = min_mmr
+        channel.save()
+
+        await msg.channel.send(f'Min MMR set to {min_mmr}')
 
     @staticmethod
     def add_player_to_queue(player, channel):
