@@ -80,6 +80,7 @@ class Command(BaseCommand):
         finally:
             cache.delete('bots')
             for bot in self.bots:
+                bot.destroy_lobby()
                 bot.exit()
                 bot.steam.logout()
 
