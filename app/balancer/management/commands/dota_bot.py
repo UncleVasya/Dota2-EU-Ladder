@@ -509,8 +509,8 @@ class Command(BaseCommand):
 
     @staticmethod
     def forcestart_command(bot, msg):
-            Command.balance_answer = None
-            Command.start_game(bot)
+        bot.balance_answer = None
+        Command.start_game(bot)
 
     @staticmethod
     def mode_command(bot, msg):
