@@ -27,10 +27,13 @@ class Command(BaseCommand):
 
         @self.bot.event
         async def on_message(msg):
-            print(f'Got message from {msg.author} ({msg.author.id}): {msg.content}')
+            if not QueueChannel.objects.filter(discord_id=msg.channel.id).exists():
+                return
 
             if msg.author.bot:
                 return
+
+            print(f'Got message from {msg.author} ({msg.author.id}): {msg.content}')
 
             # strip whitespaces so bot can handle strings like " !register   Bob   4000"
             msg.content = " ".join(msg.content.split())
