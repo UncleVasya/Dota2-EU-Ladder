@@ -200,6 +200,7 @@ class Command(BaseCommand):
         print('Making new lobby\n')
 
         bot.balance_answer = None
+        bot.game_start_time = None
         bot.queue = None
         bot.player_draft = False
         bot.staff_mode = False
@@ -1102,6 +1103,10 @@ class Command(BaseCommand):
 
     @staticmethod
     def assign_queue_to_bot(bot, queue):
+        # if in game, do nothing
+        if bot.game_start_time:
+            return
+
         bot.queue = queue
         if not bot.player_draft:
             bot.balance_answer = queue.balance
@@ -1109,6 +1114,10 @@ class Command(BaseCommand):
         bot.config_practice_lobby(bot.lobby_options)
 
     def sync_queue(self):
+        def is_bot_free(bot):
+            # 1) not in game, 2) lobby ready, 3) no queue assigned
+            return not bot.game_start_time and bot.lobby and not bot.queue
+
         while True:
             print('===========sync_queue=============')
             queues = LadderQueue.objects.filter(active=True)
@@ -1125,15 +1134,17 @@ class Command(BaseCommand):
 
             for bot in busy_bots:
                 q = queues.pop(bot.queue.id, None)
-                Command.assign_queue_to_bot(bot, q)
-                # bot became free
-                if not bot.queue:
+                if q:
+                    # update queue object in bot
+                    Command.assign_queue_to_bot(bot, q)
+                elif not bot.game_start_time:
+                    # bot became free
                     bot.leave_practice_lobby()
                     gevent.sleep(5)
                     Command.create_new_lobby(bot)
 
             # now assign new queues to free bots
-            free_bots = [b for b in self.bots if not b.queue and b.lobby]
+            free_bots = [b for b in self.bots if is_bot_free(b)]
 
             print('Free bots: ' + ' | '.join(b.lobby.game_name for b in free_bots))
 
