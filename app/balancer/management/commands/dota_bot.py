@@ -142,7 +142,7 @@ class Command(BaseCommand):
                 Command.set_min_mmr(dota, 4500)
 
             # if lobby is hung up from previous session, leave it
-            dota.leave_practice_lobby()
+            dota.destroy_lobby()
             self.create_new_lobby(dota)
 
         @dota.on(dota2.features.Lobby.EVENT_LOBBY_NEW)
@@ -735,7 +735,7 @@ class Command(BaseCommand):
         print('!new command')
 
         bot.channels.lobby.send('Creating new lobby.')
-        bot.leave_practice_lobby()
+        bot.destroy_lobby()
         gevent.sleep(5)
         Command.create_new_lobby(bot)
 
@@ -1142,7 +1142,7 @@ class Command(BaseCommand):
                     Command.assign_queue_to_bot(bot, q)
                 elif not bot.game_start_time:
                     # bot became free
-                    bot.leave_practice_lobby()
+                    bot.destroy_lobby()
                     gevent.sleep(5)
                     Command.create_new_lobby(bot)
 
