@@ -371,8 +371,11 @@ class Command(BaseCommand):
     @staticmethod
     def start_command(bot, msg):
         if not bot.balance_answer:
-            bot.channels.lobby.send('Please balance teams first.')
-            return
+            if bot.player_draft:
+                Command.custom_command(bot, None)
+            else:
+                bot.channels.lobby.send('Please balance teams first.')
+                return
 
         if not Command.check_teams_setup(bot):
             bot.channels.lobby.send('Please join slots according to balance.')
