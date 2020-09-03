@@ -206,6 +206,7 @@ class Command(BaseCommand):
         bot.player_draft = False
         bot.staff_mode = False
         bot.players = {}
+        bot.invited_players = []
         bot.lobby_options = {
             'game_name': Command.generate_lobby_name(bot),
             'game_mode': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_CM,
@@ -903,6 +904,9 @@ class Command(BaseCommand):
 
     @staticmethod
     def generate_lobby_queue_name(bot):
+        if not bot.queue:
+            return Command.generate_lobby_name(bot)
+
         lobby_name = f'RD2L Queue #{bot.queue.id}'
 
         if bot.queue.min_mmr > 0:
@@ -1106,6 +1110,19 @@ class Command(BaseCommand):
         bot.launch_practice_lobby()
 
     @staticmethod
+    def invite_players(bot):
+        # invite queue players into lobby
+        players = [p for p in bot.queue.players.all()
+                   if p not in bot.invited_players]
+
+        for player in players:
+            steam_id = SteamID(player.dota_id)
+            bot.invite_to_lobby(steam_id)
+            bot.invited_players.append(player)
+
+        print(f'invited players: {bot.invited_players}')
+
+    @staticmethod
     def assign_queue_to_bot(bot, queue):
         # if in game, do nothing
         if bot.game_start_time:
@@ -1114,6 +1131,17 @@ class Command(BaseCommand):
         bot.queue = queue
         if not bot.player_draft:
             bot.balance_answer = queue.balance
+
+        # remove un-queued players from invited_players list;
+        # this is done so if they re-join, they will get invite again
+        if queue:
+            bot.invited_players = [p for p in bot.invited_players
+                                   if p in bot.queue.players.all()]
+
+        # if queue is full, invite players
+        if queue and queue.players.count() == 10:
+            Command.invite_players(bot)
+
         bot.lobby_options['game_name'] = Command.generate_lobby_queue_name(bot)
         bot.config_practice_lobby(bot.lobby_options)
 
@@ -1123,7 +1151,13 @@ class Command(BaseCommand):
             return not bot.game_start_time and bot.lobby and not bot.queue
 
         while True:
+            gevent.sleep(30)
             print('===========sync_queue=============')
+
+            if not all(bot.ready for bot in self.bots):
+                print('Bots not ready')
+                continue
+
             queues = LadderQueue.objects.filter(active=True)
             queues = {q.id: q for q in queues}
 
@@ -1156,5 +1190,3 @@ class Command(BaseCommand):
                 if len(queues) > 0:
                     _, q = queues.popitem()
                     Command.assign_queue_to_bot(bot, q)
-
-            gevent.sleep(30)
