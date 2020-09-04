@@ -1120,7 +1120,7 @@ class Command(BaseCommand):
             bot.invite_to_lobby(steam_id)
             bot.invited_players.append(player)
 
-        print(f'invited players: {bot.invited_players}')
+        # print(f'invited players: {bot.invited_players}')
 
     @staticmethod
     def assign_queue_to_bot(bot, queue):
@@ -1151,8 +1151,8 @@ class Command(BaseCommand):
             return not bot.game_start_time and bot.lobby and not bot.queue
 
         while True:
-            gevent.sleep(30)
-            print('===========sync_queue=============')
+            gevent.sleep(5)
+            # print('===========sync_queue=============')
 
             if not all(bot.ready for bot in self.bots):
                 print('Bots not ready')
@@ -1161,14 +1161,14 @@ class Command(BaseCommand):
             queues = LadderQueue.objects.filter(active=True)
             queues = {q.id: q for q in queues}
 
-            print('Active queues: ' + ' | '.join(str(q) for q in queues.values()))
+            # print('Active queues: ' + ' | '.join(str(q) for q in queues.values()))
 
             # first update assigned queues in bots
             # at this step some of the bots might turn free
             busy_bots = [b for b in self.bots if b.queue and b.lobby]
 
-            print('Busy bots:\n' +
-                  '\n'.join(f'{b.lobby.game_name}: {b.queue}' for b in busy_bots))
+            # print('Busy bots:\n' +
+            #       '\n'.join(f'{b.lobby.game_name}: {b.queue}' for b in busy_bots))
 
             for bot in busy_bots:
                 q = queues.pop(bot.queue.id, None)
@@ -1184,7 +1184,7 @@ class Command(BaseCommand):
             # now assign new queues to free bots
             free_bots = [b for b in self.bots if is_bot_free(b)]
 
-            print('Free bots: ' + ' | '.join(b.lobby.game_name for b in free_bots))
+            # print('Free bots: ' + ' | '.join(b.lobby.game_name for b in free_bots))
 
             for bot in free_bots:
                 if len(queues) > 0:
