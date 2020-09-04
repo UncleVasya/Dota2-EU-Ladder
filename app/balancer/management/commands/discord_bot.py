@@ -250,9 +250,12 @@ class Command(BaseCommand):
 
     async def show_queues_command(self, msg, **kwargs):
         queues = LadderQueue.objects.filter(active=True)
-        await msg.channel.send(
-            ''.join(Command.queue_str(q) for q in queues)
-        )
+        if queues:
+            await msg.channel.send(
+                ''.join(Command.queue_str(q) for q in queues)
+            )
+        else:
+            await msg.channel.send('No active queues found.')
 
     async def add_to_queue_command(self, msg, **kwargs):
         command = msg.content
