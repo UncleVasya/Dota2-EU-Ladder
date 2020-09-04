@@ -171,7 +171,7 @@ class Command(BaseCommand):
             return
 
         try:
-            player = Player.objects.get(name=name)
+            player = Player.objects.get(name__iexact=name)
         except Player.DoesNotExist:
             await msg.channel.send(f'{name}: I don\'t know him')
             return
