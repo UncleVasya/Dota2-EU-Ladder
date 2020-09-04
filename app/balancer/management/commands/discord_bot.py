@@ -184,11 +184,16 @@ class Command(BaseCommand):
 
         opendota = f'https://www.opendota.com/players/{player.dota_id}'
 
+        host = os.environ.get('BASE_URL', 'localhost:8000')
+        url = reverse('ladder:player-overview', args=(player.name,))
+        player_url = f'{host}{url}'
+
         await msg.channel.send(
             f'```\n'
             f'{player.name}\n'
             f'MMR: {player.dota_mmr}\n'
-            f'Opendota: {opendota}\n\n'
+            f'Opendota: {opendota}\n'
+            f'Ladder: {player_url}\n\n'
             f'Ladder MMR: {player.ladder_mmr} (corr. {correlation})\n'
             f'Score: {player.score}\n'
             f'Games: {match_count}\n\n'
@@ -365,22 +370,22 @@ class Command(BaseCommand):
         players = [(p.name, p.ladder_mmr) for p in queue.players.all()]
 
         result = BalanceResultManager.balance_teams(players)
-        answer_num = 1
 
-        url = reverse('balancer:balancer-result', args=(result.id,))
-        host = os.environ.get('BASE_URL', 'localhost:8000')
-
-        url = '%s%s?page=%s' % (host, url, answer_num)
-
-        queue.balance = result.answers.all()[answer_num - 1]
+        queue.balance = result.answers.first()
         queue.save()
 
     @staticmethod
     def balance_str(balance: BalanceAnswer):
+        host = os.environ.get('BASE_URL', 'localhost:8000')
+        url = reverse('balancer:balancer-answer', args=(balance.id,))
+        url = '%s%s' % (host, url)
+
         result = '```\n'
         for i, team in enumerate(balance.teams):
             player_names = [p[0] for p in team['players']]
             result += f'Team {i+1} (avg. {team["mmr"]}): {" | ".join(player_names)}\n'
+        result += f'\n{url}'
+
         result += '```'
 
         return result
