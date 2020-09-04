@@ -201,6 +201,11 @@ class Command(BaseCommand):
         player = kwargs['player']
         print(f'Join command from {player}:\n {command}')
 
+        # check if player is vouched
+        if not player.vouched:
+            await msg.channel.send('You need to get vouched before you can play.')
+            return
+
         # check if this is a queue channel
         try:
             channel = QueueChannel.objects.get(discord_id=msg.channel.id)
