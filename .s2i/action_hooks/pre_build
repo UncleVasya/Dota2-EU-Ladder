@@ -43,6 +43,3 @@ echo "set -g default-shell /bin/sh" > ~/.tmux.conf
 # Link tmux to be in PATH
 mkdir -p $APP_ROOT/src/.local/bin/
 ln -s $APP_ROOT/src/local/bin/tmux $APP_ROOT/src/.local/bin/tmux
-
-tmux new -d -s dota_bot 'python manage.py dota_bot -n 3'
-tmux new -d -s discord_bot 'python manage.py discord_bot'
