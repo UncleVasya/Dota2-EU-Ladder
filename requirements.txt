@@ -9,3 +9,4 @@ dota2==1.0.0
 discord.py==1.4.1
 
 git+git://github.com/unclevasya/django-pure-pagination.git@disablable_margins
+git+git://github.com/unclevasya/dota2.git@protobufs_update

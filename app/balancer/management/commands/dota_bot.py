@@ -325,7 +325,7 @@ class Command(BaseCommand):
 
         # convert steam64 into 32bit dota id and build a dic of {id: player}
         players_steam = {
-            SteamID(player.id).as_32: player for player in bot.lobby.members
+            SteamID(player.id).as_32: player for player in bot.lobby.all_members
             if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)
         }
 
@@ -436,7 +436,7 @@ class Command(BaseCommand):
         except (IndexError, ValueError):
             return
 
-        for player in bot.lobby.members:
+        for player in bot.lobby.all_members:
             if player.team not in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS):
                 continue
             if player.name.lower().startswith(name):
@@ -490,7 +490,7 @@ class Command(BaseCommand):
     @staticmethod
     def check_command(bot, msg):
         players_steam = {
-            SteamID(player.id).as_32: player for player in bot.lobby.members
+            SteamID(player.id).as_32: player for player in bot.lobby.all_members
             if SteamID(player.id).as_32 != bot.account_id
         }
 
@@ -577,9 +577,9 @@ class Command(BaseCommand):
             return
 
         # first search with 'startswith' and if no one found repeat with 'contains'
-        member = next((m for m in bot.lobby.members if m.name.lower().startswith(name)), None)
+        member = next((m for m in bot.lobby.all_members if m.name.lower().startswith(name)), None)
         if not member:
-            member = next((m for m in bot.lobby.members if name in m.name.lower()), None)
+            member = next((m for m in bot.lobby.all_members if name in m.name.lower()), None)
 
         if not member:
             bot.channels.lobby.send('No such name.')
@@ -675,7 +675,7 @@ class Command(BaseCommand):
 
         # convert steam64 into 32bit dota id and build a dic of {id: player}
         players_steam = {
-            SteamID(player.id).as_32: player for player in bot.lobby.members
+            SteamID(player.id).as_32: player for player in bot.lobby.all_members
             if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)
         }
 
@@ -844,7 +844,7 @@ class Command(BaseCommand):
         # get teams from game (player ids)
         # TODO: make function game_members_to_ids(lobby)
         game_teams = [set(), set()]
-        for player in bot.lobby.members:
+        for player in bot.lobby.all_members:
             if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS):
                 player_id = str(SteamID(player.id).as_32)  # TODO: models.Player.dota_id should be int, not str
                 game_teams[player.team].add(player_id)
@@ -917,7 +917,7 @@ class Command(BaseCommand):
     @staticmethod
     def kick_voice_issues(bot):
         players_steam = {
-            SteamID(player.id).as_32: player for player in bot.lobby.members
+            SteamID(player.id).as_32: player for player in bot.lobby.all_members
             if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)
         }
 
@@ -934,7 +934,7 @@ class Command(BaseCommand):
     @staticmethod
     def kick_low_mmr(bot):
         players_steam = {
-            SteamID(player.id).as_32: player for player in bot.lobby.members
+            SteamID(player.id).as_32: player for player in bot.lobby.all_members
             if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)
         }
         players = Player.objects.filter(
@@ -956,7 +956,7 @@ class Command(BaseCommand):
     def kick_blacklisted(bot):
         old_players = bot.players
         current_players = {
-            SteamID(player.id).as_32: player for player in bot.lobby.members
+            SteamID(player.id).as_32: player for player in bot.lobby.all_members
             if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)
         }
 
@@ -1002,7 +1002,7 @@ class Command(BaseCommand):
     @staticmethod
     def kick_banned_from_playing(bot):
         players_steam = {
-            SteamID(player.id).as_32: player for player in bot.lobby.members
+            SteamID(player.id).as_32: player for player in bot.lobby.all_members
             if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)
         }
 
@@ -1017,7 +1017,7 @@ class Command(BaseCommand):
 
     @staticmethod
     def kick_banned_from_lobby(bot):
-        players_steam = {SteamID(player.id).as_32: player for player in bot.lobby.members}
+        players_steam = {SteamID(player.id).as_32: player for player in bot.lobby.all_members}
 
         problematic = Player.objects.filter(
             dota_id__in=players_steam.keys(),
@@ -1030,7 +1030,7 @@ class Command(BaseCommand):
     @staticmethod
     def kick_unbalanced(bot):
         players_steam = {
-            SteamID(player.id).as_32: player for player in bot.lobby.members
+            SteamID(player.id).as_32: player for player in bot.lobby.all_members
             if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)
         }
 
@@ -1048,7 +1048,7 @@ class Command(BaseCommand):
     @staticmethod
     def kick_not_in_queue(bot):
         players_steam = {
-            SteamID(player.id).as_32: player for player in bot.lobby.members
+            SteamID(player.id).as_32: player for player in bot.lobby.all_members
             if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)
         }
 
@@ -1078,7 +1078,7 @@ class Command(BaseCommand):
         lobby = bot.lobby
 
         # filter out bot account
-        members = [player for player in lobby.members if SteamID(player.id).as_32 != bot.account_id]
+        members = [player for player in lobby.all_members if SteamID(player.id).as_32 != bot.account_id]
 
         players = [player for player in members
                    if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)]
