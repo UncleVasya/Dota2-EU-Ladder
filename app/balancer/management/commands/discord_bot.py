@@ -182,8 +182,6 @@ class Command(BaseCommand):
             match__season=LadderSettings.get_solo().current_season
         ).count()
 
-        correlation = PlayerManager.ladder_to_dota_mmr(player.ladder_mmr)
-
         dotabuff = f'https://www.dotabuff.com/players/{player.dota_id}'
 
         host = os.environ.get('BASE_URL', 'localhost:8000')
@@ -196,7 +194,7 @@ class Command(BaseCommand):
             f'MMR: {player.dota_mmr}\n'
             f'Dotabuff: {dotabuff}\n'
             f'Ladder: {player_url}\n\n'
-            f'Ladder MMR: {player.ladder_mmr} (corr. {correlation})\n'
+            f'Ladder MMR: {player.ladder_mmr}\n'
             f'Score: {player.score}\n'
             f'Games: {match_count}\n\n'
             f'Vouched: {"yes" if player.vouched else "no"}\n'
@@ -220,7 +218,7 @@ class Command(BaseCommand):
             return
 
         # check that player has enough MMR
-        if player.dota_mmr < channel.min_mmr:
+        if player.ladder_mmr < channel.min_mmr:
             await msg.channel.send('Your dick is too small. Grow a bigger one.')
             return
 

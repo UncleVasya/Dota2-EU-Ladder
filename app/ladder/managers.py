@@ -23,8 +23,8 @@ class PlayerManager(models.Manager):
             season=LadderSettings.get_solo().current_season,
         )
 
-        player.min_allowed_mmr = initial_mmr - 20
-        player.max_allowed_mmr = initial_mmr + 20
+        player.min_allowed_mmr = initial_mmr - 1000
+        player.max_allowed_mmr = initial_mmr + 1000
         player.save()
 
     def update_ranks(self):
@@ -55,13 +55,11 @@ class PlayerManager(models.Manager):
 
     @staticmethod
     def dota_to_ladder_mmr(mmr):
-        avg_mmr = 4000
-        return 200 - 30 * (avg_mmr - mmr) // 1000
+        return mmr  # at this moment we don't use any custom formula for mmr
 
     @staticmethod
     def ladder_to_dota_mmr(mmr):
-        avg_mmr = 4000
-        return avg_mmr - (200 - mmr) * 1000 // 30
+        return mmr  # at this moment we don't use any custom formula for mmr
 
 
 class MatchManager(models.Manager):
@@ -73,8 +71,8 @@ class MatchManager(models.Manager):
         # TODO: make values like win/loss change and underdog bonus changeble in admin panel
         mmr_diff = match.balance.teams[0]['mmr'] - match.balance.teams[1]['mmr']
         underdog = 0 if mmr_diff <= 0 else 1
-        underdog_bonus = abs(mmr_diff) // 10  # 1 point for each 10 avg. mmr diff
-        underdog_bonus = min(1, underdog_bonus)  # but no more than 1
+        underdog_bonus = abs(mmr_diff) // 300 * 15  # 15 mmr points for each 300 avg. mmr diff
+        underdog_bonus = min(15, underdog_bonus)  # but no more than 15 mmr
 
         print('mmr diff: %d' % mmr_diff)
         print('underdog: %d' % underdog)
@@ -87,7 +85,7 @@ class MatchManager(models.Manager):
 
             score_change = 1 * is_victory
 
-            mmr_change = 4 * is_victory
+            mmr_change = 50 * is_victory
             mmr_change += underdog_bonus * is_underdog
 
             use_boundary = False  # TODO: get this values from LadderSettings
