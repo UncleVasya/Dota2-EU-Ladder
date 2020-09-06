@@ -184,7 +184,7 @@ class Command(BaseCommand):
 
         correlation = PlayerManager.ladder_to_dota_mmr(player.ladder_mmr)
 
-        opendota = f'https://www.opendota.com/players/{player.dota_id}'
+        dotabuff = f'https://www.dotabuff.com/players/{player.dota_id}'
 
         host = os.environ.get('BASE_URL', 'localhost:8000')
         url = reverse('ladder:player-overview', args=(player.name,))
@@ -194,7 +194,7 @@ class Command(BaseCommand):
             f'```\n'
             f'{player.name}\n'
             f'MMR: {player.dota_mmr}\n'
-            f'Opendota: {opendota}\n'
+            f'Dotabuff: {dotabuff}\n'
             f'Ladder: {player_url}\n\n'
             f'Ladder MMR: {player.ladder_mmr} (corr. {correlation})\n'
             f'Score: {player.score}\n'
