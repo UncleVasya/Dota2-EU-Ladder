@@ -45,10 +45,16 @@ class PlayerAdmin(admin.ModelAdmin):
     ]
     readonly_fields = ('ladder_mmr', 'score', 'rank_ladder_mmr', 'rank_score')
 
-    list_display = ('name', 'rank_ladder_mmr', 'score', 'dota_mmr', 'dota_id', 'discord_id', 'vouched')
+    list_display = ('name', 'rank_ladder_mmr', 'score', 'dota_mmr', 'opendota_link', 'discord_id', 'vouched')
     search_fields = ('=name',)
 
     inlines = (BlacklistInline, BlacklistedByInline)
+
+    def opendota_link(self, obj):
+        opendota = f'https://www.opendota.com/players/{obj.dota_id}'
+        return f'<a href="{opendota}">{obj.dota_id}</a>'
+
+    opendota_link.allow_tags = True
 
     def save_model(self, request, obj, form, change):
         super(PlayerAdmin, self).save_model(request, obj, form, change)
