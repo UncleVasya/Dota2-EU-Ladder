@@ -157,9 +157,8 @@ class Command(BaseCommand):
         player.vouched = True
         player.save()
 
-        player_discord = self.bot.get_user(int(player.discord_id))
         await msg.channel.send(
-            f'{player_discord.mention} has been vouched. He can play now!'
+            f'{self.player_mention(player)} has been vouched. He can play now!'
         )
 
     async def whois_command(self, msg, **kwargs):
@@ -239,8 +238,12 @@ class Command(BaseCommand):
 
         if queue.players.count() == 10:
             Command.balance_queue(queue)  # todo move this to QueuePlayer signal
-            await msg.channel.send('\nQueue is full! Proposed balance: \n' +
-                                   Command.balance_str(queue.balance))
+            await msg.channel.send(
+                '\nQueue is full! Proposed balance: \n' +
+                Command.balance_str(queue.balance) + '\n' +
+                ' '.join(self.player_mention(p) for p in queue.players.all()) +
+                '\nYou have 5 min to join the lobby.'
+            )
 
     async def leave_queue_command(self, msg, **kwargs):
         command = msg.content
@@ -289,17 +292,20 @@ class Command(BaseCommand):
 
         queue = Command.add_player_to_queue(player, channel)
 
-        player_discord = self.bot.get_user(int(player.discord_id))
-        mention = player_discord.mention if player_discord else player.name
         await msg.channel.send(
             f'By a shameless abuse of power {msg.author.name} '
-            f'forcefully added {mention} to the inhouse queue. Have fun! ;)'
+            f'forcefully added {self.player_mention(player)} to the inhouse queue. '
+            f'Have fun! ;)'
         )
 
         if queue.players.count() == 10:
             Command.balance_queue(queue)
-            await msg.channel.send('\nQueue is full! Proposed balance: \n' +
-                                   Command.balance_str(queue.balance))
+            await msg.channel.send(
+                '\nQueue is full! Proposed balance: \n' +
+                Command.balance_str(queue.balance) + '\n' +
+                ' '.join(self.player_mention(p) for p in queue.players.all()) +
+                '\nYou have 5 min to join the lobby.'
+            )
 
     async def kick_from_queue_command(self, msg, **kwargs):
         command = msg.content
@@ -404,3 +410,10 @@ class Command(BaseCommand):
                f'Players: {q.players.count()} (' + \
                f' | '.join(p.name for p in q.players.all()) + ')\n\n' + \
                f'```\n'
+
+    def player_mention(self, player):
+        discord_id = int(player.discord_id) if player.discord_id else 0
+        player_discord = self.bot.get_user(discord_id)
+        mention = player_discord.mention if player_discord else player.name
+
+        return mention
