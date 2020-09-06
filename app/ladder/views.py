@@ -182,8 +182,8 @@ class PlayerDetail(DetailView):
         max_vals = Player.objects\
             .filter(matchplayer__match__season=season).distinct()\
             .aggregate(Max('score'), Max('ladder_mmr'))
-        score_max = max(1, max_vals['score__max'] or 0)
-        mmr_max = max(1, max_vals['ladder_mmr__max'] or 0)
+        score_max = max(1, max_vals['score__max'] or player.score)
+        mmr_max = max(1, max_vals['ladder_mmr__max'] or player.score)
 
         score = mmr = 0
         for scoreChange in reversed(score_changes):
