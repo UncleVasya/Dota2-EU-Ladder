@@ -51,6 +51,7 @@ class Command(BaseCommand):
             '!vouch': self.vouch_command,
             '!wh': self.whois_command,
             '!whois': self.whois_command,
+            '!stats': self.whois_command,
             '!q+': self.join_queue_command,
             '!q-': self.leave_queue_command,
             '!q': self.show_queues_command,
