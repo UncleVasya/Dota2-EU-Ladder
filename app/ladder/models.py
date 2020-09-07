@@ -103,8 +103,6 @@ class ScoreChange(models.Model):
 class LadderSettings(SingletonModel):
     current_season = models.PositiveSmallIntegerField(default=1)
     use_queue = models.BooleanField(default=True)
-    normal_queue_discord_channel = models.PositiveIntegerField(null=True)
-    open_queue_discord_channel = models.PositiveIntegerField(null=True)
 
 
 class QueueChannel(models.Model):
