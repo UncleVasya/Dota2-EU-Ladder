@@ -148,9 +148,8 @@ class Command(BaseCommand):
         except (IndexError, ValueError):
             return
 
-        try:
-            player = Player.objects.get(name__iexact=name)
-        except Player.DoesNotExist:
+        player = Command.get_player_by_name(name)
+        if not player:
             await msg.channel.send(f'{name}: I don\'t know him')
             return
 
@@ -167,14 +166,15 @@ class Command(BaseCommand):
         print('Whois command:')
         print(command)
 
+        player = name = None
         try:
             name = command.split(None, 1)[1]
         except (IndexError, ValueError):
-            return
+            #  if name is not provided, show current player
+            player = kwargs['player']
 
-        try:
-            player = Player.objects.get(name__iexact=name)
-        except Player.DoesNotExist:
+        player = player or Command.get_player_by_name(name)
+        if not player:
             await msg.channel.send(f'{name}: I don\'t know him')
             return
 
@@ -273,10 +273,8 @@ class Command(BaseCommand):
         except (IndexError, ValueError):
             return
 
-        # get player from db
-        try:
-            player = Player.objects.get(name__iexact=name)
-        except Player.DoesNotExist:
+        player = Command.get_player_by_name(name)
+        if not player:
             await msg.channel.send(f'{name}: I don\'t know him')
             return
 
@@ -411,6 +409,18 @@ class Command(BaseCommand):
                f'Players: {q.players.count()} (' + \
                f' | '.join(p.name for p in q.players.all()) + ')\n\n' + \
                f'```\n'
+
+    @staticmethod
+    def get_player_by_name(name):
+        player = Player.objects.filter(name__iexact=name).first()
+
+        # if exact match not found, try to guess player name
+        if not player:
+            player = Player.objects.filter(name__istartswith=name).first()
+        if not player:
+            player = Player.objects.filter(name__contains=name).first()
+
+        return player
 
     def player_mention(self, player):
         discord_id = int(player.discord_id) if player.discord_id else 0
