@@ -178,15 +178,18 @@ class Command(BaseCommand):
             await msg.channel.send(f'{name}: I don\'t know him')
             return
 
-        match_count = player.matchplayer_set.filter(
-            match__season=LadderSettings.get_solo().current_season
-        ).count()
-
         dotabuff = f'https://www.dotabuff.com/players/{player.dota_id}'
 
         host = os.environ.get('BASE_URL', 'localhost:8000')
         url = reverse('ladder:player-overview', args=(player.name,))
         player_url = f'{host}{url}'
+
+        season = LadderSettings.get_solo().current_season
+        player.matches = player.matchplayer_set \
+            .filter(match__season=season) \
+            .select_related('match')
+        wins = sum(1 if m.match.winner == m.team else 0 for m in player.matches)
+        losses = len(player.matches) - wins
 
         await msg.channel.send(
             f'```\n'
@@ -196,7 +199,7 @@ class Command(BaseCommand):
             f'Ladder: {player_url}\n\n'
             f'Ladder MMR: {player.ladder_mmr}\n'
             f'Score: {player.score}\n'
-            f'Games: {match_count}\n\n'
+            f'Games: {len(player.matches)} ({wins}-{losses})\n\n'
             f'Vouched: {"yes" if player.vouched else "no"}\n'
             f'```'
         )
