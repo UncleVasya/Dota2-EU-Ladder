@@ -262,7 +262,7 @@ class Command(BaseCommand):
                 ''.join(Command.queue_str(q) for q in queues)
             )
         else:
-            await msg.channel.send('No active queues found.')
+            await msg.channel.send('Noone is currently queueing.')
 
     async def add_to_queue_command(self, msg, **kwargs):
         command = msg.content
