@@ -16,7 +16,13 @@ var main = function() {
     // mmr correlation tooltips
     $('[data-mmr]').each(function(index) {
         var mmr = $(this).data('mmr');
-        $(this).prop('title', 'Correlation: ' + Math.round(ladderToDotaMMR(mmr)) + ' MMR');
+
+        const show_correlation = false;
+        if (show_correlation === true) {
+            $(this).prop('title', 'Correlation: ' + Math.round(ladderToDotaMMR(mmr)) + ' MMR');
+        } else {
+            $(this).prop('title', 'Signup: ' + mmr + ' MMR')
+        }
     });
 };
 
