@@ -150,14 +150,14 @@ class Command(BaseCommand):
 
         player = Command.get_player_by_name(name)
         if not player:
-            await msg.channel.send(f'{name}: I don\'t know him')
+            await msg.channel.send(f'`{name}`: I don\'t know him')
             return
 
         player.vouched = True
         player.save()
 
         await msg.channel.send(
-            f'{self.player_mention(player)} has been vouched. He can play now!'
+            f'`{self.player_mention(player)}` has been vouched. He can play now!'
         )
 
     async def whois_command(self, msg, **kwargs):
@@ -175,7 +175,7 @@ class Command(BaseCommand):
 
         player = player or Command.get_player_by_name(name)
         if not player:
-            await msg.channel.send(f'{name}: I don\'t know him')
+            await msg.channel.send(f'`{name}`: I don\'t know him')
             return
 
         dotabuff = f'https://www.dotabuff.com/players/{player.dota_id}'
@@ -233,7 +233,7 @@ class Command(BaseCommand):
         queue = Command.add_player_to_queue(player, channel)
 
         await msg.channel.send(
-            f'{player} joined inhouse queue #{queue.id}.\n' +
+            f'`{player}` joined inhouse queue #{queue.id}.\n' +
             Command.queue_str(queue)
         )
 
@@ -253,7 +253,7 @@ class Command(BaseCommand):
 
         QueuePlayer.objects.filter(player=player, queue__active=True).delete()
 
-        await msg.channel.send(f'{player} left the queue.\n')
+        await msg.channel.send(f'`{player}` left the queue.\n')
 
     async def show_queues_command(self, msg, **kwargs):
         queues = LadderQueue.objects.filter(active=True)
@@ -275,12 +275,12 @@ class Command(BaseCommand):
 
         player = Command.get_player_by_name(name)
         if not player:
-            await msg.channel.send(f'{name}: I don\'t know him')
+            await msg.channel.send(f'`{name}`: I don\'t know him')
             return
 
         # check that player is not in a queue already
         if player.ladderqueue_set.filter(active=True):
-            await msg.channel.send(f'{player} is already in a queue')
+            await msg.channel.send(f'`{player}` is already in a queue')
             return
 
         # check if this is a queue channel
@@ -292,7 +292,7 @@ class Command(BaseCommand):
         queue = Command.add_player_to_queue(player, channel)
 
         await msg.channel.send(
-            f'By a shameless abuse of power {msg.author.name} '
+            f'By a shameless abuse of power `{msg.author.name}` '
             f'forcefully added {self.player_mention(player)} to the inhouse queue. '
             f'Have fun! ;)'
         )
@@ -319,7 +319,7 @@ class Command(BaseCommand):
         try:
             player = Player.objects.get(name__iexact=name)
         except Player.DoesNotExist:
-            await msg.channel.send(f'{name}: I don\'t know him')
+            await msg.channel.send(f'`{name}`: I don\'t know him')
             return
 
         QueuePlayer.objects.filter(player=player, queue__active=True).delete()
@@ -394,9 +394,14 @@ class Command(BaseCommand):
         result = '```\n'
         for i, team in enumerate(balance.teams):
             player_names = [p[0] for p in team['players']]
-            result += f'Team {i+1} (avg. {team["mmr"]}): {" | ".join(player_names)}\n'
-        result += f'\n{url}'
+            result += f'Team {i+1}: {" | ".join(player_names)}\n'
 
+        result += 'Ladder MMR: \n'
+        for i, team in enumerate(balance.teams):
+            player_mmrs = [str(p[1]) for p in team['players']]
+            result += f'Team {i+1}: {" | ".join(player_mmrs)}\n'
+
+        result += f'\n{url}'
         result += '```'
 
         return result
@@ -407,7 +412,7 @@ class Command(BaseCommand):
                f'Queue #{q.id}\n' + \
                f'Min MMR: {q.min_mmr}\n' + \
                f'Players: {q.players.count()} (' + \
-               f' | '.join(p.name for p in q.players.all()) + ')\n\n' + \
+               f' | '.join(f'{p.name}-{p.ladder_mmr}' for p in q.players.all()) + ')\n\n' + \
                f'```\n'
 
     @staticmethod
