@@ -120,7 +120,6 @@ class LadderQueue(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     channel = models.ForeignKey(QueueChannel)
     min_mmr = models.PositiveSmallIntegerField(default=0)
-    lobby_name = models.CharField(max_length=200, null=True, blank=True)
     balance = models.OneToOneField(BalanceAnswer, null=True, blank=True)
 
     def __str__(self):

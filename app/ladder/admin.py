@@ -137,13 +137,13 @@ class LadderQueueAdmin(admin.ModelAdmin):
     model = LadderQueue
 
     fieldsets = [
-        (None, {'fields': ['date', 'active', 'min_mmr', 'lobby_name', 'channel']}),
+        (None, {'fields': ['date', 'active', 'min_mmr', 'channel']}),
     ]
     readonly_fields = ['date']
 
     inlines = (QueuePlayerInline, )
 
-    list_display = ('date', 'active', 'min_mmr', 'lobby_name', 'channel')
+    list_display = ('date', 'active', 'min_mmr', 'channel')
 
 
 class QueueChannelAdmin(admin.ModelAdmin):
