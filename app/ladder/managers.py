@@ -85,7 +85,8 @@ class MatchManager(models.Manager):
 
             score_change = 1 * is_victory
 
-            mmr_change = 50 * is_victory
+            mmr_per_game = LadderSettings.get_solo().mmr_per_game
+            mmr_change = mmr_per_game * is_victory
             mmr_change += underdog_bonus * is_underdog
 
             use_boundary = False  # TODO: get this values from LadderSettings

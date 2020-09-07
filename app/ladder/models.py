@@ -103,6 +103,7 @@ class ScoreChange(models.Model):
 class LadderSettings(SingletonModel):
     current_season = models.PositiveSmallIntegerField(default=1)
     use_queue = models.BooleanField(default=True)
+    mmr_per_game = models.PositiveSmallIntegerField(default=50)
 
 
 class QueueChannel(models.Model):
