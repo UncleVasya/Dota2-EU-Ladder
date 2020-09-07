@@ -394,12 +394,12 @@ class Command(BaseCommand):
         result = '```\n'
         for i, team in enumerate(balance.teams):
             player_names = [p[0] for p in team['players']]
-            result += f'Team {i+1}: {" | ".join(player_names)}\n'
+            result += f'Team {i+1} (avg. {team["mmr"]}): {" | ".join(player_names)}\n'
 
         result += 'Ladder MMR: \n'
         for i, team in enumerate(balance.teams):
             player_mmrs = [str(p[1]) for p in team['players']]
-            result += f'Team {i+1}: {" | ".join(player_mmrs)}\n'
+            result += f'Team {i+1} (avg. {team["mmr"]}): {" | ".join(player_mmrs)}\n'
 
         result += f'\n{url}'
         result += '```'
