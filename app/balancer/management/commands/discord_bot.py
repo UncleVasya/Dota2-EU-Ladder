@@ -3,12 +3,12 @@ from django.core.management.base import BaseCommand
 import os
 
 from django.core.urlresolvers import reverse
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Prefetch, Case, When, F
 
 from app.balancer.managers import BalanceResultManager
 from app.balancer.models import BalanceAnswer
 from app.ladder.managers import PlayerManager
-from app.ladder.models import Player, LadderSettings, LadderQueue, QueuePlayer, QueueChannel
+from app.ladder.models import Player, LadderSettings, LadderQueue, QueuePlayer, QueueChannel, MatchPlayer
 
 
 class Command(BaseCommand):
@@ -61,6 +61,7 @@ class Command(BaseCommand):
             '!add': self.add_to_queue_command,
             '!kick': self.kick_from_queue_command,
             '!mmr': self.mmr_command,
+            '!top': self.top_command,
         }
         free_for_all = ['!register']
         staff_only = ['!vouch', '!add', '!kick', '!mmr']
@@ -363,6 +364,71 @@ class Command(BaseCommand):
         channel.save()
 
         await msg.channel.send(f'Min MMR set to {min_mmr}')
+
+    async def top_command(self, msg, **kwargs):
+        def get_top_players(limit):
+            season = LadderSettings.get_solo().current_season
+            qs = Player.objects \
+                .order_by('-score') \
+                .filter(matchplayer__match__season=season).distinct() \
+                .prefetch_related(Prefetch(
+                    'matchplayer_set',
+                    queryset=MatchPlayer.objects.select_related('match'),
+                    to_attr='matches'
+                ))
+
+            qs = qs.annotate(
+                match_count=Count('matchplayer'),
+                wins=Count(Case(
+                    When(
+                        matchplayer__team=F('matchplayer__match__winner'), then=1)
+                )
+                ),
+                losses=F('match_count') - F('wins'),
+            )
+
+            return qs[:limit]
+
+        def player_str(p):
+            # pretty format is tricky
+            # TODO: let's move to discord embeds asap
+            name_offset = 25 - len(p.name)
+            result = f'{p.name}: {" " * name_offset} {p.score}  ' \
+                     f'{p.wins}W-{p.losses}L  {p.ladder_mmr} ihMMR'
+
+            return result
+
+        command = msg.content
+        print(f'\n!top command:\n{command}')
+
+        try:
+            limit = int(command.split(' ')[1])
+        except IndexError:
+            limit = 10  # default value
+        except ValueError:
+            return
+
+        host = os.environ.get('BASE_URL', 'localhost:8000')
+        url = f'{host}{reverse("ladder:player-list-score")}'
+
+        if limit < 1:
+            await msg.channel.send('Haha, very funny :thinking:')
+            return
+
+        if limit > 15:
+            await msg.channel.send(f'Just open the leaderboard: {url}')
+            return
+
+        # all is ok, can show top players
+        players = get_top_players(limit)
+        top_str = '\n'.join(
+            f'{p.rank_score:2}. {player_str(p)}' for p in players
+        )
+        await msg.channel.send(
+            f'```{top_str} ``` \n'
+            f'Full leaderboard is here: {url}'
+        )
+
 
     @staticmethod
     def add_player_to_queue(player, channel):
