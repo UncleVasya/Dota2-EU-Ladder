@@ -251,9 +251,14 @@ class Command(BaseCommand):
         player = kwargs['player']
         print(f'Leave command from {player}:\n {command}')
 
-        QueuePlayer.objects.filter(player=player, queue__active=True).delete()
+        deleted, _ = QueuePlayer.objects\
+            .filter(player=player, queue__active=True)\
+            .delete()
 
-        await msg.channel.send(f'`{player}` left the queue.\n')
+        if deleted > 0:
+            await msg.channel.send(f'`{player}` left the queue.\n')
+        else:
+            await msg.channel.send(f'`{player}` is not queuing.\n')
 
     async def show_queues_command(self, msg, **kwargs):
         queues = LadderQueue.objects.filter(active=True)
@@ -322,11 +327,16 @@ class Command(BaseCommand):
             await msg.channel.send(f'`{name}`: I don\'t know him')
             return
 
-        QueuePlayer.objects.filter(player=player, queue__active=True).delete()
+        deleted, _ = QueuePlayer.objects \
+            .filter(player=player, queue__active=True) \
+            .delete()
 
-        player_discord = self.bot.get_user(int(player.discord_id))
-        mention = player_discord.mention if player_discord else player.name
-        await msg.channel.send(f'{mention} was kicked from the queue.')
+        if deleted > 0:
+            player_discord = self.bot.get_user(int(player.discord_id))
+            mention = player_discord.mention if player_discord else player.name
+            await msg.channel.send(f'{mention} was kicked from the queue.')
+        else:
+            await msg.channel.send(f'`{player}` is not queuing.\n')
 
     async def mmr_command(self, msg, **kwargs):
         command = msg.content
