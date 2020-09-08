@@ -258,6 +258,7 @@ class Command(BaseCommand):
             '!q': Command.show_queue_command,
             '!playerdraft': Command.player_draft_command,
             '!pd': Command.player_draft_command,
+            '!missing': Command.missing_command,
         }
         free_for_all = ['!register']
         staff_only = ['!staff', '!forcestart', '!fs', '!new', '!lobbykick', '!lk']
@@ -810,9 +811,26 @@ class Command(BaseCommand):
         bot.player_draft = not bot.player_draft
         if bot.player_draft:
             bot.balance_answer = None
+            bot.channels.lobby.send(
+                f'Player draft is turned ON. 2 highest MMR players please draft.')
+        else:
+            bot.channels.lobby.send(
+                f'Player draft is turned OFF. Use !teams to see auto-balance.')
 
-        bot.channels.lobby.send(
-            f'Player draft is turned {"ON" if bot.player_draft else "OFF"}')
+    @staticmethod
+    def missing_command(bot, msg):
+        print('\n!missing command.')
+
+        if not bot.queue:
+            bot.channels.lobby.send('This lobby is not currently in a queue.')
+            return
+
+        players_lobby = [SteamID(p.id).as_32 for p in bot.lobby.all_members]
+        missing = bot.queue.players\
+            .exclude(dota_id__in=players_lobby)\
+            .values_list('name', flat=True)
+
+        bot.channels.lobby.send('Missing players: ' + ' | '.join(missing))
 
     @staticmethod
     def process_game_result(bot):
