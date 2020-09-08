@@ -135,10 +135,12 @@ class Command(BaseCommand):
         )
         Player.objects.update_ranks()
 
+        admins_to_ping = Player.objects.filter(new_reg_pings=True)
         await msg.channel.send(
-            f"""Welcome to the ladder, {name}! 
+            f"""Welcome to the ladder, `{name}`! 
             \nYou need to get vouched before you can play. Wait for inhouse staff to review your signup. 
-            \nYou can ping their lazy asses if it takes too long ;)"""
+            \nYou can ping their lazy asses if it takes too long ;)
+            \n{' '.join(self.player_mention(p) for p in admins_to_ping)}"""
         )
 
     async def vouch_command(self, msg, **kwargs):

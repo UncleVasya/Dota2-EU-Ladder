@@ -38,6 +38,8 @@ class Player(models.Model):
     )
     banned = models.PositiveSmallIntegerField(choices=BAN_CHOICES, null=True, blank=True)
 
+    new_reg_pings = models.BooleanField(default=False)
+
     objects = PlayerManager()
 
     class Meta:
