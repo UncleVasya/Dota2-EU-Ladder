@@ -9,7 +9,7 @@ from django.db.models import Q, Count, Prefetch, Case, When, F
 
 from app.balancer.managers import BalanceResultManager
 from app.balancer.models import BalanceAnswer
-from app.ladder.managers import PlayerManager
+from app.ladder.managers import PlayerManager, MatchManager
 from app.ladder.models import Player, LadderSettings, LadderQueue, QueuePlayer, QueueChannel, MatchPlayer
 
 
@@ -468,15 +468,27 @@ class Command(BaseCommand):
         url = reverse('balancer:balancer-answer', args=(balance.id,))
         url = '%s%s' % (host, url)
 
+        # find out who's undergdog
+        teams = balance.teams
+        underdog = None
+        if teams[1]['mmr'] - teams[0]['mmr'] >= MatchManager.underdog_diff:
+            underdog = 0
+        elif teams[0]['mmr'] - teams[1]['mmr'] >= MatchManager.underdog_diff:
+            underdog = 1
+
         result = '```\n'
         for i, team in enumerate(balance.teams):
             player_names = [p[0] for p in team['players']]
-            result += f'Team {i+1} (avg. {team["mmr"]}): {" | ".join(player_names)}\n'
+            result += f'Team {i + 1} {"↡" if i == underdog else " "} ' \
+                      f'(avg. {team["mmr"]}): ' \
+                      f'{" | ".join(player_names)}\n'
 
-        result += 'Ladder MMR: \n'
+        result += '\nLadder MMR: \n'
         for i, team in enumerate(balance.teams):
             player_mmrs = [str(p[1]) for p in team['players']]
-            result += f'Team {i+1} (avg. {team["mmr"]}): {" | ".join(player_mmrs)}\n'
+            result += f'Team {i + 1} {"↡" if i == underdog else " "} ' \
+                      f'(avg. {team["mmr"]}): ' \
+                      f'{" | ".join(player_mmrs)}\n'
 
         result += f'\n{url}'
         result += '```'
