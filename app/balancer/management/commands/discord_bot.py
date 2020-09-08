@@ -159,7 +159,7 @@ class Command(BaseCommand):
         player.save()
 
         await msg.channel.send(
-            f'`{self.player_mention(player)}` has been vouched. He can play now!'
+            f'{self.player_mention(player)} has been vouched. He can play now!'
         )
 
     async def whois_command(self, msg, **kwargs):
