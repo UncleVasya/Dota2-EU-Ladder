@@ -367,7 +367,7 @@ class Command(BaseCommand):
         def get_top_players(limit):
             season = LadderSettings.get_solo().current_season
             qs = Player.objects \
-                .order_by('-score') \
+                .order_by('-score', '-ladder_mmr') \
                 .filter(matchplayer__match__season=season).distinct() \
                 .prefetch_related(Prefetch(
                     'matchplayer_set',
@@ -483,11 +483,12 @@ class Command(BaseCommand):
 
     @staticmethod
     def queue_str(q: LadderQueue):
+        players = q.players.all()
         return f'```\n' + \
                f'Queue #{q.id}\n' + \
                f'Min MMR: {q.min_mmr}\n' + \
                f'Players: {q.players.count()} (' + \
-               f' | '.join(f'{p.name}-{p.ladder_mmr}' for p in q.players.all()) + ')\n\n' + \
+               f' | '.join(f'{p.name}-{p.ladder_mmr}' for p in players) + ')\n\n' + \
                f'```\n'
 
     @staticmethod
