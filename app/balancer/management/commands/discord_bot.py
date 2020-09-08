@@ -1,3 +1,5 @@
+from statistics import mean
+
 import discord
 from django.core.management.base import BaseCommand
 import os
@@ -484,11 +486,13 @@ class Command(BaseCommand):
     @staticmethod
     def queue_str(q: LadderQueue):
         players = q.players.all()
+        avg_mmr = round(mean(p.ladder_mmr for p in players))
         return f'```\n' + \
                f'Queue #{q.id}\n' + \
                f'Min MMR: {q.min_mmr}\n' + \
                f'Players: {q.players.count()} (' + \
                f' | '.join(f'{p.name}-{p.ladder_mmr}' for p in players) + ')\n\n' + \
+               f'Avg. MMR: {avg_mmr} {"LUL" if avg_mmr < 4500 else ""} \n' + \
                f'```\n'
 
     @staticmethod
