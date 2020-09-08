@@ -322,10 +322,8 @@ class Command(BaseCommand):
         except (IndexError, ValueError):
             return
 
-        # get player from db
-        try:
-            player = Player.objects.get(name__iexact=name)
-        except Player.DoesNotExist:
+        player = Command.get_player_by_name(name)
+        if not player:
             await msg.channel.send(f'`{name}`: I don\'t know him')
             return
 
