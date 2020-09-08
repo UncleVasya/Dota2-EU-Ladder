@@ -163,12 +163,13 @@ class Command(BaseCommand):
                 # Command.kick_blacklisted(dota)
                 if dota.use_queue:
                     Command.kick_not_in_queue(dota)
-                if dota.balance_answer:
-                    Command.kick_unbalanced(dota)
-                if dota.voice_required:
-                    Command.kick_voice_issues(dota)
-                if dota.min_mmr > 0:
-                    Command.kick_low_mmr(dota)
+                else:
+                    if dota.balance_answer:
+                        Command.kick_unbalanced(dota)
+                    if dota.voice_required:
+                        Command.kick_voice_issues(dota)
+                    if dota.min_mmr > 0:
+                        Command.kick_low_mmr(dota)
 
             if int(lobby.state) == LobbyState.POSTGAME:
                 # game ended, process result and create new lobby
