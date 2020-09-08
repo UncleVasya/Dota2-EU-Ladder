@@ -126,6 +126,9 @@ class LadderQueue(models.Model):
     def __str__(self):
         return f'Queue #{self.id}'
 
+    class Meta:
+        ordering = ('-id', )
+
 
 class QueuePlayer(models.Model):
     queue = models.ForeignKey(LadderQueue)
