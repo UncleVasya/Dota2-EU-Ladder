@@ -41,7 +41,7 @@ class PlayerAdmin(admin.ModelAdmin):
         (None, {'fields': ['name', 'dota_mmr', 'dota_id', 'discord_id', 'voice_issues', 'bot_access', 'vouched', 'banned']}),
         (None, {'fields': ['ladder_mmr', 'score']}),
         (None, {'fields': ['rank_ladder_mmr', 'rank_score']}),
-        (None, {'fields': ['min_allowed_mmr', 'max_allowed_mmr']}),
+        # (None, {'fields': ['min_allowed_mmr', 'max_allowed_mmr']}),
         (None, {'fields': ['new_reg_pings']})
     ]
     readonly_fields = ('ladder_mmr', 'score', 'rank_ladder_mmr', 'rank_score')
@@ -49,7 +49,7 @@ class PlayerAdmin(admin.ModelAdmin):
     list_display = ('name', 'rank_ladder_mmr', 'score', 'dota_mmr', 'dotabuff_link', 'discord_id', 'vouched')
     search_fields = ('=name',)
 
-    inlines = (BlacklistInline, BlacklistedByInline)
+    # inlines = (BlacklistInline, BlacklistedByInline)
 
     def dotabuff_link(self, obj):
         dotabuff = f'https://www.dotabuff.com/players/{obj.dota_id}'
@@ -166,4 +166,4 @@ admin.site.register(QueueChannel, QueueChannelAdmin)
 
 admin.site.register(LadderSettings, SingletonModelAdmin)
 
-admin.site.register(Player.blacklist.through)
+# admin.site.register(Player.blacklist.through)
