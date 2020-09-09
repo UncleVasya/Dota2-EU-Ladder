@@ -119,6 +119,7 @@ class Command(BaseCommand):
         if not 0 <= mmr < 10000:
             await msg.channel.send('Haha, very funny. :thinking:')
             return
+
         # check if we can register this player
         if Player.objects.filter(Q(discord_id=msg.author.id) | Q(dota_id=dota_id)).exists():
             await msg.channel.send('Already registered, bro.')
@@ -210,7 +211,8 @@ class Command(BaseCommand):
             f'Ladder MMR: {player.ladder_mmr}\n'
             f'Score: {player.score}\n'
             f'Games: {len(player.matches)} ({wins}-{losses})\n\n'
-            f'Vouched: {"yes" if player.vouched else "no"}\n'
+            f'Vouched: {"yes" if player.vouched else "no"}\n\n'
+            f'{player.description or ""}\n'
             f'```'
         )
 

@@ -40,6 +40,7 @@ class PlayerAdmin(admin.ModelAdmin):
     fieldsets = [
         (None, {'fields': ['name', 'dota_mmr', 'dota_id', 'discord_id', 'voice_issues', 'bot_access', 'vouched', 'banned']}),
         (None, {'fields': ['ladder_mmr', 'score']}),
+        (None, {'fields': ['description']}),
         (None, {'fields': ['rank_ladder_mmr', 'rank_score']}),
         # (None, {'fields': ['min_allowed_mmr', 'max_allowed_mmr']}),
         (None, {'fields': ['new_reg_pings']})
