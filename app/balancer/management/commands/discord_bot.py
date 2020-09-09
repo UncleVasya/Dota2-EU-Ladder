@@ -109,12 +109,16 @@ class Command(BaseCommand):
             dota_id = str(int(params[2]))  # check that id is a number
         except (IndexError, ValueError):
             await msg.channel.send(
-                'Wrong command usage.\n' 
-                'Format: "!register username mmr dota_id". Example: \n' 
-                '!register Uvs 3000 444510529'
+                'Format: `!register username mmr dota_id`. Example: \n' 
+                '```\n'
+                '!register Uvs 3000 444510529\n'
+                '```'
             )
             return
 
+        if not 0 <= mmr < 10000:
+            await msg.channel.send('Haha, very funny. :thinking:')
+            return
         # check if we can register this player
         if Player.objects.filter(Q(discord_id=msg.author.id) | Q(dota_id=dota_id)).exists():
             await msg.channel.send('Already registered, bro.')
