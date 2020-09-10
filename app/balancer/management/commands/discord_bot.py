@@ -94,6 +94,7 @@ class Command(BaseCommand):
             '!mmr': self.mmr_command,
             '!top': self.top_command,
             '!afk-ping': self.afk_ping_command,
+            '!afkping': self.afk_ping_command,
         }
         free_for_all = ['!register']
         staff_only = ['!vouch', '!add', '!kick', '!mmr']
