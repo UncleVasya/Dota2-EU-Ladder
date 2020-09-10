@@ -596,33 +596,13 @@ class Command(BaseCommand):
             afk = [p for p in players if datetime.now() - last_seen(p) > t]
             return afk
 
-        def player_str(p):
-            seen = last_seen(p)
-            return f'{p.name:15}  |  Last seen: {timeago.format(seen)}'
-
-        await channel.send('=====afk check======')
-        await channel.send(
-            '```\n' +
-            'Queued players: \n' +
-            ' \n'.join(player_str(p) for p in players) +
-            '\n```'
-        )
-
         afk_allowed_time = LadderSettings.get_solo().afk_allowed_time
 
         afk_list = afk_filter(players, afk_allowed_time)
         if not afk_list:
             return
 
-        await channel.send(
-            '```\n' +
-            'AFK players: \n' +
-            ' \n'.join(player_str(p) for p in afk_list) +
-            '\n```'
-        )
-
         ping_list = [p for p in afk_list if p.queue_afk_ping]
-
         if ping_list:
             afk_response_time = LadderSettings.get_solo().afk_response_time
 
