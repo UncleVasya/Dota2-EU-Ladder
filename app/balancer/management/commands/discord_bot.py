@@ -473,7 +473,7 @@ class Command(BaseCommand):
         print(f'\n!afk_ping command:\n{command}')
 
         try:
-            mode = int(command.split(' ')[1])
+            mode = command.split(' ')[1]
         except IndexError:
             mode = ''
 
@@ -483,11 +483,11 @@ class Command(BaseCommand):
             await msg.channel.send('Aye aye, captain')
         else:
             await msg.channel.send(
-                f'Current mode is `{"ON" if player.queue_afk_ping else "OFF"}`. '
+                f'{player.name}, you current mode is `{"ON" if player.queue_afk_ping else "OFF"}`. '
                 f'Available modes: \n'
                 f'```\n'
-                f'!afk-ping ON - will `ping` you before kicking if yo are afk in queue.\n'
-                f'!afk-ping OFF - will `kick` you without pinging if yo are afk in queue.\n'
+                f'!afk-ping ON   - will ping you before kicking for afk.\n'
+                f'!afk-ping OFF  - will kick you for afk without pinging.\n'
                 f'```'
             )
 
@@ -627,7 +627,7 @@ class Command(BaseCommand):
         if deleted > 0:
             await channel.send(
                 'Purge all heretics from the queue! For the Emperor! ' +
-                'These are burned at stake: \n' +
+                'These players were burned at stake: \n' +
                 '```\n' +
                 ' | '.join(p.name for p in afk_list) +
                 '\n```'
