@@ -43,7 +43,8 @@ class PlayerAdmin(admin.ModelAdmin):
         (None, {'fields': ['description']}),
         (None, {'fields': ['rank_ladder_mmr', 'rank_score']}),
         # (None, {'fields': ['min_allowed_mmr', 'max_allowed_mmr']}),
-        (None, {'fields': ['new_reg_pings']})
+        (None, {'fields': ['new_reg_pings']}),
+        (None, {'fields': ['queue_afk_ping']}),
     ]
     readonly_fields = ('ladder_mmr', 'score', 'rank_ladder_mmr', 'rank_score')
 

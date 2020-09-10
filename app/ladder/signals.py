@@ -2,7 +2,7 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.db.models import Sum
 
-from app.ladder.models import ScoreChange, Match, Player, LadderSettings, QueuePlayer
+from app.ladder.models import ScoreChange, Match, Player, LadderSettings, QueuePlayer, LadderQueue
 
 
 @receiver([post_save, post_delete], sender=ScoreChange)
@@ -26,7 +26,12 @@ def match_change(**kwargs):
 
 @receiver(post_delete, sender=QueuePlayer)
 def qplayer_change(instance, **kwargs):
-    queue = instance.queue
+    try:
+        queue = instance.queue
+    except LadderQueue.DoesNotExist:
+        # this happens on bulk removal of afk players;
+        # queue already been deleted, it's fine
+        return
 
     if queue.players.count() < 10:
         queue.balance = None

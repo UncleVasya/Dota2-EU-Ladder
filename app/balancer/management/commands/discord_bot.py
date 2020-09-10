@@ -1,6 +1,12 @@
+import asyncio
+import itertools
+from collections import defaultdict
+from datetime import datetime, timedelta
 from statistics import mean
 
 import discord
+import timeago
+from discord.ext import tasks
 from django.core.management.base import BaseCommand
 import os
 
@@ -9,7 +15,7 @@ from django.db.models import Q, Count, Prefetch, Case, When, F
 
 from app.balancer.managers import BalanceResultManager
 from app.balancer.models import BalanceAnswer
-from app.ladder.managers import PlayerManager, MatchManager
+from app.ladder.managers import MatchManager
 from app.ladder.models import Player, LadderSettings, LadderQueue, QueuePlayer, QueueChannel, MatchPlayer
 
 
@@ -17,6 +23,7 @@ class Command(BaseCommand):
     def __init__(self):
         super().__init__()
         self.bot = None
+        self.last_seen = defaultdict(datetime.now)  # to detect afk players
 
     def handle(self, *args, **options):
         bot_token = os.environ.get('DISCORD_BOT_TOKEN', '')
@@ -26,12 +33,14 @@ class Command(BaseCommand):
         @self.bot.event
         async def on_ready():
             print(f'Logged in: {self.bot.user} {self.bot.user.id}')
+            queue_afk_check.start()
 
         @self.bot.event
         async def on_message(msg):
+            self.last_seen[msg.author.id] = datetime.now()
+
             if not QueueChannel.objects.filter(discord_id=msg.channel.id).exists():
                 return
-
             if msg.author.bot:
                 return
 
@@ -42,6 +51,26 @@ class Command(BaseCommand):
             if msg.content.startswith('!'):
                 # looks like this is a bot command
                 await self.bot_cmd(msg)
+
+        @self.bot.event
+        async def on_reaction_add(reaction, user):
+            self.last_seen[user.id] = datetime.now()
+
+        @tasks.loop(seconds=30.0)
+        async def queue_afk_check():
+            # TODO: it would be good to do here
+            #  .select_related(`player`, `queue`, `queue__channel`)
+            #  but this messes up with itertools.groupby.
+            #  Need to measure speed here and investigate.
+            players = QueuePlayer.objects.filter(queue__active=True)
+            # group players by channel
+            players = itertools.groupby(players, lambda x: x.queue.channel)
+
+            for channel, qp_list in players:
+                channel_players = [qp.player for qp in qp_list]
+
+                channel = self.bot.get_channel(channel.discord_id)
+                await self.channel_check_afk(channel, channel_players)
 
         self.bot.run(bot_token)
 
@@ -64,6 +93,7 @@ class Command(BaseCommand):
             '!kick': self.kick_from_queue_command,
             '!mmr': self.mmr_command,
             '!top': self.top_command,
+            '!afk-ping': self.afk_ping_command,
         }
         free_for_all = ['!register']
         staff_only = ['!vouch', '!add', '!kick', '!mmr']
@@ -437,6 +467,29 @@ class Command(BaseCommand):
             f'Full leaderboard is here: {url}'
         )
 
+    async def afk_ping_command(self, msg, **kwargs):
+        command = msg.content
+        player = kwargs['player']
+        print(f'\n!afk_ping command:\n{command}')
+
+        try:
+            mode = int(command.split(' ')[1])
+        except IndexError:
+            mode = ''
+
+        if mode.lower() in ['on', 'off']:
+            player.queue_afk_ping = True if mode.lower() == 'on' else False
+            player.save()
+            await msg.channel.send('Aye aye, captain')
+        else:
+            await msg.channel.send(
+                f'Current mode is `{"ON" if player.queue_afk_ping else "OFF"}`. '
+                f'Available modes: \n'
+                f'```\n'
+                f'!afk-ping ON - will `ping` you before kicking if yo are afk in queue.\n'
+                f'!afk-ping OFF - will `kick` you without pinging if yo are afk in queue.\n'
+                f'```'
+            )
 
     @staticmethod
     def add_player_to_queue(player, channel):
@@ -533,3 +586,69 @@ class Command(BaseCommand):
         mention = player_discord.mention if player_discord else player.name
 
         return mention
+
+    async def channel_check_afk(self, channel: discord.TextChannel, players):
+        def last_seen(p):
+            return self.last_seen[int(p.discord_id or 0)]
+
+        def afk_filter(players, allowed_time):
+            t = timedelta(minutes=allowed_time)
+            afk = [p for p in players if datetime.now() - last_seen(p) > t]
+            return afk
+
+        def player_str(p):
+            seen = last_seen(p)
+            return f'{p.name:15}  |  Last seen: {timeago.format(seen)}'
+
+        await channel.send('=====afk check======')
+        await channel.send(
+            '```\n' +
+            'Queued players: \n' +
+            ' \n'.join(player_str(p) for p in players) +
+            '\n```'
+        )
+
+        afk_allowed_time = LadderSettings.get_solo().afk_allowed_time
+
+        afk_list = afk_filter(players, afk_allowed_time)
+        if not afk_list:
+            return
+
+        await channel.send(
+            '```\n' +
+            'AFK players: \n' +
+            ' \n'.join(player_str(p) for p in afk_list) +
+            '\n```'
+        )
+
+        ping_list = [p for p in afk_list if p.queue_afk_ping]
+
+        if ping_list:
+            afk_response_time = LadderSettings.get_solo().afk_response_time
+
+            msg = await channel.send(
+                " ".join(self.player_mention(p) for p in ping_list) +
+                f"\nIt's been a while. React if you are still around. " +
+                f"You have `{afk_response_time} min`.\n"
+            )
+            await msg.add_reaction('👌')
+            await asyncio.sleep(afk_response_time * 60)
+
+            # players who not responded
+            afk_list = afk_filter(afk_list, afk_response_time)
+
+        if not afk_list:
+            return
+
+        deleted, _ = QueuePlayer.objects \
+            .filter(player__in=afk_list, queue__active=True) \
+            .delete()
+
+        if deleted > 0:
+            await channel.send(
+                'Purge all heretics from the queue! For the Emperor! ' +
+                'These are burned at stake: \n' +
+                '```\n' +
+                ' | '.join(p.name for p in afk_list) +
+                '\n```'
+            )

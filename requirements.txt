@@ -6,6 +6,7 @@ django-debug-toolbar==1.5
 django-autoslug==1.9.3
 django-solo==1.1.2
 discord.py==1.4.1
+timeago==1.0.14
 
 git+git://github.com/unclevasya/django-pure-pagination.git@disablable_margins
 git+git://github.com/unclevasya/dota2.git@protobufs_update

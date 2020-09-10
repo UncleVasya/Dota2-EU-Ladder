@@ -39,6 +39,8 @@ class Player(models.Model):
     banned = models.PositiveSmallIntegerField(choices=BAN_CHOICES, null=True, blank=True)
 
     new_reg_pings = models.BooleanField(default=False)
+    queue_afk_ping = models.BooleanField(default=True)
+
     description = models.CharField(max_length=200, null=True, blank=True)
 
     objects = PlayerManager()
@@ -107,6 +109,8 @@ class LadderSettings(SingletonModel):
     current_season = models.PositiveSmallIntegerField(default=1)
     use_queue = models.BooleanField(default=True)
     mmr_per_game = models.PositiveSmallIntegerField(default=50)
+    afk_allowed_time = models.PositiveSmallIntegerField(default=40)
+    afk_response_time = models.PositiveSmallIntegerField(default=5)
 
 
 class QueueChannel(models.Model):
