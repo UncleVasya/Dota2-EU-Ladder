@@ -484,7 +484,7 @@ class Command(BaseCommand):
             await msg.channel.send('Aye aye, captain')
         else:
             await msg.channel.send(
-                f'{player.name}, you current mode is `{"ON" if player.queue_afk_ping else "OFF"}`. '
+                f'`{player.name}`, you current mode is `{"ON" if player.queue_afk_ping else "OFF"}`. '
                 f'Available modes: \n'
                 f'```\n'
                 f'!afk-ping ON   - will ping you before kicking for afk.\n'
