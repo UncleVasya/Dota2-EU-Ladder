@@ -1,5 +1,6 @@
 import asyncio
 import itertools
+import re
 from collections import defaultdict
 from datetime import datetime, timedelta
 from statistics import mean
@@ -571,6 +572,14 @@ class Command(BaseCommand):
 
     @staticmethod
     def get_player_by_name(name):
+        player = None
+
+        # check if name is a mention
+        match = re.match(r'<@!?([0-9]+)>$', name)
+        if match:
+            return Player.objects.filter(discord_id=match.group(1)).first()
+
+        # not a mention, proceed normally
         player = Player.objects.filter(name__iexact=name).first()
 
         # if exact match not found, try to guess player name
