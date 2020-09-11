@@ -56,7 +56,7 @@ class Command(BaseCommand):
         async def on_reaction_add(reaction, user):
             self.last_seen[user.id] = datetime.now()
 
-        @tasks.loop(seconds=30.0)
+        @tasks.loop(minutes=5)
         async def queue_afk_check():
             # TODO: it would be good to do here
             #  .select_related(`player`, `queue`, `queue__channel`)
@@ -566,7 +566,7 @@ class Command(BaseCommand):
                f'Min MMR: {q.min_mmr}\n' + \
                f'Players: {q.players.count()} (' + \
                f' | '.join(f'{p.name}-{p.ladder_mmr}' for p in players) + ')\n\n' + \
-               f'Avg. MMR: {avg_mmr} {"LUL" if avg_mmr < 4500 else ""} \n' + \
+               f'Avg. MMR: {avg_mmr} {"LUL" if avg_mmr < 4000 else ""} \n' + \
                f'```\n'
 
     @staticmethod
