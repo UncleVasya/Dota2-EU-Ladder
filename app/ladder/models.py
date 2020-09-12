@@ -1,10 +1,23 @@
-
-
 from django.db import models
 from app.balancer.models import BalanceAnswer
 from autoslug import AutoSlugField
 from app.ladder.managers import PlayerManager, ScoreChangeManager
 from solo.models import SingletonModel
+from annoying.fields import AutoOneToOneField
+
+
+def create_roles_pref():
+    return RolesPreference.objects.create().id
+
+
+class RolesPreference(models.Model):
+    CHOICES = [(i, i) for i in range(1, 6)]
+
+    carry = models.PositiveSmallIntegerField(choices=CHOICES, default=3)
+    mid = models.PositiveSmallIntegerField(choices=CHOICES, default=3)
+    offlane = models.PositiveSmallIntegerField(choices=CHOICES, default=3)
+    pos4 = models.PositiveSmallIntegerField(choices=CHOICES, default=3)
+    pos5 = models.PositiveSmallIntegerField(choices=CHOICES, default=3)
 
 
 class Player(models.Model):
@@ -42,6 +55,8 @@ class Player(models.Model):
     queue_afk_ping = models.BooleanField(default=True)
 
     description = models.CharField(max_length=200, null=True, blank=True)
+
+    roles = AutoOneToOneField(RolesPreference)
 
     objects = PlayerManager()
 

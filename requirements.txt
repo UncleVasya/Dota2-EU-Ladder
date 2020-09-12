@@ -7,6 +7,8 @@ django-autoslug==1.9.3
 django-solo==1.1.2
 discord.py==1.4.1
 timeago==1.0.14
+django-annoying==0.10.4
+django-reverse-admin==1.0.0
 
 git+git://github.com/unclevasya/django-pure-pagination.git@disablable_margins
 git+git://github.com/unclevasya/dota2.git@protobufs_update

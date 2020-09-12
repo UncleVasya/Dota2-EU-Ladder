@@ -1,6 +1,8 @@
 from django import forms
+from django_reverse_admin import ReverseModelAdmin
+
 from app.ladder.models import Player, Match, MatchPlayer, ScoreChange, LadderSettings, LadderQueue, QueuePlayer, \
-    QueueChannel
+    QueueChannel, RolesPreference
 from django.contrib import admin
 from django.db.models import Prefetch
 from dal import autocomplete
@@ -34,7 +36,11 @@ class BlacklistedByInline(admin.TabularInline):
     fk_name = 'to_player'
 
 
-class PlayerAdmin(admin.ModelAdmin):
+class RolesInline(admin.StackedInline):
+    model = RolesPreference
+
+
+class PlayerAdmin(ReverseModelAdmin):
     model = Player
 
     fieldsets = [
@@ -51,6 +57,10 @@ class PlayerAdmin(admin.ModelAdmin):
     list_display = ('name', 'rank_ladder_mmr', 'score', 'dota_mmr', 'dotabuff_link', 'discord_id', 'vouched')
     search_fields = ('=name',)
 
+    inline_type = 'tabular'
+    inline_reverse = [
+        ('roles', {'fields': ['carry', 'mid', 'offlane', 'pos4', 'pos5']})
+    ]
     # inlines = (BlacklistInline, BlacklistedByInline)
 
     def dotabuff_link(self, obj):
