@@ -224,7 +224,7 @@ class Command(BaseCommand):
         dotabuff = f'https://www.dotabuff.com/players/{player.dota_id}'
 
         host = os.environ.get('BASE_URL', 'localhost:8000')
-        url = reverse('ladder:player-overview', args=(player.name,))
+        url = reverse('ladder:player-overview', args=(player.slug,))
         player_url = f'{host}{url}'
 
         season = LadderSettings.get_solo().current_season

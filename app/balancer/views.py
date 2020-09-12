@@ -106,7 +106,7 @@ class BalancerAnswer(DetailView):
                     slug = Player.objects.get(name=player[0]).slug
                 except Player.DoesNotExist:
                     slug = ''  # player was renamed since this balance
-                    
+
                 mmr_percent = float(player[1] ** mmr_exponent) / mmr_max * 100
                 team['players'][i] = {
                     'name': player[0],
