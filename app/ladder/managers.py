@@ -32,23 +32,22 @@ class PlayerManager(models.Manager):
 
         # recalculate player rankings by particular field (ladder_mmr or score)
         def update_ranks_by(field):
-            groups = defaultdict(list)
-            for player in players:
-                value = getattr(player, field)
-                groups[value].append(player)
+            players.sort(key=lambda p: getattr(p, field), reverse=True)
 
-            groups = sorted(groups.items(), reverse=True)
+            ranks = [1]
+            for i in range(1, len(players)):
+                curr_val = getattr(players[i], field)
+                prev_val = getattr(players[i-1], field)
+                ranks.append(ranks[i-1] if curr_val == prev_val else i+1)
 
-            rank = 0
-            for group in groups:
-                rank += len(group[1])
-                for player in group[1]:
-                    setattr(player, 'rank_%s' % field, rank)
-                    player.save()
+            for i, player in enumerate(players):
+                setattr(player, f'rank_{field}', ranks[i])
+                player.save()
 
         season = LadderSettings.get_solo().current_season
         players = self.filter(matchplayer__match__season=season).distinct()
         players = players or self.all()
+        players = list(players)  # evaluate
 
         update_ranks_by('ladder_mmr')
         update_ranks_by('score')
