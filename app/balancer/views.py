@@ -102,11 +102,17 @@ class BalancerAnswer(DetailView):
 
         for team in answer.teams:
             for i, player in enumerate(team['players']):
+                try:
+                    slug = Player.objects.get(name=player[0]).slug
+                except Player.DoesNotExist:
+                    slug = ''  # player was renamed since this balance
+                    
                 mmr_percent = float(player[1] ** mmr_exponent) / mmr_max * 100
                 team['players'][i] = {
                     'name': player[0],
                     'mmr': player[1],
-                    'mmr_percent': mmr_percent
+                    'mmr_percent': mmr_percent,
+                    'slug': slug,
                 }
 
         context.update({

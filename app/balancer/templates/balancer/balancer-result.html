@@ -58,7 +58,7 @@
 
                             <tbody>
                             {% for player in team.players %}
-                                {% url 'ladder:player-overview' player.name|slugify as player_url %}
+                                {% url 'ladder:player-overview' player.slug as player_url %}
 
                                 <tr data-link="{{ player_url }}">
                                     <td class="col-md-3">
