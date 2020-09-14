@@ -349,7 +349,7 @@ class Command(BaseCommand):
 
         print(players)
 
-        players = [(p.name, p.ladder_mmr) for p in players.values()]
+        players = players.values()
         result = BalanceResultManager.balance_teams(players)
 
         try:

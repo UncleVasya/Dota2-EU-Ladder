@@ -518,8 +518,7 @@ class Command(BaseCommand):
 
     @staticmethod
     def balance_queue(queue):
-        players = [(p.name, p.ladder_mmr) for p in queue.players.all()]
-
+        players = list(queue.players.all())
         result = BalanceResultManager.balance_teams(players)
 
         queue.balance = result.answers.first()
