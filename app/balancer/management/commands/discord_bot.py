@@ -77,7 +77,7 @@ class Command(BaseCommand):
         self.bot.run(bot_token)
 
     async def bot_cmd(self, msg):
-        command = msg.content.split(' ')[0]
+        command = msg.content.split(' ')[0].lower()
 
         commands = {
             '!register': self.register_command,
