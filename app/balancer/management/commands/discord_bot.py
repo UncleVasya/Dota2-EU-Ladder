@@ -17,7 +17,8 @@ from django.db.models import Q, Count, Prefetch, Case, When, F
 from app.balancer.managers import BalanceResultManager
 from app.balancer.models import BalanceAnswer
 from app.ladder.managers import MatchManager
-from app.ladder.models import Player, LadderSettings, LadderQueue, QueuePlayer, QueueChannel, MatchPlayer
+from app.ladder.models import Player, LadderSettings, LadderQueue, QueuePlayer, QueueChannel, MatchPlayer, \
+    RolesPreference
 
 
 class Command(BaseCommand):
@@ -96,6 +97,8 @@ class Command(BaseCommand):
             '!top': self.top_command,
             '!afk-ping': self.afk_ping_command,
             '!afkping': self.afk_ping_command,
+            '!role': self.role_command,
+            '!roles': self.role_command,
         }
         free_for_all = ['!register']
         staff_only = ['!vouch', '!add', '!kick', '!mmr']
@@ -243,7 +246,8 @@ class Command(BaseCommand):
             f'Ladder MMR: {player.ladder_mmr}\n'
             f'Score: {player.score}\n'
             f'Games: {len(player.matches)} ({wins}-{losses})\n\n'
-            f'Vouched: {"yes" if player.vouched else "no"}\n\n'
+            f'Vouched: {"yes" if player.vouched else "no"}\n'
+            f'Roles: {Command.roles_str(player.roles)}\n\n'
             f'{player.description or ""}\n'
             f'```'
         )
@@ -493,6 +497,90 @@ class Command(BaseCommand):
                 f'```'
             )
 
+    async def role_command(self, msg, **kwargs):
+        command = msg.content
+        player = kwargs['player']
+        print(f'\n!role command from {player}:\n{command}')
+
+        roles = player.roles
+        args = command.split(' ')[1:]
+
+        if len(args) == 5:
+            # full roles format; check that we have 5 numbers from 1 to 5
+            try:
+                args = [int(x) for x in args]
+                if any(not 0 < x < 6 for x in args):
+                    raise ValueError
+            except ValueError:
+                await msg.channel.send('Haha, very funny :thinking:')
+                return
+
+            # args are fine
+            roles.carry = args[0]
+            roles.mid = args[1]
+            roles.offlane = args[2]
+            roles.pos4 = args[3]
+            roles.pos5 = args[4]
+        elif len(args) == 2:
+            # !role mid 4  format
+            try:
+                role = args[0]
+                value = int(args[1])
+                if not 0 < value < 6:
+                    raise ValueError
+
+                if role in ['carry', 'pos1']:
+                    roles.carry = value
+                elif role in ['mid', 'midlane', 'pos2']:
+                    roles.mid = value
+                elif role in ['off', 'offlane', 'pos3']:
+                    roles.offlane = value
+                elif role in ['pos4']:
+                    roles.pos4 = value
+                elif role in ['pos5']:
+                    roles.pos5 = value
+                elif role in ['core']:
+                    roles.carry = roles.mid = roles.offlane = value
+                elif role in ['sup', 'supp', 'support']:
+                    roles.pos4 = roles.pos5 = value
+                else:
+                    raise ValueError  # wrong role name
+            except ValueError:
+                await msg.channel.send('Haha, very funny :thinking:')
+                return
+        elif len(args) == 0:
+            # !role command without args, show current role prefs
+            await msg.channel.send(
+                f'Current role prefs for `{player.name}`: \n'
+                f'```\n{Command.roles_str(roles)}\n```'
+            )
+            return
+        else:
+            # wrong format, so just show help message
+            await msg.channel.send(
+                'This command sets your comfort score for a given role, from 1 to 5. '
+                'Usage examples: \n'
+                '```\n'
+                '!role mid 5  - you prefer to play mid very much;\n'
+                '!role pos5 2  - you don\'t really want to play hard support;\n'
+                '!role supp 1  - you totally don\'t want to play any support (pos4 or pos5);\n\n'
+                '!role 1 4 2 5 3  - set all roles in one command; this means carry=1, mid=4, off=3, pos4=5, pos5=2;\n'
+                '\n```\n'
+                'Role names: \n'
+                '```\n'
+                'carry/pos1, mid/midlane/pos2, off/offlane/pos3, pos4, pos5\n'
+                'core  - combines carry, mid and off\n'
+                'sup/supp/support  - combines pos4 and pos5\n'
+                '\n```'
+            )
+            return
+
+        roles.save()
+        await msg.channel.send(
+            f'New role prefs for `{player.name}`: \n'
+            f'```\n{Command.roles_str(roles)}\n```'
+        )
+
     @staticmethod
     def add_player_to_queue(player, channel):
         # get an available active queue
@@ -568,6 +656,11 @@ class Command(BaseCommand):
                f' | '.join(f'{p.name}-{p.ladder_mmr}' for p in players) + ')\n\n' + \
                f'Avg. MMR: {avg_mmr} {"LUL" if avg_mmr < 4000 else ""} \n' + \
                f'```\n'
+
+    @staticmethod
+    def roles_str(roles: RolesPreference):
+        return f'carry: {roles.carry} | mid: {roles.mid} | off: {roles.offlane} | ' + \
+               f'pos4: {roles.pos4} | pos5: {roles.pos5}'
 
     @staticmethod
     def get_player_by_name(name):
