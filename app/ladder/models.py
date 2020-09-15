@@ -75,6 +75,9 @@ class Player(models.Model):
         self.ladder_mmr = max(self.ladder_mmr or 0, 0)
 
         created = not self.pk
+        if created:
+            self.roles = RolesPreference.objects.create()
+
         super(Player, self).save(*args, **kwargs)
 
         # give player initial score and mmr
