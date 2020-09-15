@@ -9,7 +9,7 @@ class BalanceResultManager(models.Manager):
 
         # balance teams and save result
         # TODO: make mmr_exponent changable from admin panel
-        mmr_exponent = 3
+        mmr_exponent = 1
         if role_balancing:
             answers = role_balance_teams(players, mmr_exponent)
         else:
