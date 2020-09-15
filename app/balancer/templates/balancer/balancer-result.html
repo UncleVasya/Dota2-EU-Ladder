@@ -44,13 +44,16 @@
         <div class="col-md-6">
             <section class="balancer-result team{{ forloop.counter }}">
                 <header>
-                    <a> Team {{ forloop.counter }} (Avg. {{ team.mmr }}) </a>
+                    <a> Team {{ forloop.counter }} (Avg. {{ team.mmr }}, Comf. {{ team.role_score_sum }}) </a>
                 </header>
                 <article>
                     <div class="table-responsive balancer-result-stats">
                         <table class="table table-borderless">
                             <thead>
                                 <tr>
+                                    {% if team.role_score %}
+                                        <th> Role </th>
+                                    {% endif %}
                                     <th> Player </th>
                                     <th> MMR </th>
                                 </tr>
@@ -61,6 +64,13 @@
                                 {% url 'ladder:player-overview' player.slug as player_url %}
 
                                 <tr data-link="{{ player_url }}">
+                                    {% if team.role_score %}
+                                        <td class="col-md-2">
+                                            <span>
+                                                {{ role_names|index:forloop.counter0 }} | {{ player.role_score }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
                                     <td class="col-md-3">
                                         <a class='link-white' href="{{ player_url }}"> {{ player.name }} </a>
                                     </td>

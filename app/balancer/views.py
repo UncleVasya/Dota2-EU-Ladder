@@ -1,5 +1,5 @@
 from django.contrib.auth.mixins import PermissionRequiredMixin
-from app.balancer.balancer import balance_teams
+from app.balancer.balancer import balance_teams, role_names
 from app.balancer.forms import BalancerForm, BalancerCustomForm
 from app.balancer.managers import BalanceResultManager
 from app.balancer.models import BalanceResult, BalanceAnswer
@@ -72,11 +72,13 @@ class BalancerResult(DetailView):
                 team['players'][i] = {
                     'name': player[0],
                     'mmr': player[1],
-                    'mmr_percent': mmr_percent
+                    'mmr_percent': mmr_percent,
+                    'role_score': team['role_score'][i],
                 }
 
         context.update({
             'answer': answer,
+            'role_names': role_names,
             'pagination': page,
         })
 
@@ -112,11 +114,13 @@ class BalancerAnswer(DetailView):
                     'name': player[0],
                     'mmr': player[1],
                     'mmr_percent': mmr_percent,
+                    'role_score': team['role_score'][i],
                     'slug': slug,
                 }
 
         context.update({
             'answer': answer,
+            'role_names': role_names,
         })
 
         return context
