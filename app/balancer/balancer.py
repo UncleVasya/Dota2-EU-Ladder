@@ -5,6 +5,10 @@ from typing import List
 from app.ladder.models import Match, Player
 
 
+role_names = ['carry', 'mid', 'offlane', 'pos4', 'pos5']
+role_permutations = list(itertools.permutations(role_names, 5))
+
+
 def balance_teams(players, mmr_exponent=3):
     """
     Takes a list of 10 players and produces
@@ -89,6 +93,42 @@ def role_balance_teams(players: List[Player], mmr_exponent=3):
         return intersection(answer[0], players) >= amount and \
                intersection(answer[1], players) >= amount
 
+    def get_role_mmr_diff(answer, role):
+        ind = role_names.index(role)
+        p1 = answer[0]['players'][ind]
+        p2 = answer[1]['players'][ind]
+        diff = abs(p1.ladder_mmr - p2.ladder_mmr)
+        return diff
+
+    def assign_best_roles(team):
+        role_score_max = 0
+        best_roles = None
+        for roles in role_permutations:
+            role_score = 0
+            for i, player in enumerate(team['players']):
+                role_score += getattr(player.roles, roles[i])
+
+            if role_score > role_score_max:
+                role_score_max = role_score
+                best_roles = roles
+
+        # sort players according to their roles
+        sorted_players = []
+        role_score = []
+        for r in role_names:
+            ind = best_roles.index(r)  # index of player for given role
+            player = team['players'][ind]
+            score = getattr(player.roles, r)
+
+            sorted_players.append(player)
+            role_score.append(score)
+
+        team.update({
+            'players': sorted_players,
+            'role_score': role_score,
+            'role_score_sum': role_score_max,
+        })
+
     team_players = 5
 
     # sort players by mmr
@@ -110,6 +150,12 @@ def role_balance_teams(players: List[Player], mmr_exponent=3):
         }
         for team in teams
     ]
+
+    for team in teams:
+        assign_best_roles(team)
+
+    # for team in teams:
+    #     print(f'{team}\n\n')
 
     # combine teams into pairs against each other
     half = len(teams) // 2
@@ -136,9 +182,10 @@ def role_balance_teams(players: List[Player], mmr_exponent=3):
         ' | '.join(f'{p.name}-{p.roles.mid}-{p.ladder_mmr}' for p in mid_players)
     )
 
-    if len(mid_players) > 1:
-        # check that every team has at least one mid player
-        answers = [x for x in answers if both_teams_have(x, mid_players, 1)]
+    # check that players on core roles are competitive with each other
+    # answers = [x for x in answers if get_role_mmr_diff(x, 'carry') < 1000]
+    # answers = [x for x in answers if get_role_mmr_diff(x, 'mid') < 1000]
+    # answers = [x for x in answers if get_role_mmr_diff(x, 'offlane') < 1000]
 
     # discard answers that place top 2 or lowest 2 players on same team
     top_players = players[:2]
@@ -154,13 +201,14 @@ def role_balance_teams(players: List[Player], mmr_exponent=3):
         {
             'teams': random.sample(answer, len(answer)),  # assign team side randomly (Radiant or Dire)
             'mmr_diff': abs(answer[0]['mmr'] - answer[1]['mmr']),
-            'mmr_diff_exp': abs(answer[0]['mmr_exp'] - answer[1]['mmr_exp'])
+            'mmr_diff_exp': abs(answer[0]['mmr_exp'] - answer[1]['mmr_exp']),
+            'role_score_sum': answer[0]['role_score_sum'] + answer[1]['role_score_sum'],
         }
         for answer in answers
     ]
 
     # sort answers by mmr difference
-    answers.sort(key=lambda x: x['mmr_diff_exp'])
+    answers.sort(key=lambda x: (-x['role_score_sum'], x['mmr_diff_exp']))
 
     for answer in answers:
         for team in answer['teams']:
