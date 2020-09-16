@@ -71,7 +71,7 @@
 
          <div class="col-md-4 stats-element">
             <div class="stats-value">
-                {% url 'balancer:balancer-answer' max_diff_match.balance.id as match_url %}
+                {% url 'balancer:balancer-answer' stats.max_diff_match.balance.id as match_url %}
                 <span>
                     {{ stats.max_diff_match.balance.mmr_diff }} MMR
                     <br>
