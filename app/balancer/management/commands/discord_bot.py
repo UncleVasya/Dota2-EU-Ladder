@@ -629,7 +629,12 @@ class Command(BaseCommand):
 
         result = '```\n'
         for i, team in enumerate(balance.teams):
-            player_names = [p[0] for p in team['players']]
+            if team['role_score_sum']:
+                # this is balance with roles
+                player_names = [f'{i+1}. {p[0]}' for i, p in enumerate(team['players'])]
+            else:
+                # balance without roles
+                player_names = [p[0] for p in team['players']]
             result += f'Team {i + 1} {"↡" if i == underdog else " "} ' \
                       f'(avg. {team["mmr"]}): ' \
                       f'{" | ".join(player_names)}\n'

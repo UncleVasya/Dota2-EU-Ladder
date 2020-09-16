@@ -608,22 +608,24 @@ class Command(BaseCommand):
     def teams_command(bot, msg):
         print('Teams command')
 
+        balance = bot.balance_answer
         if not bot.balance_answer:
             bot.channels.lobby.send('Please balance teams first.')
             return
 
-        teams = [
-            Player.objects.filter(
-                name__in=[player[0] for player in team['players']]
-            ).order_by('-ladder_mmr')
-            for team in bot.balance_answer.teams
-        ]
+        team_str = []
+        for i, team in enumerate(balance.teams):
+            if team['role_score_sum']:
+                # this is balance with roles
+                player_names = [f'{i+1}. {p[0]}' for i, p in enumerate(team['players'])]
+            else:
+                # balance without roles
+                player_names = [p[0] for p in team['players']]
+            team_str.append(f'Team {i+1}: ' + ' | '.join(player_names))
 
-        ladder_mmr = [' '.join(str(player.ladder_mmr) for player in team) for team in teams]
+        ladder_mmr = [' '.join(str(p[1]) for p in team['players']) for team in balance.teams]
 
-        [bot.channels.lobby.send(
-            f'Team {i+1}: ' + f' | '.join(player.name for player in team))
-         for i, team in enumerate(teams)]
+        [bot.channels.lobby.send(team) for team in team_str]
         bot.channels.lobby.send('Ladder MMR:')
         [bot.channels.lobby.send(team) for team in ladder_mmr]
 
