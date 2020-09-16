@@ -1,0 +1,90 @@
+<section>
+<header> {{ caption }} </header>
+<article>
+    <div class="row stats-row">
+        <div class="col-md-4 stats-element">
+            <div class="stats-value">
+                <span> {{ stats.matches }} </span>
+            </div>
+            <div class="stats-caption">
+                <p>Games played</p>
+            </div>
+        </div>
+
+         <div class="col-md-4 stats-element">
+            <div class="stats-value">
+                <span> {{ stats.players }} </span>
+            </div>
+            <div class="stats-caption">
+                <p>Active players</p>
+            </div>
+        </div>
+
+         <div class="col-md-4 stats-element">
+            <div class="stats-value">
+                <span> {{ stats.mmr|floatformat:0|default:0 }} </span>
+            </div>
+            <div class="stats-caption">
+                <p>Average MMR</p>
+            </div>
+        </div>
+    </div>
+</article>
+</section>
+
+<section>
+<article>
+    <div class="row stats-row">
+        <div class="col-md-4 stats-element">
+            <div class="stats-value">
+                {% url 'balancer:balancer-answer' stats.highest_mmr_match.balance.id as match_url %}
+                <span>
+                    {{ stats.highest_mmr_match.avg_mmr }} MMR
+                    <br>
+                    <a href="{{ match_url }}">Ladder</a>
+                    &nbsp;
+                    <a href="https://www.dotabuff.com/matches/{{ stats.highest_mmr_match.dota_id }}">Dotabuff</a>
+                </span>
+
+            </div>
+            <div class="stats-caption">
+                <p>Highest avg. MMR match</p>
+            </div>
+        </div>
+
+         <div class="col-md-4 stats-element">
+            <div class="stats-value">
+                {% url 'balancer:balancer-answer' stats.lowest_mmr_match.balance.id as match_url %}
+                <span>
+                    {{ stats.lowest_mmr_match.avg_mmr }} MMR
+                    <br>
+                    <a href="{{ match_url }}">Ladder</a>
+                    &nbsp;
+                    <a href="https://www.dotabuff.com/matches/{{ stats.lowest_mmr_match.dota_id }}">Dotabuff</a>
+                </span>
+
+            </div>
+            <div class="stats-caption">
+                <p>Lowest avg. MMR match</p>
+            </div>
+        </div>
+
+         <div class="col-md-4 stats-element">
+            <div class="stats-value">
+                {% url 'balancer:balancer-answer' max_diff_match.balance.id as match_url %}
+                <span>
+                    {{ stats.max_diff_match.balance.mmr_diff }} MMR
+                    <br>
+                    <a href="{{ match_url }}">Ladder</a>
+                    &nbsp;
+                    <a href="https://www.dotabuff.com/matches/{{ stats.max_diff_match.dota_id }}">Dotabuff</a>
+                </span>
+
+            </div>
+            <div class="stats-caption">
+                <p>Max MMR diff match</p>
+            </div>
+        </div>
+    </div>
+</article>
+</section>

@@ -20,6 +20,10 @@
     font-weight: bold;
 }
 
+.stats-value a {
+    font-size: 14px;
+}
+
 .stats-caption {
     margin-top: 20px;
     font-size: 20px;

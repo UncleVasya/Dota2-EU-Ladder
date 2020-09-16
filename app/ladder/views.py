@@ -408,9 +408,18 @@ class KimerStats(TemplateView):
     def get_context_data(self, **kwargs):
         context = super(KimerStats, self).get_context_data(**kwargs)
 
-        time_period = timedelta(days=7)  # weekly stats
-        matches = Match.objects.filter(date__gte=datetime.now() - time_period)
+        #  filter out games that was played before the mmr system change
+        all_time = Match.objects.filter(date__gte=datetime(2020, 9, 7))
+        last_week = Match.objects.filter(date__gte=datetime.now() - timedelta(days=7))
 
+        context.update({
+            'all_time': self.get_stats(all_time),
+            'last_week': self.get_stats(last_week),
+        })
+        return context
+
+    @staticmethod
+    def get_stats(matches):
         stats = matches.aggregate(
             matches=Count('id', distinct=True),
             players=Count('matchplayer__player', distinct=True),
@@ -420,11 +429,12 @@ class KimerStats(TemplateView):
         for m in matches:
             m.avg_mmr = sum(t['mmr'] for t in m.balance.teams) // 2
 
-        context.update({
-            'matches': matches,
+        return {
+            'matches': stats['matches'],
+            'players': stats['players'],
+            'mmr': stats['mmr'],
             'max_diff_match': max(matches, key=lambda x: x.balance.mmr_diff),
             'highest_mmr_match': max(matches, key=lambda x: x.avg_mmr),
             'lowest_mmr_match': min(matches, key=lambda x: x.avg_mmr),
             'stats': stats,
-        })
-        return context
+        }
