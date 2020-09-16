@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+
+{% block page_scripts %}
+{% endblock page_scripts %}
+
+{% block page_styles %}
+    <link href='//fonts.googleapis.com/css?family=Open+Sans:300,400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="{% static 'ladder/css/stats.css' %}">
+{% endblock page_styles %}
+
+{% block content %}
+
+<div class="page-overview">
+    <div class="page-overview-primary">
+        <div class="page-overview-title">
+            <h1> Kimer stats
+                <small>{% block player-page-title %} {% endblock %}</small>
+            </h1>
+        </div>
+    </div>
+</div>
+
+<section>
+<article>
+    <div class="row stats-row">
+        <div class="col-md-4 stats-element">
+            <div class="stats-value">
+                <span> {{ stats.matches }} </span>
+            </div>
+            <div class="stats-caption">
+                <p>Games played</p>
+            </div>
+        </div>
+
+         <div class="col-md-4 stats-element">
+            <div class="stats-value">
+                <span> {{ stats.players }} </span>
+            </div>
+            <div class="stats-caption">
+                <p>Active players</p>
+            </div>
+        </div>
+
+         <div class="col-md-4 stats-element">
+            <div class="stats-value">
+                <span> {{ stats.mmr|floatformat:0|default:0 }} </span>
+            </div>
+            <div class="stats-caption">
+                <p>Average MMR</p>
+            </div>
+        </div>
+    </div>
+</article>
+</section>
+
+<section>
+<article>
+    <div class="row stats-row">
+        <div class="col-md-4 stats-element">
+            <div class="stats-value">
+                {% url 'balancer:balancer-answer' highest_mmr_match.balance.id as match_url %}
+                <span>
+                    {{ highest_mmr_match.avg_mmr }} MMR
+                    <br><br>
+                    <a href="{{ match_url }}">Ladder</a>
+                    &nbsp;
+                    <a href="https://www.dotabuff.com/matches/{{ highest_mmr_match.dota_id }}">Dotabuff</a>
+                </span>
+
+            </div>
+            <div class="stats-caption">
+                <p>Highest MMR match</p>
+            </div>
+        </div>
+
+         <div class="col-md-4 stats-element">
+            <div class="stats-value">
+                {% url 'balancer:balancer-answer' lowest_mmr_match.balance.id as match_url %}
+                <span>
+                    {{ lowest_mmr_match.avg_mmr }} MMR
+                    <br><br>
+                    <a href="{{ match_url }}">Ladder</a>
+                    &nbsp;
+                    <a href="https://www.dotabuff.com/matches/{{ lowest_mmr_match.dota_id }}">Dotabuff</a>
+                </span>
+
+            </div>
+            <div class="stats-caption">
+                <p>Lowest MMR match</p>
+            </div>
+        </div>
+
+         <div class="col-md-4 stats-element">
+            <div class="stats-value">
+                {% url 'balancer:balancer-answer' max_diff_match.balance.id as match_url %}
+                <span>
+                    {{ max_diff_match.balance.mmr_diff }} MMR
+                    <br><br>
+                    <a href="{{ match_url }}">Ladder</a>
+                    &nbsp;
+                    <a href="https://www.dotabuff.com/matches/{{ max_diff_match.dota_id }}">Dotabuff</a>
+                </span>
+
+            </div>
+            <div class="stats-caption">
+                <p>Max MMR diff match</p>
+            </div>
+        </div>
+    </div>
+</article>
+</section>
+
+{% endblock content %}

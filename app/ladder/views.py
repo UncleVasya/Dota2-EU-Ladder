@@ -400,3 +400,31 @@ class LobbyStatus(TemplateView):
             'lobbies_game': sum(lobby['state'] == 'game' for lobby in lobbies),
         })
         return context
+
+
+class KimerStats(TemplateView):
+    template_name = 'ladder/kimer_stats.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(KimerStats, self).get_context_data(**kwargs)
+
+        time_period = timedelta(days=7)  # weekly stats
+        matches = Match.objects.filter(date__gte=datetime.now() - time_period)
+
+        stats = matches.aggregate(
+            matches=Count('id', distinct=True),
+            players=Count('matchplayer__player', distinct=True),
+            mmr=Avg('matchplayer__player__ladder_mmr')
+        )
+
+        for m in matches:
+            m.avg_mmr = sum(t['mmr'] for t in m.balance.teams) // 2
+
+        context.update({
+            'matches': matches,
+            'max_diff_match': max(matches, key=lambda x: x.balance.mmr_diff),
+            'highest_mmr_match': max(matches, key=lambda x: x.avg_mmr),
+            'lowest_mmr_match': min(matches, key=lambda x: x.avg_mmr),
+            'stats': stats,
+        })
+        return context
