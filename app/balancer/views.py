@@ -114,7 +114,7 @@ class BalancerAnswer(DetailView):
                     'name': player[0],
                     'mmr': player[1],
                     'mmr_percent': mmr_percent,
-                    'role_score': team['role_score'][i],
+                    'role_score': team['role_score'][i] if team.get('role_score') else None,
                     'slug': slug,
                 }
 
