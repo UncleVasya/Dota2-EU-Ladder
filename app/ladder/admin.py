@@ -36,10 +36,6 @@ class BlacklistedByInline(admin.TabularInline):
     fk_name = 'to_player'
 
 
-class RolesInline(admin.StackedInline):
-    model = RolesPreference
-
-
 class PlayerAdmin(ReverseModelAdmin):
     model = Player
 
