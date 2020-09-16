@@ -584,10 +584,11 @@ class Command(BaseCommand):
     @staticmethod
     def add_player_to_queue(player, channel):
         # get an available active queue
-        queue = LadderQueue.objects \
-            .filter(active=True) \
-            .annotate(Count('players')) \
-            .filter(players__count__lt=10, channel=channel) \
+        queue = LadderQueue.objects\
+            .filter(active=True)\
+            .annotate(Count('players'))\
+            .filter(players__count__lt=10, channel=channel)\
+            .order_by('-players__count')\
             .first()
 
         if not queue:
