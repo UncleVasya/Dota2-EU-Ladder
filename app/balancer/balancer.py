@@ -182,6 +182,10 @@ def role_balance_teams(players: List[Player], mmr_exponent=3):
         ' | '.join(f'{p.name}-{p.roles.mid}-{p.ladder_mmr}' for p in mid_players)
     )
 
+    # if len(mid_players) > 1:
+    #     # check that every team has at least one mid player
+    #     answers = [x for x in answers if both_teams_have(x, mid_players, 1)]
+
     # check that players on core roles are competitive with each other
     # answers = [x for x in answers if get_role_mmr_diff(x, 'carry') < 1000]
     # answers = [x for x in answers if get_role_mmr_diff(x, 'mid') < 1000]
