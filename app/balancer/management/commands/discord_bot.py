@@ -31,6 +31,7 @@ class Command(BaseCommand):
         self.poll_reaction_funcs = {
             'DraftMode': self.on_draft_mode_reaction,
             'EliteMMR': self.on_elite_mmr_reaction,
+            'Faceit': self.on_faceit_reaction,
         }
 
     def handle(self, *args, **options):
@@ -99,8 +100,7 @@ class Command(BaseCommand):
 
             # call reaction processing function
             # if there is no processing function, use do-nothing lambda
-            func = self.poll_reaction_funcs.get(poll.name, lambda *args: None)
-            await func(message, user, player)
+            await self.poll_reaction_funcs[poll.name](message, user, player)
 
         @self.bot.event
         async def on_raw_reaction_remove(payload):
@@ -115,8 +115,7 @@ class Command(BaseCommand):
 
             # call reaction processing function
             # if there is no processing function, use do-nothing lambda
-            func = self.poll_reaction_funcs.get(poll.name, lambda *args: None)
-            await func(message, user)
+            await self.poll_reaction_funcs[poll.name](message, user)
 
         @tasks.loop(minutes=5)
         async def queue_afk_check():
@@ -957,3 +956,6 @@ class Command(BaseCommand):
         await message.edit(content=text)
         await message.add_reaction('🇾')
         await message.add_reaction('🇳')
+
+    async def on_faceit_reaction(self, message, user, player=None):
+        pass
