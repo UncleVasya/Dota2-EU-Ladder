@@ -1,4 +1,6 @@
 import re
+
+from app.balancer.balancer import role_names
 from app.balancer.models import BalanceAnswer
 from django.core.management.base import BaseCommand
 from django.core.cache import cache
@@ -590,18 +592,17 @@ class Command(BaseCommand):
         try:
             player = Player.objects.get(dota_id=SteamID(member.id).as_32)
         except Player.DoesNotExist:
-            bot.channels.lobby.send('%s: I don\'t know him' % member.name)
+            bot.channels.lobby.send(f'{member.name}: I don\'t know him')
             return
 
         match_count = player.matchplayer_set.filter(
             match__season=LadderSettings.get_solo().current_season
         ).count()
 
-        correlation = PlayerManager.ladder_to_dota_mmr(player.ladder_mmr)
+        roles = ' '.join(str(getattr(player.roles, r)) for r in role_names)
         bot.channels.lobby.send(
-            '%s: %s, MMR: %d, Ladder MMR: %d, Correlation: %d, Score: %d, Games: %d' %
-            (member.name, player.name, player.dota_mmr, player.ladder_mmr, correlation,
-             player.score, match_count)
+            f'{member.name}: {player.name}, MMR: {player.ladder_mmr}, '
+            f'Games: {match_count}, Roles: {roles}'
         )
 
     @staticmethod
