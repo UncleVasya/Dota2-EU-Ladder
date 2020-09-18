@@ -25,7 +25,13 @@ class Command(BaseCommand):
     def __init__(self):
         super().__init__()
         self.bot = None
+        self.polls_channel = None
         self.last_seen = defaultdict(datetime.now)  # to detect afk players
+
+        self.poll_reaction_funcs = {
+            'DraftMode': self.on_draft_mode_reaction,
+            'EliteMMR': self.on_elite_mmr_reaction,
+        }
 
     def handle(self, *args, **options):
         bot_token = os.environ.get('DISCORD_BOT_TOKEN', '')
@@ -35,6 +41,10 @@ class Command(BaseCommand):
         @self.bot.event
         async def on_ready():
             print(f'Logged in: {self.bot.user} {self.bot.user.id}')
+
+            polls_channel = DiscordChannels.get_solo().polls
+            self.polls_channel = self.bot.get_channel(polls_channel)
+
             await self.setup_poll_messages()
             queue_afk_check.start()
 
@@ -58,6 +68,55 @@ class Command(BaseCommand):
         @self.bot.event
         async def on_reaction_add(reaction, user):
             self.last_seen[user.id] = datetime.now()
+
+        @self.bot.event
+        async def on_raw_reaction_add(payload):
+            channel = self.bot.get_channel(payload.channel_id)
+            message = await channel.fetch_message(payload.message_id)
+            user = self.bot.get_user(payload.user_id)
+
+            if user.bot:
+                return
+
+            poll = DiscordPoll.objects.filter(message_id=message.id).first()
+            # if not a poll message, ignore reaction
+            if not poll:
+                return
+
+            # if player is unknown, remove reaction
+            try:
+                player = Player.objects.get(discord_id=payload.user_id)
+            except Player.DoesNotExist:
+                print('unknown')
+                for reaction in message.reactions:
+                    await reaction.remove(user)
+                return
+
+            # remove other reactions by this user from this message
+            for r in message.reactions:
+                if r.emoji != payload.emoji.name:
+                    await r.remove(user)
+
+            # call reaction processing function
+            # if there is no processing function, use do-nothing lambda
+            func = self.poll_reaction_funcs.get(poll.name, lambda *args: None)
+            await func(message, user, player)
+
+        @self.bot.event
+        async def on_raw_reaction_remove(payload):
+            channel = self.bot.get_channel(payload.channel_id)
+            message = await channel.fetch_message(payload.message_id)
+            user = self.bot.get_user(payload.user_id)
+
+            poll = DiscordPoll.objects.filter(message_id=message.id).first()
+            # if not a poll message, ignore reaction
+            if not poll:
+                return
+
+            # call reaction processing function
+            # if there is no processing function, use do-nothing lambda
+            func = self.poll_reaction_funcs.get(poll.name, lambda *args: None)
+            await func(message, user)
 
         @tasks.loop(minutes=5)
         async def queue_afk_check():
@@ -286,13 +345,19 @@ class Command(BaseCommand):
             Command.queue_str(queue)
         )
 
+        # TODO: this is a separate function
         if queue.players.count() == 10:
             Command.balance_queue(queue)  # todo move this to QueuePlayer signal
+
+            balance_str = ''
+            if LadderSettings.get_solo().draft_mode == LadderSettings.AUTO_BALANCE:
+                balance_str = f'Proposed balance: \n' + \
+                              Command.balance_str(queue.balance)
+
             await msg.channel.send(
-                '\nQueue is full! Proposed balance: \n' +
-                Command.balance_str(queue.balance) + '\n' +
-                ' '.join(self.player_mention(p) for p in queue.players.all()) +
-                '\nYou have 5 min to join the lobby.'
+                f'\nQueue is full! {balance_str} \n' +
+                f' '.join(self.player_mention(p) for p in queue.players.all()) +
+                f'\nYou have 5 min to join the lobby.'
             )
 
     async def leave_queue_command(self, msg, **kwargs):
@@ -351,13 +416,19 @@ class Command(BaseCommand):
             f'Have fun! ;)'
         )
 
+        # TODO: this is a separate function
         if queue.players.count() == 10:
             Command.balance_queue(queue)
+
+            balance_str = ''
+            if LadderSettings.get_solo().draft_mode == LadderSettings.AUTO_BALANCE:
+                balance_str = f'Proposed balance: \n' + \
+                              Command.balance_str(queue.balance)
+
             await msg.channel.send(
-                '\nQueue is full! Proposed balance: \n' +
-                Command.balance_str(queue.balance) + '\n' +
-                ' '.join(self.player_mention(p) for p in queue.players.all()) +
-                '\nYou have 5 min to join the lobby.'
+                f'\nQueue is full! {balance_str} \n' +
+                f' '.join(self.player_mention(p) for p in queue.players.all()) +
+                f'\nYou have 5 min to join the lobby.'
             )
 
     async def kick_from_queue_command(self, msg, **kwargs):
@@ -745,26 +816,144 @@ class Command(BaseCommand):
     async def setup_poll_messages(self):
         polls = ['Welcome', 'DraftMode', 'EliteMMR', 'Faceit']
 
-        channel = DiscordChannels.get_solo().polls
-        channel = self.bot.get_channel(channel)
+        channel = self.polls_channel
 
-        async def is_message_present(poll):
+        async def get_poll_message(poll):
             try:
                 message_id = DiscordPoll.objects.get(name=poll).message_id
-                await channel.fetch_message(message_id)
-                return True
+                return await channel.fetch_message(message_id)
             except (DiscordPoll.DoesNotExist, discord.NotFound):
-                return False
+                return None
 
         # remove all messages but polls
         db_messages = DiscordPoll.objects.values_list('message_id', flat=True)
         await channel.purge(check=lambda x: x.id not in db_messages)
 
         # create poll messages that are not already present
+        poll_msg = {}
         for p in polls:
-            if not await is_message_present(p):
+            msg = await get_poll_message(p)
+            if not msg:
                 msg = await channel.send(p)
                 DiscordPoll.objects.update_or_create(name=p, defaults={
                     'name': p,
                     'message_id': msg.id
                 })
+            poll_msg[p] = msg
+
+        await self.polls_welcome_show()
+        await self.draft_mode_poll_show(poll_msg['DraftMode'])
+        await self.elite_mmr_poll_show(poll_msg['EliteMMR'])
+        await self.faceit_poll_show(poll_msg['Faceit'])
+
+    async def polls_welcome_show(self):
+        text = 'Hello, friends!\n\n' + \
+               'Here you can vote for inhouse settings.\n\n' + \
+               'These polls are directly connected to our system.' + \
+               '\n\n.'
+        msg_id = DiscordPoll.objects.get(name='Welcome').message_id
+        msg = await self.polls_channel.fetch_message(msg_id)
+        await msg.edit(content=text)
+
+    async def draft_mode_poll_show(self, message):
+        mode = LadderSettings.get_solo().draft_mode
+        mode = LadderSettings.DRAFT_CHOICES[mode][1]
+
+        text = f'\n-------------------------------\n' + \
+               f'**DRAFT MODE**\n' + \
+               f'-------------------------------\n' + \
+               f'Current mode: **{mode}**\n\n' + \
+               f'This sets the default draft mode for inhouse games.\n\n' + \
+               f':man_red_haired: - player draft;\n' + \
+               f':robot: - auto balance;\n\n' + \
+               f'Players with 5+ inhouse games can vote. \n' + \
+               f'-------------------------------'
+
+        await message.edit(content=text)
+        await message.add_reaction('👨‍🦰')
+        await message.add_reaction('🤖')
+
+    async def on_draft_mode_reaction(self, message, user, player=None):
+        # if player is not eligible for voting, remove his reactions
+        if player and player.matchplayer_set.count() < 5:
+            for r in message.reactions:
+                await r.remove(user)
+            return
+
+        # refresh message
+        message = await self.polls_channel.fetch_message(message.id)
+
+        # calculate votes
+        votes_ab = discord.utils.get(message.reactions, emoji='🤖').count
+        votes_pd = discord.utils.get(message.reactions, emoji='👨‍🦰').count
+
+        # update settings
+        settings = LadderSettings.get_solo()
+        if votes_ab > votes_pd:
+            settings.draft_mode = LadderSettings.AUTO_BALANCE
+        elif votes_pd > votes_ab:
+            settings.draft_mode = LadderSettings.PLAYER_DRAFT
+        settings.save()
+
+        # redraw poll message
+        await self.draft_mode_poll_show(message)
+
+    async def elite_mmr_poll_show(self, message):
+        q_channel = QueueChannel.objects.get(name='High MMR queue')
+
+        text = f'\n-------------------------------\n' + \
+               f'**ELITE QUEUE MMR**\n' + \
+               f'-------------------------------\n' + \
+               f'Current MMR floor: **{q_channel.min_mmr}**\n\n' + \
+               f'🦀 - 4000;\n' + \
+               f'👶 - 4500;\n' + \
+               f'💪 - 5000;\n\n' + \
+               f'Only 5000+ players can vote. \n' + \
+               f'-------------------------------'
+
+        await message.edit(content=text)
+        await message.add_reaction('🦀')
+        await message.add_reaction('👶')
+        await message.add_reaction('💪')
+
+    async def on_elite_mmr_reaction(self, message, user, player=None):
+        # if player is not eligible for voting, remove his reactions
+        if player and player.ladder_mmr < 5000:
+            for r in message.reactions:
+                await r.remove(user)
+            return
+
+        # refresh message
+        message = await self.polls_channel.fetch_message(message.id)
+
+        # calculate votes
+        votes_4000 = discord.utils.get(message.reactions, emoji='🦀').count
+        votes_4500 = discord.utils.get(message.reactions, emoji='👶').count
+        votes_5000 = discord.utils.get(message.reactions, emoji='💪').count
+
+        # update settings
+        q_channel = QueueChannel.objects.get(name='High MMR queue')
+        if votes_4500 < votes_4000 > votes_5000:
+            q_channel.min_mmr = 4000
+        elif votes_4000 < votes_4500 > votes_5000:
+            q_channel.min_mmr = 4500
+        elif votes_4000 < votes_5000 > votes_4500:
+            q_channel.min_mmr = 5000
+        q_channel.save()
+
+        # redraw poll message
+        await self.elite_mmr_poll_show(message)
+
+    async def faceit_poll_show(self, message):
+        text = f'\n-------------------------------\n' + \
+               f'**FACEIT**\n' + \
+               f'-------------------------------\n' + \
+               f'Should we go back to Faceit?\n\n' + \
+               f'🇾 - yes;\n' + \
+               f'🇳 - no;\n\n' + \
+               f'This poll has no effect and is here to measure player sentiment. \n' + \
+               f'-------------------------------'
+
+        await message.edit(content=text)
+        await message.add_reaction('🇾')
+        await message.add_reaction('🇳')

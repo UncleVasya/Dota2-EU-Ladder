@@ -130,6 +130,15 @@ class LadderSettings(SingletonModel):
     afk_allowed_time = models.PositiveSmallIntegerField(default=40)
     afk_response_time = models.PositiveSmallIntegerField(default=5)
 
+    # default draft mode
+    AUTO_BALANCE = 0
+    PLAYER_DRAFT = 1
+    DRAFT_CHOICES = (
+        (AUTO_BALANCE, 'Auto balance'),
+        (PLAYER_DRAFT, 'Player draft'),
+    )
+    draft_mode = models.PositiveSmallIntegerField(choices=DRAFT_CHOICES, default=AUTO_BALANCE)
+
 
 class DiscordChannels(SingletonModel):
     polls = models.PositiveIntegerField(null=True)

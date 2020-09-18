@@ -206,7 +206,7 @@ class Command(BaseCommand):
         bot.balance_answer = None
         bot.game_start_time = None
         bot.queue = None
-        bot.player_draft = False
+        bot.player_draft = (LadderSettings.get_solo().draft_mode == LadderSettings.PLAYER_DRAFT)
         bot.staff_mode = False
         bot.players = {}
         bot.invited_players = []
