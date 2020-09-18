@@ -135,6 +135,11 @@ class DiscordChannels(SingletonModel):
     polls = models.PositiveIntegerField(null=True)
 
 
+class DiscordPoll(models.Model):
+    name = models.CharField(max_length=200)
+    message_id = models.PositiveIntegerField()
+
+
 class QueueChannel(models.Model):
     name = models.CharField(max_length=200)
     min_mmr = models.PositiveSmallIntegerField(default=0)

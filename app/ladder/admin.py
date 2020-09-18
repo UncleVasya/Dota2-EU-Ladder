@@ -2,7 +2,7 @@ from django import forms
 from django_reverse_admin import ReverseModelAdmin
 
 from app.ladder.models import Player, Match, MatchPlayer, ScoreChange, LadderSettings, LadderQueue, QueuePlayer, \
-    QueueChannel, RolesPreference, DiscordChannels
+    QueueChannel, RolesPreference, DiscordChannels, DiscordPoll
 from django.contrib import admin
 from django.db.models import Prefetch
 from dal import autocomplete
@@ -165,14 +165,26 @@ class QueueChannelAdmin(admin.ModelAdmin):
     list_display = ('name', 'min_mmr', 'discord_id')
 
 
+class DiscordPollAdmin(admin.ModelAdmin):
+    model = DiscordPoll
+
+    fieldsets = [
+        (None, {'fields': ['name', 'message_id']}),
+    ]
+
+    list_display = ('name', 'message_id')
+
+
 admin.site.register(Player, PlayerAdmin)
 admin.site.register(ScoreChange, ScoreChangeAdmin)
 admin.site.register(Match, MatchAdmin)
 
+admin.site.register(LadderSettings, SingletonModelAdmin)
+
 admin.site.register(LadderQueue, LadderQueueAdmin)
 admin.site.register(QueueChannel, QueueChannelAdmin)
 
-admin.site.register(LadderSettings, SingletonModelAdmin)
 admin.site.register(DiscordChannels, SingletonModelAdmin)
+admin.site.register(DiscordPoll, DiscordPollAdmin)
 
 # admin.site.register(Player.blacklist.through)

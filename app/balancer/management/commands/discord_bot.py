@@ -18,7 +18,7 @@ from app.balancer.managers import BalanceResultManager
 from app.balancer.models import BalanceAnswer
 from app.ladder.managers import MatchManager
 from app.ladder.models import Player, LadderSettings, LadderQueue, QueuePlayer, QueueChannel, MatchPlayer, \
-    RolesPreference
+    RolesPreference, DiscordChannels, DiscordPoll
 
 
 class Command(BaseCommand):
@@ -35,6 +35,7 @@ class Command(BaseCommand):
         @self.bot.event
         async def on_ready():
             print(f'Logged in: {self.bot.user} {self.bot.user.id}')
+            await self.setup_poll_messages()
             queue_afk_check.start()
 
         @self.bot.event
@@ -740,3 +741,30 @@ class Command(BaseCommand):
                 ' | '.join(p.name for p in afk_list) +
                 '\n```'
             )
+
+    async def setup_poll_messages(self):
+        polls = ['Welcome', 'DraftMode', 'EliteMMR', 'Faceit']
+
+        channel = DiscordChannels.get_solo().polls
+        channel = self.bot.get_channel(channel)
+
+        async def is_message_present(poll):
+            try:
+                message_id = DiscordPoll.objects.get(name=poll).message_id
+                await channel.fetch_message(message_id)
+                return True
+            except (DiscordPoll.DoesNotExist, discord.NotFound):
+                return False
+
+        # remove all messages but polls
+        db_messages = DiscordPoll.objects.values_list('message_id', flat=True)
+        await channel.purge(check=lambda x: x.id not in db_messages)
+
+        # create poll messages that are not already present
+        for p in polls:
+            if not await is_message_present(p):
+                msg = await channel.send(p)
+                DiscordPoll.objects.update_or_create(name=p, defaults={
+                    'name': p,
+                    'message_id': msg.id
+                })
