@@ -131,6 +131,10 @@ class LadderSettings(SingletonModel):
     afk_response_time = models.PositiveSmallIntegerField(default=5)
 
 
+class DiscordChannels(SingletonModel):
+    polls = models.PositiveIntegerField(null=True)
+
+
 class QueueChannel(models.Model):
     name = models.CharField(max_length=200)
     min_mmr = models.PositiveSmallIntegerField(default=0)

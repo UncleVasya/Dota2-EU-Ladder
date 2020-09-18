@@ -2,7 +2,7 @@ from django import forms
 from django_reverse_admin import ReverseModelAdmin
 
 from app.ladder.models import Player, Match, MatchPlayer, ScoreChange, LadderSettings, LadderQueue, QueuePlayer, \
-    QueueChannel, RolesPreference
+    QueueChannel, RolesPreference, DiscordChannels
 from django.contrib import admin
 from django.db.models import Prefetch
 from dal import autocomplete
@@ -173,5 +173,6 @@ admin.site.register(LadderQueue, LadderQueueAdmin)
 admin.site.register(QueueChannel, QueueChannelAdmin)
 
 admin.site.register(LadderSettings, SingletonModelAdmin)
+admin.site.register(DiscordChannels, SingletonModelAdmin)
 
 # admin.site.register(Player.blacklist.through)
