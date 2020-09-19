@@ -99,7 +99,6 @@ class Command(BaseCommand):
                     await r.remove(user)
 
             # call reaction processing function
-            # if there is no processing function, use do-nothing lambda
             await self.poll_reaction_funcs[poll.name](message, user, player)
 
         @self.bot.event
@@ -114,7 +113,6 @@ class Command(BaseCommand):
                 return
 
             # call reaction processing function
-            # if there is no processing function, use do-nothing lambda
             await self.poll_reaction_funcs[poll.name](message, user)
 
         @tasks.loop(minutes=5)
