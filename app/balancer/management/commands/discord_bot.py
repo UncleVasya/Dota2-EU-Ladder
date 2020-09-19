@@ -26,6 +26,7 @@ class Command(BaseCommand):
         super().__init__()
         self.bot = None
         self.polls_channel = None
+        self.queues_channel = None
         self.last_seen = defaultdict(datetime.now)  # to detect afk players
 
         self.poll_reaction_funcs = {
@@ -46,7 +47,11 @@ class Command(BaseCommand):
             polls_channel = DiscordChannels.get_solo().polls
             self.polls_channel = self.bot.get_channel(polls_channel)
 
+            queues_channel = DiscordChannels.get_solo().queues
+            self.queues_channel = self.bot.get_channel(queues_channel)
+
             await self.setup_poll_messages()
+            await self.setup_queue_messages()
             queue_afk_check.start()
 
         @self.bot.event
@@ -730,7 +735,7 @@ class Command(BaseCommand):
                f'Players: {q.players.count()} (' + \
                f' | '.join(f'{p.name}-{p.ladder_mmr}' for p in players) + ')\n\n' + \
                f'Avg. MMR: {avg_mmr} {"LUL" if avg_mmr < 4000 else ""} \n' + \
-               f'```\n'
+               f'```'
 
     @staticmethod
     def roles_str(roles: RolesPreference):
@@ -896,7 +901,7 @@ class Command(BaseCommand):
         await self.draft_mode_poll_show(message)
 
     async def elite_mmr_poll_show(self, message):
-        q_channel = QueueChannel.objects.get(name='High MMR queue')
+        q_channel = QueueChannel.objects.get(name='Elite queue')
 
         text = f'\n-------------------------------\n' + \
                f'**ELITE QUEUE MMR**\n' + \
@@ -929,7 +934,7 @@ class Command(BaseCommand):
         votes_5000 = discord.utils.get(message.reactions, emoji='💪').count
 
         # update settings
-        q_channel = QueueChannel.objects.get(name='High MMR queue')
+        q_channel = QueueChannel.objects.get(name='Elite queue')
         if votes_4500 < votes_4000 > votes_5000:
             q_channel.min_mmr = 4000
         elif votes_4000 < votes_4500 > votes_5000:
@@ -957,3 +962,49 @@ class Command(BaseCommand):
 
     async def on_faceit_reaction(self, message, user, player=None):
         pass
+
+    async def get_queues_message(self, q_type):
+        try:
+            message_id = q_type.discord_msg
+            return await self.queues_channel.fetch_message(message_id)
+        except (discord.HTTPException, discord.NotFound):
+            return None
+
+    async def setup_queue_messages(self):
+        channel = self.queues_channel
+
+        # remove all messages but queues
+        db_messages = QueueChannel.objects.values_list('discord_msg', flat=True)
+        await channel.purge(check=lambda x: x.id not in db_messages)
+
+        # create queues messages that are not already present
+        for q_type in QueueChannel.objects.all():
+            msg = await self.get_queues_message(q_type)
+            if not msg:
+                msg = await channel.send(q_type.name)
+                q_type.discord_msg = msg.id
+                q_type.save()
+
+        await self.queues_show()
+
+    async def queues_show(self):
+        for q_type in QueueChannel.objects.all():
+            message = await self.get_queues_message(q_type)
+
+            mmr_string = f'({q_type.min_mmr}+)' if q_type.min_mmr > 0 else ''
+            queues = LadderQueue.objects.filter(channel=q_type, active=True)
+
+            queues_text = '```\nNoone is currently queueing.\n```'
+            if queues:
+                queues_text = f'\n'.join(self.queue_str(q) for q in queues)
+
+            text = f'\n-------------------------------\n' + \
+                   f'**{q_type.name}** {mmr_string}\n' + \
+                   f'-------------------------------\n' + \
+                   f'{queues_text}' + \
+                   f'-------------------------------\n' + \
+                   f'✅ - join the queue\n' + \
+                   f'-------------------------------\n'
+
+            await message.edit(content=text)
+            await message.add_reaction('✅')

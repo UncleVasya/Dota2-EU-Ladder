@@ -141,7 +141,8 @@ class LadderSettings(SingletonModel):
 
 
 class DiscordChannels(SingletonModel):
-    polls = models.PositiveIntegerField(null=True)
+    polls = models.PositiveIntegerField(null=True, blank=True)
+    queues = models.PositiveIntegerField(null=True, blank=True)
 
 
 class DiscordPoll(models.Model):
@@ -153,6 +154,7 @@ class QueueChannel(models.Model):
     name = models.CharField(max_length=200)
     min_mmr = models.PositiveSmallIntegerField(default=0)
     discord_id = models.PositiveIntegerField()
+    discord_msg = models.PositiveIntegerField(null=True, blank=True)
 
     def __str__(self):
         return self.name
