@@ -84,27 +84,24 @@ class Command(BaseCommand):
             if user.bot:
                 return
 
-            poll = DiscordPoll.objects.filter(message_id=message.id).first()
-            # if not a poll message, ignore reaction
-            if not poll:
+            # check if reaction is in bot channels
+            db_channels = DiscordChannels.get_solo()
+            if channel.id not in [db_channels.polls, db_channels.queues]:
                 return
 
             # if player is unknown, remove reaction
             try:
                 player = Player.objects.get(discord_id=payload.user_id)
             except Player.DoesNotExist:
-                print('unknown')
                 for reaction in message.reactions:
                     await reaction.remove(user)
                 return
 
-            # remove other reactions by this user from this message
-            for r in message.reactions:
-                if r.emoji != payload.emoji.name:
-                    await r.remove(user)
-
-            # call reaction processing function
-            await self.poll_reaction_funcs[poll.name](message, user, player)
+            # process reaction
+            if channel.id == db_channels.polls:
+                await self.on_poll_reaction_add(message, user, payload, player)
+            elif channel.id == db_channels.queues:
+                await self.on_queue_reaction_add(message, user, payload, player)
 
         @self.bot.event
         async def on_raw_reaction_remove(payload):
@@ -112,13 +109,22 @@ class Command(BaseCommand):
             message = await channel.fetch_message(payload.message_id)
             user = self.bot.get_user(payload.user_id)
 
-            poll = DiscordPoll.objects.filter(message_id=message.id).first()
-            # if not a poll message, ignore reaction
-            if not poll:
+            # check if reaction is in bot channels
+            db_channels = DiscordChannels.get_solo()
+            if channel.id not in [db_channels.polls, db_channels.queues]:
                 return
 
-            # call reaction processing function
-            await self.poll_reaction_funcs[poll.name](message, user)
+            # if player is unknown, nothing to do
+            try:
+                player = Player.objects.get(discord_id=payload.user_id)
+            except Player.DoesNotExist:
+                return
+
+            # process reaction
+            if channel.id == db_channels.polls:
+                await self.on_poll_reaction_remove(message, user, payload, player)
+            elif channel.id == db_channels.queues:
+                await self.on_queue_reaction_remove(message, user, payload, player)
 
         @tasks.loop(minutes=5)
         async def queue_afk_check():
@@ -319,48 +325,16 @@ class Command(BaseCommand):
         player = kwargs['player']
         print(f'Join command from {player}:\n {command}')
 
-        # check if player is vouched
-        if not player.vouched:
-            await msg.channel.send('You need to get vouched before you can play.')
-            return
-
         # check if this is a queue channel
         try:
             channel = QueueChannel.objects.get(discord_id=msg.channel.id)
         except QueueChannel.DoesNotExist:
             return
 
-        # check that player has enough MMR
-        if player.ladder_mmr < channel.min_mmr:
-            await msg.channel.send('Your dick is too small. Grow a bigger one.')
-            return
+        success, response = self.player_join_queue(player, channel)
 
-        # check that player is not in a queue already
-        if player.ladderqueue_set.filter(active=True):
-            await msg.channel.send('Already queued, friend.')
-            return
-
-        queue = Command.add_player_to_queue(player, channel)
-
-        await msg.channel.send(
-            f'`{player}` joined inhouse queue #{queue.id}.\n' +
-            Command.queue_str(queue)
-        )
-
-        # TODO: this is a separate function
-        if queue.players.count() == 10:
-            Command.balance_queue(queue)  # todo move this to QueuePlayer signal
-
-            balance_str = ''
-            if LadderSettings.get_solo().draft_mode == LadderSettings.AUTO_BALANCE:
-                balance_str = f'Proposed balance: \n' + \
-                              Command.balance_str(queue.balance)
-
-            await msg.channel.send(
-                f'\nQueue is full! {balance_str} \n' +
-                f' '.join(self.player_mention(p) for p in queue.players.all()) +
-                f'\nYou have 5 min to join the lobby.'
-            )
+        await msg.channel.send(response)
+        await self.queues_show()
 
     async def leave_queue_command(self, msg, **kwargs):
         command = msg.content
@@ -376,6 +350,8 @@ class Command(BaseCommand):
         else:
             await msg.channel.send(f'`{player}` is not queuing.\n')
 
+        await self.queues_show()
+
     async def show_queues_command(self, msg, **kwargs):
         queues = LadderQueue.objects.filter(active=True)
         if queues:
@@ -384,6 +360,8 @@ class Command(BaseCommand):
             )
         else:
             await msg.channel.send('Noone is currently queueing.')
+
+        await self.queues_show()
 
     async def add_to_queue_command(self, msg, **kwargs):
         command = msg.content
@@ -433,6 +411,8 @@ class Command(BaseCommand):
                 f'\nYou have 5 min to join the lobby.'
             )
 
+        await self.queues_show()
+
     async def kick_from_queue_command(self, msg, **kwargs):
         command = msg.content
         print(f'Kick command:\n {command}')
@@ -457,6 +437,8 @@ class Command(BaseCommand):
             await msg.channel.send(f'{mention} was kicked from the queue.')
         else:
             await msg.channel.send(f'`{player}` is not queuing.\n')
+
+        await self.queues_show()
 
     async def mmr_command(self, msg, **kwargs):
         command = msg.content
@@ -655,8 +637,51 @@ class Command(BaseCommand):
             f'```\n{Command.roles_str(roles)}\n```'
         )
 
+    def player_join_queue(self, player, channel):
+        # check if player is vouched
+        if not player.vouched:
+            response = 'You need to get vouched before you can play.'
+            return False, response
+
+        # check that player has enough MMR
+        if player.ladder_mmr < channel.min_mmr:
+            response = 'Your dick is too small. Grow a bigger one.'
+            return False, response
+
+        # check that player is not in this queue already
+        if player.ladderqueue_set.filter(channel=channel, active=True):
+            response = 'Already queued, friend.'
+            return True, response
+
+        # remove player from other queues
+        QueuePlayer.objects\
+            .filter(player=player, queue__active=True)\
+            .exclude(queue__channel=channel)\
+            .delete()
+
+        queue = Command.add_player_to_queue(player, channel)
+
+        response = f'`{player}` joined inhouse queue #{queue.id}.\n' + \
+                   Command.queue_str(queue)
+
+        # TODO: this is a separate function
+        if queue.players.count() == 10:
+            Command.balance_queue(queue)  # todo move this to QueuePlayer signal
+
+            balance_str = ''
+            if LadderSettings.get_solo().draft_mode == LadderSettings.AUTO_BALANCE:
+                balance_str = f'Proposed balance: \n' + \
+                              Command.balance_str(queue.balance)
+
+            response += f'\nQueue is full! {balance_str} \n' + \
+                        f' '.join(self.player_mention(p) for p in queue.players.all()) + \
+                        f'\nYou have 5 min to join the lobby.'
+
+        return True, response
+
     @staticmethod
     def add_player_to_queue(player, channel):
+        # TODO: this whole function should be QueueManager.add_player_to_queue()
         # get an available active queue
         queue = LadderQueue.objects\
             .filter(active=True)\
@@ -808,8 +833,7 @@ class Command(BaseCommand):
 
         if deleted > 0:
             await channel.send(
-                'Purge all heretics from the queue! For the Emperor! ' +
-                'These players were burned at stake: \n' +
+                'Purge all heretics from the queue!\n' +
                 '```\n' +
                 ' | '.join(p.name for p in afk_list) +
                 '\n```'
@@ -985,6 +1009,9 @@ class Command(BaseCommand):
                 q_type.discord_msg = msg.id
                 q_type.save()
 
+        # one additional message for status text
+        await channel.send('.')
+
         await self.queues_show()
 
     async def queues_show(self):
@@ -1008,3 +1035,91 @@ class Command(BaseCommand):
 
             await message.edit(content=text)
             await message.add_reaction('✅')
+
+            # remove reactions of players who are no longer in this queue
+            queue_players = QueuePlayer.objects\
+                .filter(queue__channel=q_type, queue__active=True) \
+                .values_list('player__discord_id', flat=True)
+
+            r = discord.utils.get(message.reactions, emoji='✅')
+            async for user in r.users():
+                if not user.bot and (str(user.id) not in queue_players):
+                    await r.remove(user)
+
+    async def on_poll_reaction_add(self, message, user, payload, player):
+        poll = DiscordPoll.objects.filter(message_id=message.id).first()
+
+        # if not a poll message, ignore reaction
+        if not poll:
+            return
+
+        # remove other reactions by this user from this message
+        for r in message.reactions:
+            if r.emoji != payload.emoji.name:
+                await r.remove(user)
+
+        # call reaction processing function
+        await self.poll_reaction_funcs[poll.name](message, user, player)
+
+    async def on_poll_reaction_remove(self, message, user, payload, player):
+        poll = DiscordPoll.objects.filter(message_id=message.id).first()
+
+        # if not a poll message, ignore reaction
+        if not poll:
+            return
+
+        # call reaction processing function
+        await self.poll_reaction_funcs[poll.name](message, user)
+
+    async def on_queue_reaction_add(self, message, user, payload, player):
+        # if emoji is invalid or message is not a queue message, remove reaction
+        allowed_reactions = ['✅']
+        q_channel = QueueChannel.objects.filter(discord_msg=message.id).first()
+        if (payload.emoji.name not in allowed_reactions) or not q_channel:
+            r = discord.utils.get(message.reactions, emoji=payload.emoji.name)
+            await r.clear()
+            return
+
+        # if not a queue message, ignore reaction
+        if not q_channel:
+            return
+
+        success, response = self.player_join_queue(player, q_channel)
+        if success:
+            await self.queues_show()
+            response = response.split('```')[0]  # take only first part of response text
+        else:
+            # if couldn't join queue, remove reaction
+            r = discord.utils.get(message.reactions, emoji='✅')
+            await r.remove(user)
+
+        # show response in status message
+        msg_hist = await message.channel.history(limit=1).flatten()
+        status_msg = msg_hist[0]
+        await status_msg.edit(content=response)
+
+        # remove user from other queues and remove invalid reactions
+
+        # for r in message.reactions:
+        #     if r.emoji != payload.emoji.name:
+        #         await r.remove(user)
+
+    async def on_queue_reaction_remove(self, message, user, payload, player):
+        # if emoji is invalid or message is not a queue message, do nothing
+        allowed_reactions = ['✅']
+        q_channel = QueueChannel.objects.filter(discord_msg=message.id).first()
+        if (payload.emoji.name not in allowed_reactions) or not q_channel:
+            return
+
+        # remove player from this q_channel
+        deleted, _ = QueuePlayer.objects \
+            .filter(player=player, queue__channel=q_channel, queue__active=True) \
+            .delete()
+
+        if deleted > 0:
+            await self.queues_show()
+
+            # show response in status message
+            msg_hist = await message.channel.history(limit=1).flatten()
+            status_msg = msg_hist[0]
+            await status_msg.edit(content=f'`{player}` left the queue.\n')
