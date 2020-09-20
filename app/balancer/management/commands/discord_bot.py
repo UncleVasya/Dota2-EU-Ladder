@@ -762,12 +762,12 @@ class Command(BaseCommand):
         return result
 
     @staticmethod
-    def queue_str(q: LadderQueue):
+    def queue_str(q: LadderQueue, show_min_mmr=True):
         players = q.players.all()
         avg_mmr = round(mean(p.ladder_mmr for p in players))
         return f'```\n' + \
                f'Queue #{q.id}\n' + \
-               f'Min MMR: {q.min_mmr}\n' + \
+               (f'Min MMR: {q.min_mmr}\n' if show_min_mmr else '\n') + \
                f'Players: {q.players.count()} (' + \
                f' | '.join(f'{p.name}-{p.ladder_mmr}' for p in players) + ')\n\n' + \
                f'Avg. MMR: {avg_mmr} {"LUL" if avg_mmr < 4000 else ""} \n' + \
@@ -1026,11 +1026,18 @@ class Command(BaseCommand):
         await self.queues_show()
 
     async def queues_show(self):
+        def queue_show(q):
+            q_string = self.queue_str(q, show_min_mmr=False)
+
+            auto_balance = LadderSettings.get_solo().draft_mode == LadderSettings.AUTO_BALANCE
+            if q.players.count() == 10 and auto_balance:
+                q_string += self.balance_str(q.balance)
+
+            return q_string
+
         # remember queued players to check for changes in periodic task
         queued_players = [qp for qp in QueuePlayer.objects.filter(queue__active=True)]
         self.queued_players = set(qp.player.discord_id for qp in queued_players)
-
-        print(f'Queued player: {queued_players}')
 
         # show queues info
         for q_type in QueueChannel.objects.all():
@@ -1041,7 +1048,7 @@ class Command(BaseCommand):
 
             queues_text = '```\nNoone is currently queueing.\n```'
             if queues:
-                queues_text = f'\n'.join(self.queue_str(q) for q in queues)
+                queues_text = f'\n'.join(queue_show(q) for q in queues)
 
             text = f'\n-------------------------------\n' + \
                    f'**{q_type.name}** {mmr_string}\n' + \
