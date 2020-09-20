@@ -28,6 +28,7 @@ class Command(BaseCommand):
         self.polls_channel = None
         self.queues_channel = None
         self.last_seen = defaultdict(datetime.now)  # to detect afk players
+        self.queued_players = set()
 
         self.poll_reaction_funcs = {
             'DraftMode': self.on_draft_mode_reaction,
@@ -52,7 +53,9 @@ class Command(BaseCommand):
 
             await self.setup_poll_messages()
             await self.setup_queue_messages()
+
             queue_afk_check.start()
+            update_queues_shown.start()
 
         @self.bot.event
         async def on_message(msg):
@@ -141,6 +144,14 @@ class Command(BaseCommand):
 
                 channel = self.bot.get_channel(channel.discord_id)
                 await self.channel_check_afk(channel, channel_players)
+
+        @tasks.loop(seconds=30)
+        async def update_queues_shown():
+            queued_players = [qp for qp in QueuePlayer.objects.filter(queue__active=True)]
+            queued_players = set(qp.player.discord_id for qp in queued_players)
+
+            if queued_players != self.queued_players:
+                await self.queues_show()
 
         self.bot.run(bot_token)
 
@@ -1015,6 +1026,13 @@ class Command(BaseCommand):
         await self.queues_show()
 
     async def queues_show(self):
+        # remember queued players to check for changes in periodic task
+        queued_players = [qp for qp in QueuePlayer.objects.filter(queue__active=True)]
+        self.queued_players = set(qp.player.discord_id for qp in queued_players)
+
+        print(f'Queued player: {queued_players}')
+
+        # show queues info
         for q_type in QueueChannel.objects.all():
             message = await self.get_queues_message(q_type)
 
@@ -1097,12 +1115,6 @@ class Command(BaseCommand):
         msg_hist = await message.channel.history(limit=1).flatten()
         status_msg = msg_hist[0]
         await status_msg.edit(content=response)
-
-        # remove user from other queues and remove invalid reactions
-
-        # for r in message.reactions:
-        #     if r.emoji != payload.emoji.name:
-        #         await r.remove(user)
 
     async def on_queue_reaction_remove(self, message, user, payload, player):
         # if emoji is invalid or message is not a queue message, do nothing
