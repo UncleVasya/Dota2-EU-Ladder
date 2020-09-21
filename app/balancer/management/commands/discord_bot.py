@@ -1067,6 +1067,9 @@ class Command(BaseCommand):
                 .values_list('player__discord_id', flat=True)
 
             r = discord.utils.get(message.reactions, emoji='✅')
+            if not r:
+                return  # no reactions setup yet
+
             async for user in r.users():
                 if not user.bot and (str(user.id) not in queue_players):
                     await r.remove(user)
