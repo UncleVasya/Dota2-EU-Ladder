@@ -1042,9 +1042,12 @@ class Command(BaseCommand):
         def queue_show(q):
             q_string = self.queue_str(q, show_min_mmr=False)
 
-            auto_balance = LadderSettings.get_solo().draft_mode == LadderSettings.AUTO_BALANCE
-            if q.players.count() == 10 and auto_balance:
-                q_string += self.balance_str(q.balance)
+            if q.players.count() == 10:
+                auto_balance = LadderSettings.get_solo().draft_mode == LadderSettings.AUTO_BALANCE
+                if auto_balance:
+                    q_string += self.balance_str(q.balance) + '\n'
+                q_string += ' '.join(self.player_mention(p) for p in q.players.all()) + \
+                            '\nYou have 5 min to join the lobby.\n\n'
 
             return q_string
 
