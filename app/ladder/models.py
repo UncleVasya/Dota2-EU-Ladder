@@ -127,6 +127,7 @@ class LadderSettings(SingletonModel):
     current_season = models.PositiveSmallIntegerField(default=1)
     use_queue = models.BooleanField(default=True)
     mmr_per_game = models.PositiveSmallIntegerField(default=50)
+    balance_exponent = models.PositiveSmallIntegerField(default=3)
     afk_allowed_time = models.PositiveSmallIntegerField(default=40)
     afk_response_time = models.PositiveSmallIntegerField(default=5)
 
