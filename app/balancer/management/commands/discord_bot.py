@@ -344,6 +344,10 @@ class Command(BaseCommand):
 
         success, response = self.player_join_queue(player, channel)
 
+        queues_channel = DiscordChannels.get_solo().queues
+        mention = self.bot.get_channel(queues_channel).mention
+        await msg.channel.send(f'Next time use {mention} channel :wink: \n\n')
+
         await msg.channel.send(response)
         await self.queues_show()
 
@@ -356,6 +360,10 @@ class Command(BaseCommand):
             .filter(player=player, queue__active=True)\
             .delete()
 
+        queues_channel = DiscordChannels.get_solo().queues
+        mention = self.bot.get_channel(queues_channel).mention
+        await msg.channel.send(f'Next time use {mention} channel :wink: \n\n')
+
         if deleted > 0:
             await msg.channel.send(f'`{player}` left the queue.\n')
         else:
@@ -365,6 +373,11 @@ class Command(BaseCommand):
 
     async def show_queues_command(self, msg, **kwargs):
         queues = LadderQueue.objects.filter(active=True)
+
+        queues_channel = DiscordChannels.get_solo().queues
+        mention = self.bot.get_channel(queues_channel).mention
+        await msg.channel.send(f'Next time use {mention} channel :wink: \n\n')
+
         if queues:
             await msg.channel.send(
                 ''.join(Command.queue_str(q) for q in queues)
