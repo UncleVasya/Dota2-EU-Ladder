@@ -75,15 +75,12 @@ class Command(BaseCommand):
                 await self.bot_cmd(msg)
 
         @self.bot.event
-        async def on_reaction_add(reaction, user):
-            self.last_seen[user.id] = datetime.now()
-
-        @self.bot.event
         async def on_raw_reaction_add(payload):
             channel = self.bot.get_channel(payload.channel_id)
             message = await channel.fetch_message(payload.message_id)
             user = self.bot.get_user(payload.user_id)
 
+            self.last_seen[user.id] = datetime.now()
             if user.bot:
                 return
 
