@@ -362,10 +362,7 @@ class LobbyStatus(TemplateView):
         context = super(LobbyStatus, self).get_context_data(**kwargs)
 
         # get current lobbies from cache
-        bots = cache.get('bots')
-        lobbies = []
-        if bots:
-            lobbies = [cache.get(bot) for bot in bots]
+        lobbies = [cache.get(bot) for bot in cache.get('bots', [])]
 
         # list of all members in all lobbies
         members = itertools.chain(*[lobby['members'] for lobby in lobbies])

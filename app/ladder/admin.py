@@ -147,6 +147,7 @@ class LadderQueueAdmin(admin.ModelAdmin):
 
     fieldsets = [
         (None, {'fields': ['date', 'active', 'min_mmr', 'channel']}),
+        (None, {'fields': ['game_start_time', 'game_end_time']}),
     ]
     readonly_fields = ['date']
 

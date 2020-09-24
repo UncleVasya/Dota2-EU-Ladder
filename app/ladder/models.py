@@ -169,6 +169,9 @@ class LadderQueue(models.Model):
     min_mmr = models.PositiveSmallIntegerField(default=0)
     balance = models.OneToOneField(BalanceAnswer, null=True, blank=True)
 
+    game_start_time = models.DateTimeField(null=True, blank=True)
+    game_end_time = models.DateTimeField(null=True, blank=True)
+
     def __str__(self):
         return f'Queue #{self.id}'
 

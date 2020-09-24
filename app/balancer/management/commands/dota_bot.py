@@ -176,6 +176,9 @@ class Command(BaseCommand):
             if int(lobby.state) == LobbyState.POSTGAME:
                 # game ended, process result and create new lobby
                 dota.game_start_time = None
+                if dota.queue:
+                    dota.queue.game_end_time = datetime.now()
+                    dota.queue.save()
                 self.process_game_result(dota)
                 self.create_new_lobby(dota)
 
@@ -1121,6 +1124,7 @@ class Command(BaseCommand):
         bot.game_start_time = datetime.now()
         if bot.queue:
             bot.queue.active = False
+            bot.queue.game_start_time = bot.game_start_time
             bot.queue.save()
         bot.launch_practice_lobby()
 

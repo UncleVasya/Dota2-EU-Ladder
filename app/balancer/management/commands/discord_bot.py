@@ -29,6 +29,7 @@ class Command(BaseCommand):
         self.queues_channel = None
         self.last_seen = defaultdict(datetime.now)  # to detect afk players
         self.queued_players = set()
+        self.last_queues_update = datetime.now()
 
         self.poll_reaction_funcs = {
             'DraftMode': self.on_draft_mode_reaction,
@@ -147,7 +148,8 @@ class Command(BaseCommand):
             queued_players = [qp for qp in QueuePlayer.objects.filter(queue__active=True)]
             queued_players = set(qp.player.discord_id for qp in queued_players)
 
-            if queued_players != self.queued_players:
+            outdated = datetime.now() - self.last_queues_update > timedelta(minutes=5)
+            if queued_players != self.queued_players or outdated:
                 await self.queues_show()
 
         self.bot.run(bot_token)
@@ -734,7 +736,7 @@ class Command(BaseCommand):
         queue.save()
 
     @staticmethod
-    def balance_str(balance: BalanceAnswer):
+    def balance_str(balance: BalanceAnswer, verbose=True):
         host = os.environ.get('BASE_URL', 'localhost:8000')
         url = reverse('balancer:balancer-answer', args=(balance.id,))
         url = '%s%s' % (host, url)
@@ -759,12 +761,13 @@ class Command(BaseCommand):
                       f'(avg. {team["mmr"]}): ' \
                       f'{" | ".join(player_names)}\n'
 
-        result += '\nLadder MMR: \n'
-        for i, team in enumerate(balance.teams):
-            player_mmrs = [str(p[1]) for p in team['players']]
-            result += f'Team {i + 1} {"↡" if i == underdog else " "} ' \
-                      f'(avg. {team["mmr"]}): ' \
-                      f'{" | ".join(player_mmrs)}\n'
+        if verbose:
+            result += '\nLadder MMR: \n'
+            for i, team in enumerate(balance.teams):
+                player_mmrs = [str(p[1]) for p in team['players']]
+                result += f'Team {i + 1} {"↡" if i == underdog else " "} ' \
+                          f'(avg. {team["mmr"]}): ' \
+                          f'{" | ".join(player_mmrs)}\n'
 
         result += f'\n{url}'
         result += '```'
@@ -775,8 +778,11 @@ class Command(BaseCommand):
     def queue_str(q: LadderQueue, show_min_mmr=True):
         players = q.players.all()
         avg_mmr = round(mean(p.ladder_mmr for p in players))
+        time_game = timeago.format(q.game_start_time, datetime.now()) \
+                    if q.game_start_time else None
         return f'```\n' + \
                f'Queue #{q.id}\n' + \
+               (f'Game started {time_game}\n' if time_game else '') + \
                (f'Min MMR: {q.min_mmr}\n' if show_min_mmr else '\n') + \
                f'Players: {q.players.count()} (' + \
                f' | '.join(f'{p.name}-{p.ladder_mmr}' for p in players) + ')\n\n' + \
@@ -790,8 +796,6 @@ class Command(BaseCommand):
 
     @staticmethod
     def get_player_by_name(name):
-        player = None
-
         # check if name is a mention
         match = re.match(r'<@!?([0-9]+)>$', name)
         if match:
@@ -1042,22 +1046,27 @@ class Command(BaseCommand):
             if q.players.count() == 10:
                 auto_balance = LadderSettings.get_solo().draft_mode == LadderSettings.AUTO_BALANCE
                 if auto_balance:
-                    q_string += self.balance_str(q.balance) + '\n'
-                q_string += ' '.join(self.player_mention(p) for p in q.players.all()) + \
-                            '\nYou have 5 min to join the lobby.\n\n'
+                    q_string += self.balance_str(q.balance, verbose=q.active) + '\n'
+                if q.active:
+                    q_string += ' '.join(self.player_mention(p) for p in q.players.all()) + \
+                                '\nYou have 5 min to join the lobby.\n\n'
 
             return q_string
 
         # remember queued players to check for changes in periodic task
         queued_players = [qp for qp in QueuePlayer.objects.filter(queue__active=True)]
         self.queued_players = set(qp.player.discord_id for qp in queued_players)
+        self.last_queues_update = datetime.now()
 
         # show queues info
         for q_type in QueueChannel.objects.all():
             message = await self.get_queues_message(q_type)
 
             mmr_string = f'({q_type.min_mmr}+)' if q_type.min_mmr > 0 else ''
-            queues = LadderQueue.objects.filter(channel=q_type, active=True)
+            queues = LadderQueue.objects\
+                .filter(channel=q_type)\
+                .filter(Q(active=True) |
+                        Q(game_start_time__isnull=False) & Q(game_end_time__isnull=True))
 
             queues_text = '```\nNoone is currently queueing.\n```'
             if queues:
