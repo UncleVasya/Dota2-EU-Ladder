@@ -27,6 +27,7 @@ class Command(BaseCommand):
         self.bot = None
         self.polls_channel = None
         self.queues_channel = None
+        self.status_message = None  # status text in queues channel
         self.last_seen = defaultdict(datetime.now)  # to detect afk players
         self.queued_players = set()
         self.last_queues_update = datetime.now()
@@ -57,6 +58,7 @@ class Command(BaseCommand):
 
             queue_afk_check.start()
             update_queues_shown.start()
+            clear_queues_channel.start()
 
         @self.bot.event
         async def on_message(msg):
@@ -151,6 +153,19 @@ class Command(BaseCommand):
             outdated = datetime.now() - self.last_queues_update > timedelta(minutes=5)
             if queued_players != self.queued_players or outdated:
                 await self.queues_show()
+
+        """
+        This taks removes unnecessary messages (status and pings);
+        This is done to make channel clear and also to highlight it 
+        when new status message appears after some time.
+        """
+        @tasks.loop(minutes=5)
+        async def clear_queues_channel():
+            channel = DiscordChannels.get_solo().queues
+            channel = self.bot.get_channel(channel)
+
+            db_messages = QueueChannel.objects.values_list('discord_msg', flat=True)
+            await channel.purge(check=lambda x: x.id not in db_messages)
 
         self.bot.run(bot_token)
 
@@ -341,7 +356,7 @@ class Command(BaseCommand):
         except QueueChannel.DoesNotExist:
             return
 
-        success, response = self.player_join_queue(player, channel)
+        _, response = self.player_join_queue(player, channel)
 
         queues_channel = DiscordChannels.get_solo().queues
         mention = self.bot.get_channel(queues_channel).mention
@@ -674,7 +689,7 @@ class Command(BaseCommand):
         # check that player is not in this queue already
         if player.ladderqueue_set.filter(channel=channel, active=True):
             response = 'Already queued, friend.'
-            return True, response
+            return None, response
 
         # remove player from other queues
         QueuePlayer.objects\
@@ -700,7 +715,7 @@ class Command(BaseCommand):
                         f' '.join(self.player_mention(p) for p in queue.players.all()) + \
                         f'\nYou have 5 min to join the lobby.'
 
-        return True, response
+        return queue, response
 
     @staticmethod
     def add_player_to_queue(player, channel):
@@ -815,6 +830,19 @@ class Command(BaseCommand):
             player = Player.objects.filter(name__contains=name).first()
 
         return player
+
+    def queue_full_msg(self, queue, show_balance=True):
+        balance_str = ''
+        auto_balance = LadderSettings.get_solo().draft_mode == LadderSettings.AUTO_BALANCE
+        if auto_balance and show_balance:
+            balance_str = f'Proposed balance: \n' + \
+                          Command.balance_str(queue.balance)
+
+        msg = f'\nQueue is full! {balance_str} \n' + \
+              f' '.join(self.player_mention(p) for p in queue.players.all()) + \
+              f'\nYou have 5 min to join the lobby.'
+
+        return msg
 
     def player_mention(self, player):
         discord_id = int(player.discord_id) if player.discord_id else 0
@@ -1038,9 +1066,6 @@ class Command(BaseCommand):
                 q_type.discord_msg = msg.id
                 q_type.save()
 
-        # one additional message for status text
-        await channel.send('.')
-
         await self.queues_show()
 
     async def queues_show(self):
@@ -1051,9 +1076,6 @@ class Command(BaseCommand):
                 auto_balance = LadderSettings.get_solo().draft_mode == LadderSettings.AUTO_BALANCE
                 if auto_balance:
                     q_string += self.balance_str(q.balance, verbose=q.active) + '\n'
-                if q.active:
-                    q_string += ' '.join(self.player_mention(p) for p in q.players.all()) + \
-                                '\nYou have 5 min to join the lobby.\n\n'
 
             return q_string
 
@@ -1125,6 +1147,15 @@ class Command(BaseCommand):
         # call reaction processing function
         await self.poll_reaction_funcs[poll.name](message, user)
 
+    @staticmethod
+    async def get_or_create_message(channel, msg_id):
+        try:
+            msg = await channel.fetch_message(msg_id)
+        except (DiscordPoll.DoesNotExist, discord.NotFound, discord.HTTPException):
+            msg = await channel.send('.')
+
+        return msg
+
     async def on_queue_reaction_add(self, message, user, payload, player):
         # if emoji is invalid or message is not a queue message, remove reaction
         allowed_reactions = ['✅']
@@ -1138,18 +1169,21 @@ class Command(BaseCommand):
         if not q_channel:
             return
 
-        success, response = self.player_join_queue(player, q_channel)
-        if success:
+        queue, response = self.player_join_queue(player, q_channel)
+        if queue:
             await self.queues_show()
             response = response.split('```')[0]  # take only first part of response text
+            if len(queue.players.all()) == 10:
+                msg = self.queue_full_msg(queue, show_balance=False)
+                await message.channel.send(f'---------------------\n{msg}')
         else:
             # if couldn't join queue, remove reaction
             r = discord.utils.get(message.reactions, emoji='✅')
             await r.remove(user)
 
         # show response in status message
-        msg_hist = await message.channel.history(limit=1).flatten()
-        status_msg = msg_hist[0]
+        status_msg = await self.get_or_create_message(message.channel, self.status_message)
+        self.status_message = status_msg.id
         await status_msg.edit(content=response)
 
     async def on_queue_reaction_remove(self, message, user, payload, player):
@@ -1168,6 +1202,6 @@ class Command(BaseCommand):
             await self.queues_show()
 
             # show response in status message
-            msg_hist = await message.channel.history(limit=1).flatten()
-            status_msg = msg_hist[0]
+            status_msg = await self.get_or_create_message(message.channel, self.status_message)
+            self.status_message = status_msg.id
             await status_msg.edit(content=f'`{player}` left the queue.\n')
