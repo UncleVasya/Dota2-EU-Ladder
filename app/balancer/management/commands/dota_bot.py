@@ -1096,7 +1096,8 @@ class Command(BaseCommand):
         lobby = bot.lobby
 
         # filter out bot account
-        members = [player for player in lobby.all_members if SteamID(player.id).as_32 != bot.account_id]
+        members = [player for player in lobby.all_members
+                   if player.id and SteamID(player.id).as_32 != bot.account_id]
 
         players = [player for player in members
                    if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)]
