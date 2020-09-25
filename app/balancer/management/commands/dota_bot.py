@@ -173,6 +173,11 @@ class Command(BaseCommand):
                     if dota.min_mmr > 0:
                         Command.kick_low_mmr(dota)
 
+            if int(lobby.state) == LobbyState.SERVERSETUP:
+                if hasattr(lobby, 'server_id') and dota.queue:
+                    dota.queue.game_server = lobby.server_id
+                    dota.queue.save()
+
             if int(lobby.state) == LobbyState.POSTGAME:
                 # game ended, process result and create new lobby
                 dota.game_start_time = None

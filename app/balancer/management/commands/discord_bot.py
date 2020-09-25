@@ -778,11 +778,15 @@ class Command(BaseCommand):
     def queue_str(q: LadderQueue, show_min_mmr=True):
         players = q.players.all()
         avg_mmr = round(mean(p.ladder_mmr for p in players))
-        time_game = timeago.format(q.game_start_time, datetime.now()) \
-                    if q.game_start_time else None
+
+        game_str = ''
+        if q.game_start_time:
+            time_game = timeago.format(q.game_start_time, datetime.now())
+            game_str = f'Game started {time_game}. Spectate: watch_server {q.game_server}\n'
+
         return f'```\n' + \
                f'Queue #{q.id}\n' + \
-               (f'Game started {time_game}\n' if time_game else '') + \
+               game_str + \
                (f'Min MMR: {q.min_mmr}\n' if show_min_mmr else '\n') + \
                f'Players: {q.players.count()} (' + \
                f' | '.join(f'{p.name}-{p.ladder_mmr}' for p in players) + ')\n\n' + \
