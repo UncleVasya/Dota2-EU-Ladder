@@ -64,12 +64,11 @@ class Command(BaseCommand):
         async def on_message(msg):
             self.last_seen[msg.author.id] = datetime.now()
 
-            if not QueueChannel.objects.filter(discord_id=msg.channel.id).exists():
+            if not QueueChannel.objects.filter(discord_id=msg.channel.id).exists() \
+               and not (msg.channel.id == DiscordChannels.get_solo().chat):
                 return
             if msg.author.bot:
                 return
-
-            print(f'Got message from {msg.author} ({msg.author.id}): {msg.content}')
 
             # strip whitespaces so bot can handle strings like " !register   Bob   4000"
             msg.content = " ".join(msg.content.split())
@@ -195,6 +194,15 @@ class Command(BaseCommand):
         }
         free_for_all = ['!register']
         staff_only = ['!vouch', '!add', '!kick', '!mmr']
+        chat_channel = [
+            '!register', '!vouch', '!wh', '!whois', '!stats', '!top',
+            '!afk-ping', '!afkping', '!role', '!roles'
+        ]
+
+        # if this is a chat channel, check if command is allowed
+        if msg.channel.id == DiscordChannels.get_solo().chat:
+            if command not in chat_channel:
+                return
 
         # if command is free for all, no other checks required
         if command in free_for_all:
@@ -350,17 +358,8 @@ class Command(BaseCommand):
         player = kwargs['player']
         print(f'Join command from {player}:\n {command}')
 
-        # check if this is a queue channel
-        try:
-            channel = QueueChannel.objects.get(discord_id=msg.channel.id)
-        except QueueChannel.DoesNotExist:
-            return
-
+        channel = QueueChannel.objects.get(discord_id=msg.channel.id)
         _, response = self.player_join_queue(player, channel)
-
-        queues_channel = DiscordChannels.get_solo().queues
-        mention = self.bot.get_channel(queues_channel).mention
-        await msg.channel.send(f'Next time use {mention} channel :wink: \n\n')
 
         await msg.channel.send(response)
         await self.queues_show()
@@ -374,10 +373,6 @@ class Command(BaseCommand):
             .filter(player=player, queue__active=True)\
             .delete()
 
-        queues_channel = DiscordChannels.get_solo().queues
-        mention = self.bot.get_channel(queues_channel).mention
-        await msg.channel.send(f'Next time use {mention} channel :wink: \n\n')
-
         if deleted > 0:
             await msg.channel.send(f'`{player}` left the queue.\n')
         else:
@@ -387,11 +382,6 @@ class Command(BaseCommand):
 
     async def show_queues_command(self, msg, **kwargs):
         queues = LadderQueue.objects.filter(active=True)
-
-        queues_channel = DiscordChannels.get_solo().queues
-        mention = self.bot.get_channel(queues_channel).mention
-        await msg.channel.send(f'Next time use {mention} channel :wink: \n\n')
-
         if queues:
             await msg.channel.send(
                 ''.join(Command.queue_str(q) for q in queues)
@@ -420,12 +410,7 @@ class Command(BaseCommand):
             await msg.channel.send(f'`{player}` is already in a queue')
             return
 
-        # check if this is a queue channel
-        try:
-            channel = QueueChannel.objects.get(discord_id=msg.channel.id)
-        except QueueChannel.DoesNotExist:
-            return
-
+        channel = QueueChannel.objects.get(discord_id=msg.channel.id)
         queue = Command.add_player_to_queue(player, channel)
 
         await msg.channel.send(
@@ -488,10 +473,7 @@ class Command(BaseCommand):
         except (IndexError, ValueError):
             return
 
-        try:
-            channel = QueueChannel.objects.get(discord_id=msg.channel.id)
-        except QueueChannel.DoesNotExist:
-            return
+        channel = QueueChannel.objects.get(discord_id=msg.channel.id)
 
         if LadderQueue.objects.filter(channel=channel, active=True).exists():
             await msg.channel.send(

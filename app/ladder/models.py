@@ -144,6 +144,7 @@ class LadderSettings(SingletonModel):
 class DiscordChannels(SingletonModel):
     polls = models.PositiveIntegerField(null=True, blank=True)
     queues = models.PositiveIntegerField(null=True, blank=True)
+    chat = models.PositiveIntegerField(null=True, blank=True)
 
 
 class DiscordPoll(models.Model):
