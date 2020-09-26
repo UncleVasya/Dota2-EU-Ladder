@@ -848,6 +848,10 @@ class Command(BaseCommand):
         if not afk_list:
             return
 
+        # for now, send afk pings in chat channel
+        channel = DiscordChannels.get_solo().chat
+        channel = self.bot.get_channel(channel)
+
         ping_list = [p for p in afk_list if p.queue_afk_ping]
         if ping_list:
             afk_response_time = LadderSettings.get_solo().afk_response_time
