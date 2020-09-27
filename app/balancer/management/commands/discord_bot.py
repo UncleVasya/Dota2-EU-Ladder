@@ -32,6 +32,9 @@ class Command(BaseCommand):
         self.queued_players = set()
         self.last_queues_update = datetime.now()
 
+        # cached discord models
+        self.queue_messages = {}
+
         self.poll_reaction_funcs = {
             'DraftMode': self.on_draft_mode_reaction,
             'EliteMMR': self.on_elite_mmr_reaction,
@@ -669,9 +672,10 @@ class Command(BaseCommand):
             return False, response
 
         # check that player is not in this queue already
-        if player.ladderqueue_set.filter(channel=channel, active=True):
+        queue = player.ladderqueue_set.filter(channel=channel, active=True).first()
+        if queue:
             response = 'Already queued, friend.'
-            return None, response
+            return queue, response
 
         # remove player from other queues
         QueuePlayer.objects\
@@ -1030,13 +1034,6 @@ class Command(BaseCommand):
     async def on_faceit_reaction(self, message, user, player=None):
         pass
 
-    async def get_queues_message(self, q_type):
-        try:
-            message_id = q_type.discord_msg
-            return await self.queues_channel.fetch_message(message_id)
-        except (discord.HTTPException, discord.NotFound):
-            return None
-
     async def setup_queue_messages(self):
         channel = self.queues_channel
 
@@ -1046,9 +1043,10 @@ class Command(BaseCommand):
 
         # create queues messages that are not already present
         for q_type in QueueChannel.objects.all():
-            msg = await self.get_queues_message(q_type)
-            if not msg:
-                msg = await channel.send(q_type.name)
+            msg, created = await self.get_or_create_message(self.queues_channel, q_type.discord_msg)
+            await msg.add_reaction('✅')
+            self.queue_messages[msg.id] = msg
+            if created:
                 q_type.discord_msg = msg.id
                 q_type.save()
 
@@ -1072,7 +1070,7 @@ class Command(BaseCommand):
 
         # show queues info
         for q_type in QueueChannel.objects.all():
-            message = await self.get_queues_message(q_type)
+            message = self.queue_messages[q_type.discord_msg]
 
             mmr_string = f'({q_type.min_mmr}+)' if q_type.min_mmr > 0 else ''
             queues = LadderQueue.objects\
@@ -1093,7 +1091,6 @@ class Command(BaseCommand):
                    f'-------------------------------\n'
 
             await message.edit(content=text)
-            await message.add_reaction('✅')
 
             # remove reactions of players who are no longer in this queue
             queue_players = QueuePlayer.objects\
@@ -1137,21 +1134,25 @@ class Command(BaseCommand):
     async def get_or_create_message(channel, msg_id):
         try:
             msg = await channel.fetch_message(msg_id)
+            created = False
         except (DiscordPoll.DoesNotExist, discord.NotFound, discord.HTTPException):
             msg = await channel.send('.')
+            created = True
 
-        return msg
+        return msg, created
 
     async def on_queue_reaction_add(self, message, user, payload, player):
         # if emoji is invalid or message is not a queue message, remove reaction
         allowed_reactions = ['✅']
         q_channel = QueueChannel.objects.filter(discord_msg=message.id).first()
         if (payload.emoji.name not in allowed_reactions) or not q_channel:
+            # TODO: instead of "not q_channel" this should be "message.id not in self.queue_messages"
             r = discord.utils.get(message.reactions, emoji=payload.emoji.name)
             await r.clear()
             return
 
         # if not a queue message, ignore reaction
+        # TODO: this check should be on the top
         if not q_channel:
             return
 
@@ -1167,10 +1168,9 @@ class Command(BaseCommand):
             r = discord.utils.get(message.reactions, emoji='✅')
             await r.remove(user)
 
-        # show response in status message
-        status_msg = await self.get_or_create_message(message.channel, self.status_message)
-        self.status_message = status_msg.id
-        await status_msg.edit(content=response)
+        self.bot.loop.create_task(
+            self.update_status_message(response)
+        )
 
     async def on_queue_reaction_remove(self, message, user, payload, player):
         # if emoji is invalid or message is not a queue message, do nothing
@@ -1186,8 +1186,18 @@ class Command(BaseCommand):
 
         if deleted > 0:
             await self.queues_show()
+            self.bot.loop.create_task(
+                self.update_status_message(f'`{player}` left the queue.\n')
+            )
 
-            # show response in status message
-            status_msg = await self.get_or_create_message(message.channel, self.status_message)
-            self.status_message = status_msg.id
-            await status_msg.edit(content=f'`{player}` left the queue.\n')
+    async def update_status_message(self, text):
+        channel = DiscordChannels.get_solo().queues
+        channel = self.bot.get_channel(channel)
+
+        try:
+            status_msg = discord.utils.get(self.bot.cached_messages, id=self.status_message)
+            await status_msg.edit(content=text)
+        except (DiscordPoll.DoesNotExist, discord.NotFound, discord.HTTPException, AttributeError):
+            msg = await channel.send(text)
+            self.status_message = msg.id
+
