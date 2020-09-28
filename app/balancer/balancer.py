@@ -93,22 +93,22 @@ def role_balance_teams(players: List[Player], mmr_exponent=3):
         return intersection(answer[0], players) >= amount and \
                intersection(answer[1], players) >= amount
 
-    def get_role_mmr_diff(answer, role):
-        ind = role_names.index(role)
-        p1 = answer[0]['players'][ind]
-        p2 = answer[1]['players'][ind]
-        diff = abs(p1.ladder_mmr - p2.ladder_mmr)
-        return diff
-
     def assign_best_roles(team):
+        top2_mmr = team['players'][1].ladder_mmr
+
         role_score_max = 0
         best_roles = None
         for roles in role_permutations:
             role_score = 0
+            important_roles_mmr = []
             for i, player in enumerate(team['players']):
                 role_score += getattr(player.roles, roles[i])
+                # remember mmrs of carry nad mid players to later check if they are okay
+                if roles[i] in ['carry', 'mid']:
+                    important_roles_mmr.append(player.ladder_mmr)
 
-            if role_score > role_score_max:
+            team_ok = all(top2_mmr - x < 1500 for x in important_roles_mmr)
+            if role_score > role_score_max and team_ok:
                 role_score_max = role_score
                 best_roles = roles
 
@@ -154,42 +154,9 @@ def role_balance_teams(players: List[Player], mmr_exponent=3):
     for team in teams:
         assign_best_roles(team)
 
-    # for team in teams:
-    #     print(f'{team}\n\n')
-
     # combine teams into pairs against each other
     half = len(teams) // 2
     answers = zip(teams[:half], list(reversed(teams[half:])))
-
-    mid_players = [p for p in players if p.roles.mid > 3]
-    print(
-        'Mid players: ' +
-        ' | '.join(f'{p.name}-{p.roles.mid}-{p.ladder_mmr}' for p in mid_players)
-    )
-
-    mid_players.sort(key=lambda p: (-p.roles.mid, -p.ladder_mmr))
-    print(
-        'Mid players sorted: ' +
-        ' | '.join(f'{p.name}-{p.roles.mid}-{p.ladder_mmr}' for p in mid_players)
-    )
-
-    # discard midlaners who are 1k mmr lower than top one
-    mid_players = [p for p in mid_players
-                   if mid_players[0].ladder_mmr - p.ladder_mmr < 1000]
-
-    print(
-        'Mid players filtered: ' +
-        ' | '.join(f'{p.name}-{p.roles.mid}-{p.ladder_mmr}' for p in mid_players)
-    )
-
-    # if len(mid_players) > 1:
-    #     # check that every team has at least one mid player
-    #     answers = [x for x in answers if both_teams_have(x, mid_players, 1)]
-
-    # check that players on core roles are competitive with each other
-    # answers = [x for x in answers if get_role_mmr_diff(x, 'carry') < 1000]
-    # answers = [x for x in answers if get_role_mmr_diff(x, 'mid') < 1000]
-    # answers = [x for x in answers if get_role_mmr_diff(x, 'offlane') < 1000]
 
     # discard answers that place top 2 or lowest 2 players on same team
     top_players = players[:2]
@@ -210,6 +177,9 @@ def role_balance_teams(players: List[Player], mmr_exponent=3):
         }
         for answer in answers
     ]
+
+    # discard answers that have too unbalanced teams
+    answers = [x for x in answers if x['mmr_diff'] <= 300]
 
     # sort answers by mmr difference
     answers.sort(key=lambda x: (-x['role_score_sum'], x['mmr_diff_exp']))

@@ -62,7 +62,7 @@ class PlayerManager(models.Manager):
 
 
 class MatchManager(models.Manager):
-    underdog_diff = 300
+    underdog_diff = 200
 
     @staticmethod
     def add_scores(match):
@@ -72,7 +72,7 @@ class MatchManager(models.Manager):
         # TODO: make values like win/loss change and underdog bonus changeble in admin panel
         mmr_diff = match.balance.teams[0]['mmr'] - match.balance.teams[1]['mmr']
         underdog = 0 if mmr_diff <= 0 else 1
-        underdog_bonus = abs(mmr_diff) // MatchManager.underdog_diff * 15  # 15 mmr points for each 300 avg. mmr diff
+        underdog_bonus = abs(mmr_diff) // MatchManager.underdog_diff * 15  # 15 mmr points for each 200 mmr diff
         underdog_bonus = min(15, underdog_bonus)  # but no more than 15 mmr
 
         print('mmr diff: %d' % mmr_diff)
