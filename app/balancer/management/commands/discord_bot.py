@@ -372,10 +372,19 @@ class Command(BaseCommand):
         player = kwargs['player']
         print(f'Leave command from {player}:\n {command}')
 
-        deleted, _ = QueuePlayer.objects\
+        # TODO: this should be  a player_leave_queue() function;
+        #       reuse it in on_queue_reaction_remove()
+        qs = QueuePlayer.objects\
             .filter(player=player, queue__active=True)\
-            .delete()
+            .annotate(Count('queue__players'))
 
+        if any(x.queue__players__count == 10 for x in qs):
+            await msg.channel.send(
+                f'`{player}`, you are under arrest dodging scum. Play the game.\n'
+            )
+            return
+
+        deleted, _ = qs.delete()
         if deleted > 0:
             await msg.channel.send(f'`{player}` left the queue.\n')
         else:
@@ -671,11 +680,17 @@ class Command(BaseCommand):
             response = 'Your dick is too small. Grow a bigger one.'
             return False, response
 
-        # check that player is not in this queue already
-        queue = player.ladderqueue_set.filter(channel=channel, active=True).first()
+        queue = player.ladderqueue_set.filter(active=True).first()
         if queue:
-            response = 'Already queued, friend.'
-            return queue, response
+            # check that player is not in this queue already
+            if queue.channel == channel:
+                response = 'Already queued, friend.'
+                return queue, response
+
+            # check that player is not already in a full queue
+            if queue.players.count() == 10:
+                response = f'{player}, you are under arrest dodging scum. Play the game.'
+                return None, response
 
         # remove player from other queues
         QueuePlayer.objects\
@@ -1179,11 +1194,19 @@ class Command(BaseCommand):
         if (payload.emoji.name not in allowed_reactions) or not q_channel:
             return
 
-        # remove player from this q_channel
-        deleted, _ = QueuePlayer.objects \
+        qs = QueuePlayer.objects \
             .filter(player=player, queue__channel=q_channel, queue__active=True) \
-            .delete()
+            .annotate(Count('queue__players'))
 
+        if any(x.queue__players__count == 10 for x in qs):
+            self.bot.loop.create_task(
+                self.update_status_message(
+                    f'`{player}`, you are under arrest dodging scum. Play the game.\n'
+                )
+            )
+            return
+
+        deleted, _ = qs.delete()
         if deleted > 0:
             await self.queues_show()
             self.bot.loop.create_task(
