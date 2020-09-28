@@ -55,6 +55,7 @@ class Player(models.Model):
     queue_afk_ping = models.BooleanField(default=True)
 
     description = models.CharField(max_length=200, null=True, blank=True)
+    vouch_info = models.CharField(max_length=200, null=True, blank=True)
 
     roles = AutoOneToOneField(RolesPreference)
 
