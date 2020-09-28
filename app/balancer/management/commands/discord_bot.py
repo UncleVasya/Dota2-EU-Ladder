@@ -2,7 +2,7 @@ import asyncio
 import itertools
 import re
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import timedelta
 from statistics import mean
 
 import discord
@@ -13,6 +13,7 @@ import os
 
 from django.core.urlresolvers import reverse
 from django.db.models import Q, Count, Prefetch, Case, When, F
+from django.utils import timezone
 
 from app.balancer.managers import BalanceResultManager
 from app.balancer.models import BalanceAnswer
@@ -28,9 +29,9 @@ class Command(BaseCommand):
         self.polls_channel = None
         self.queues_channel = None
         self.status_message = None  # status text in queues channel
-        self.last_seen = defaultdict(datetime.now)  # to detect afk players
+        self.last_seen = defaultdict(timezone.now)  # to detect afk players
         self.queued_players = set()
-        self.last_queues_update = datetime.now()
+        self.last_queues_update = timezone.now()
 
         # cached discord models
         self.queue_messages = {}
@@ -65,7 +66,7 @@ class Command(BaseCommand):
 
         @self.bot.event
         async def on_message(msg):
-            self.last_seen[msg.author.id] = datetime.now()
+            self.last_seen[msg.author.id] = timezone.now()
 
             if not QueueChannel.objects.filter(discord_id=msg.channel.id).exists() \
                and not (msg.channel.id == DiscordChannels.get_solo().chat):
@@ -85,7 +86,7 @@ class Command(BaseCommand):
             message = await channel.fetch_message(payload.message_id)
             user = self.bot.get_user(payload.user_id)
 
-            self.last_seen[user.id] = datetime.now()
+            self.last_seen[user.id] = timezone.now()
             if user.bot:
                 return
 
@@ -152,7 +153,7 @@ class Command(BaseCommand):
             queued_players = [qp for qp in QueuePlayer.objects.filter(queue__active=True)]
             queued_players = set(qp.player.discord_id for qp in queued_players)
 
-            outdated = datetime.now() - self.last_queues_update > timedelta(minutes=5)
+            outdated = timezone.now() - self.last_queues_update > timedelta(minutes=5)
             if queued_players != self.queued_players or outdated:
                 await self.queues_show()
 
@@ -797,7 +798,7 @@ class Command(BaseCommand):
 
         game_str = ''
         if q.game_start_time:
-            time_game = timeago.format(q.game_start_time, datetime.now())
+            time_game = timeago.format(q.game_start_time, timezone.now())
             game_str = f'Game started {time_game}. Spectate: watch_server {q.game_server}\n'
 
         return f'```\n' + \
@@ -858,7 +859,7 @@ class Command(BaseCommand):
 
         def afk_filter(players, allowed_time):
             t = timedelta(minutes=allowed_time)
-            afk = [p for p in players if datetime.now() - last_seen(p) > t]
+            afk = [p for p in players if timezone.now() - last_seen(p) > t]
             return afk
 
         afk_allowed_time = LadderSettings.get_solo().afk_allowed_time
@@ -1081,7 +1082,7 @@ class Command(BaseCommand):
         # remember queued players to check for changes in periodic task
         queued_players = [qp for qp in QueuePlayer.objects.filter(queue__active=True)]
         self.queued_players = set(qp.player.discord_id for qp in queued_players)
-        self.last_queues_update = datetime.now()
+        self.last_queues_update = timezone.now()
 
         # show queues info
         for q_type in QueueChannel.objects.all():
