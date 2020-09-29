@@ -62,7 +62,7 @@ class PlayerManager(models.Manager):
 
 
 class MatchManager(models.Manager):
-    underdog_diff = 200
+    underdog_diff = 150
 
     @staticmethod
     def add_scores(match):

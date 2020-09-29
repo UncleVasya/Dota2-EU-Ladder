@@ -179,7 +179,7 @@ def role_balance_teams(players: List[Player], mmr_exponent=3):
     ]
 
     # discard answers that have too unbalanced teams
-    answers = [x for x in answers if x['mmr_diff'] <= 300]
+    answers = [x for x in answers if x['mmr_diff'] <= 200]
 
     # sort answers by mmr difference
     answers.sort(key=lambda x: (-x['role_score_sum'], x['mmr_diff_exp']))
