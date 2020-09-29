@@ -505,22 +505,16 @@ class Command(BaseCommand):
             season = LadderSettings.get_solo().current_season
             qs = Player.objects \
                 .order_by('-score', '-ladder_mmr') \
-                .filter(matchplayer__match__season=season).distinct() \
-                .prefetch_related(Prefetch(
-                    'matchplayer_set',
-                    queryset=MatchPlayer.objects.select_related('match'),
-                    to_attr='matches'
-                ))
-            qs = qs.annotate(
-                match_count=Count('matchplayer'),
-                wins=Count(Case(
-                    When(
-                        matchplayer__team=F('matchplayer__match__winner'), then=1)
+                .filter(matchplayer__match__season=season).distinct()\
+                .annotate(
+                    match_count=Count('matchplayer'),
+                    wins=Count(Case(
+                        When(
+                            matchplayer__team=F('matchplayer__match__winner'), then=1)
+                    )
+                    ),
+                    losses=F('match_count') - F('wins'),
                 )
-                ),
-                losses=F('match_count') - F('wins'),
-            )
-
             players = qs[:limit]
             if bottom:
                 players = reversed(players.reverse())
