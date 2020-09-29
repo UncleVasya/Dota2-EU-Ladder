@@ -191,6 +191,8 @@ class Command(BaseCommand):
             '!kick': self.kick_from_queue_command,
             '!mmr': self.mmr_command,
             '!top': self.top_command,
+            '!bot': self.bottom_command,
+            '!bottom': self.bottom_command,
             '!afk-ping': self.afk_ping_command,
             '!afkping': self.afk_ping_command,
             '!role': self.role_command,
@@ -200,7 +202,7 @@ class Command(BaseCommand):
         staff_only = ['!vouch', '!add', '!kick', '!mmr']
         chat_channel = [
             '!register', '!vouch', '!wh', '!whois', '!stats', '!top',
-            '!afk-ping', '!afkping', '!role', '!roles'
+            '!bottom', '!bot', '!afk-ping', '!afkping', '!role', '!roles'
         ]
 
         # if this is a chat channel, check if command is allowed
@@ -499,7 +501,7 @@ class Command(BaseCommand):
         await msg.channel.send(f'Min MMR set to {min_mmr}')
 
     async def top_command(self, msg, **kwargs):
-        def get_top_players(limit):
+        def get_top_players(limit, bottom=False):
             season = LadderSettings.get_solo().current_season
             qs = Player.objects \
                 .order_by('-score', '-ladder_mmr') \
@@ -509,7 +511,6 @@ class Command(BaseCommand):
                     queryset=MatchPlayer.objects.select_related('match'),
                     to_attr='matches'
                 ))
-
             qs = qs.annotate(
                 match_count=Count('matchplayer'),
                 wins=Count(Case(
@@ -520,7 +521,10 @@ class Command(BaseCommand):
                 losses=F('match_count') - F('wins'),
             )
 
-            return qs[:limit]
+            players = qs[:limit]
+            if bottom:
+                players = reversed(players.reverse())
+            return players
 
         def player_str(p):
             # pretty format is tricky
@@ -532,6 +536,7 @@ class Command(BaseCommand):
             return result
 
         command = msg.content
+        bottom = kwargs.get('bottom', False)  # for '!bottom' command
         print(f'\n!top command:\n{command}')
 
         try:
@@ -553,7 +558,7 @@ class Command(BaseCommand):
             return
 
         # all is ok, can show top players
-        players = get_top_players(limit)
+        players = get_top_players(limit, bottom)
         top_str = '\n'.join(
             f'{p.rank_score:2}. {player_str(p)}' for p in players
         )
@@ -561,6 +566,12 @@ class Command(BaseCommand):
             f'```{top_str} ``` \n'
             f'Full leaderboard is here: {url}'
         )
+
+    async def bottom_command(self, msg, **kwargs):
+        print(f'\n!bottom command:\n{msg.content}')
+
+        kwargs.update({'bottom': True})
+        await self.top_command(msg, **kwargs)
 
     async def afk_ping_command(self, msg, **kwargs):
         command = msg.content
