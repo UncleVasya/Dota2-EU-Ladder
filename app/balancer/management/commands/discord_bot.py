@@ -179,6 +179,7 @@ class Command(BaseCommand):
             '!register': self.register_command,
             '!vouch': self.vouch_command,
             '!wh': self.whois_command,
+            '!who': self.whois_command,
             '!whois': self.whois_command,
             '!stats': self.whois_command,
             '!q+': self.join_queue_command,
@@ -193,6 +194,7 @@ class Command(BaseCommand):
             '!top': self.top_command,
             '!bot': self.bottom_command,
             '!bottom': self.bottom_command,
+            '!streak': self.streak_command,
             '!afk-ping': self.afk_ping_command,
             '!afkping': self.afk_ping_command,
             '!role': self.role_command,
@@ -201,7 +203,7 @@ class Command(BaseCommand):
         free_for_all = ['!register']
         staff_only = ['!vouch', '!add', '!kick', '!mmr']
         chat_channel = [
-            '!register', '!vouch', '!wh', '!whois', '!stats', '!top',
+            '!register', '!vouch', '!wh', '!who', '!whois', '!stats', '!top', '!streak',
             '!bottom', '!bot', '!afk-ping', '!afkping', '!role', '!roles'
         ]
 
@@ -566,6 +568,39 @@ class Command(BaseCommand):
 
         kwargs.update({'bottom': True})
         await self.top_command(msg, **kwargs)
+
+    async def streak_command(self, msg, **kwargs):
+        command = msg.content
+        player = kwargs['player']
+        print(f'\n!streak command from {player}:\n{command}')
+
+        player = name = None
+        try:
+            name = command.split(None, 1)[1]
+        except (IndexError, ValueError):
+            #  if name is not provided, show current player
+            player = kwargs['player']
+
+        player = player or Command.get_player_by_name(name)
+        if not player:
+            await msg.channel.send(f'`{name}`: I don\'t know him')
+            return
+
+        mps = player.matchplayer_set.filter(match__season=LadderSettings.get_solo().current_season)
+        results = ['win' if x.team == x.match.winner else 'loss' for x in mps]
+        print(results)
+
+        streaks = [list(g) for k, g in itertools.groupby(results)]
+        streak = streaks[0]
+        max_streak = max(streaks, key=len)
+
+        await msg.channel.send(
+            f'```\n'
+            f'{player} streaks\n\n'
+            f'Current: {len(streak)}{"W" if streak[0] == "win" else "L"}\n'
+            f'Biggest: {len(max_streak)}{"W" if max_streak[0] == "win" else "L"}\n'
+            f'```'
+        )
 
     async def afk_ping_command(self, msg, **kwargs):
         command = msg.content
