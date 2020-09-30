@@ -588,7 +588,6 @@ class Command(BaseCommand):
 
         mps = player.matchplayer_set.filter(match__season=LadderSettings.get_solo().current_season)
         results = ['win' if x.team == x.match.winner else 'loss' for x in mps]
-        print(results)
 
         streaks = [list(g) for k, g in itertools.groupby(results)]
         streak = streaks[0]

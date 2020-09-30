@@ -384,12 +384,11 @@ class Command(BaseCommand):
     #       command argument for when I don't need it
     @staticmethod
     def start_command(bot, msg):
-        if not bot.balance_answer:
-            if bot.player_draft:
-                Command.custom_command(bot, None)
-            else:
-                bot.channels.lobby.send('Please balance teams first.')
-                return
+        if bot.player_draft:
+            Command.custom_command(bot, None)
+        elif not bot.balance_answer:
+            bot.channels.lobby.send('Please balance teams first.')
+            return
 
         if not Command.check_teams_setup(bot):
             bot.channels.lobby.send('Please join slots according to balance.')
@@ -822,7 +821,6 @@ class Command(BaseCommand):
 
         bot.player_draft = not bot.player_draft
         if bot.player_draft:
-            bot.balance_answer = None
             bot.channels.lobby.send(
                 f'Player draft is turned ON. 2 highest MMR players please draft.')
         else:
@@ -1154,8 +1152,7 @@ class Command(BaseCommand):
             return
 
         bot.queue = queue
-        if not bot.player_draft:
-            bot.balance_answer = queue.balance
+        bot.balance_answer = queue.balance
 
         # remove un-queued players from invited_players list;
         # this is done so if they re-join, they will get invite again
