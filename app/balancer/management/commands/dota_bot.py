@@ -90,6 +90,7 @@ class Command(BaseCommand):
         client = SteamClient()
         dota = Dota2Client(client)
 
+        # TODO: do I need it here? ones in create_new_lobby() should be enough
         dota.balance_answer = None
         dota.min_mmr = 0
         dota.lobby_options = {}
@@ -100,7 +101,10 @@ class Command(BaseCommand):
         dota.players = {}  # TODO: this isn't used atm, make use of it
         dota.queue = None
         dota.use_queue = LadderSettings.get_solo().use_queue
+
         dota.player_draft = False
+        dota.pd_votes = set()
+        dota.ab_votes = set()
 
         self.bots.append(dota)
 
@@ -214,7 +218,11 @@ class Command(BaseCommand):
         bot.balance_answer = None
         bot.game_start_time = None
         bot.queue = None
+
         bot.player_draft = (LadderSettings.get_solo().draft_mode == LadderSettings.PLAYER_DRAFT)
+        bot.pd_votes = set()
+        bot.ab_votes = set()
+
         bot.staff_mode = False
         bot.players = {}
         bot.invited_players = []
@@ -269,6 +277,8 @@ class Command(BaseCommand):
             '!q': Command.show_queue_command,
             '!playerdraft': Command.player_draft_command,
             '!pd': Command.player_draft_command,
+            '!auto': Command.auto_balance_command,
+            '!ab': Command.auto_balance_command,
             '!missing': Command.missing_command,
         }
         free_for_all = ['!register']
@@ -818,14 +828,58 @@ class Command(BaseCommand):
     @staticmethod
     def player_draft_command(bot, msg):
         print('\n!playerdraft command.')
+        print(bot.pd_votes)
 
-        bot.player_draft = not bot.player_draft
+        votes_needed = 5
+
+        if not (bot.queue and bot.queue.players.count() == 10):
+            bot.channels.lobby.send('Queue is not yet full.')
+            return
+
+        if not bot.queue.players.filter(dota_id=msg.account_id).exists():
+            bot.channels.lobby.send(f'{msg.persona_name}, you are not in this queue.')
+            return
+
         if bot.player_draft:
+            bot.channels.lobby.send('Player draft is already ON.')
+            return
+
+        bot.pd_votes.add(msg.account_id)
+        bot.channels.lobby.send(
+            f'{len(bot.pd_votes)}/{votes_needed} votes for player draft.')
+
+        if len(bot.pd_votes) >= votes_needed:
+            bot.player_draft = True
             bot.channels.lobby.send(
-                f'Player draft is turned ON. 2 highest MMR players please draft.')
-        else:
+                f'PLAYER DRAFT IS ON. 2 highest MMR players please draft.')
+
+    @staticmethod
+    def auto_balance_command(bot, msg):
+        print('\n!auto_balance command.')
+        print(bot.ab_votes)
+
+        votes_needed = 5
+
+        if not (bot.queue and bot.queue.players.count() == 10):
+            bot.channels.lobby.send('Queue is not yet full.')
+            return
+
+        if not bot.queue.players.filter(dota_id=msg.account_id).exists():
+            bot.channels.lobby.send(f'{msg.persona_name}, you are not in this queue.')
+            return
+
+        if not bot.player_draft:
+            bot.channels.lobby.send('Auto balance is already ON.')
+            return
+
+        bot.ab_votes.add(msg.account_id)
+        bot.channels.lobby.send(
+            f'{len(bot.ab_votes)}/{votes_needed} votes for auto balance.')
+
+        if len(bot.pd_votes) >= votes_needed:
+            bot.player_draft = False
             bot.channels.lobby.send(
-                f'Player draft is turned OFF. Use !teams to see auto-balance.')
+                f'AUTO BALANCE IS ON. Use !teams to see auto-balance.')
 
     @staticmethod
     def missing_command(bot, msg):
@@ -1134,16 +1188,15 @@ class Command(BaseCommand):
 
     @staticmethod
     def invite_players(bot):
-        # invite queue players into lobby
+        lobby_members = [p.id for p in bot.lobby.all_members]
         players = [p for p in bot.queue.players.all()
                    if p not in bot.invited_players]
 
         for player in players:
             steam_id = SteamID(player.dota_id)
-            bot.invite_to_lobby(steam_id)
-            bot.invited_players.append(player)
-
-        # print(f'invited players: {bot.invited_players}')
+            if steam_id not in lobby_members:
+                bot.invite_to_lobby(steam_id)
+                bot.invited_players.append(player)
 
     @staticmethod
     def assign_queue_to_bot(bot, queue):
@@ -1151,14 +1204,14 @@ class Command(BaseCommand):
         if bot.game_start_time:
             return
 
+        # if queue players changed, reset votes and invited list
+        if bot.balance_answer != queue.balance:
+            bot.invited_players = []
+            bot.pd_votes = set()
+            bot.ab_votes = set()
+
         bot.queue = queue
         bot.balance_answer = queue.balance
-
-        # remove un-queued players from invited_players list;
-        # this is done so if they re-join, they will get invite again
-        if queue:
-            bot.invited_players = [p for p in bot.invited_players
-                                   if p in bot.queue.players.all()]
 
         # if queue is full, invite players
         if queue and queue.players.count() == 10:
