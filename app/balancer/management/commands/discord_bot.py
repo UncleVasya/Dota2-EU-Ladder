@@ -710,14 +710,19 @@ class Command(BaseCommand):
         )
 
     def player_join_queue(self, player, channel):
-        # check if player is vouched
-        if not player.vouched:
-            response = 'You need to get vouched before you can play.'
+        # check if player is banned
+        if player.banned:
+            response = f'`{player}`, you are banned.'
             return False, response
 
-        # check that player has enough MMR
+        # check if player is vouched
+        if not player.vouched:
+            response = f'`{player}`, you need to get vouched before you can play.'
+            return False, response
+
+        # check if player has enough MMR
         if player.ladder_mmr < channel.min_mmr:
-            response = 'Your dick is too small. Grow a bigger one.'
+            response = f'`{player}`, your dick is too small. Grow a bigger one.'
             return False, response
 
         queue = player.ladderqueue_set.filter(active=True).first()
