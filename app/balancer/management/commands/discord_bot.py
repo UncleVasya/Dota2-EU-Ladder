@@ -1041,7 +1041,7 @@ class Command(BaseCommand):
                f'🦀 - 4000;\n' + \
                f'👶 - 4500;\n' + \
                f'💪 - 5000;\n\n' + \
-               f'Only 5000+ players can vote. \n' + \
+               f'Only 4500+ players can vote. \n' + \
                f'-------------------------------'
 
         await message.edit(content=text)
@@ -1051,7 +1051,7 @@ class Command(BaseCommand):
 
     async def on_elite_mmr_reaction(self, message, user, player=None):
         # if player is not eligible for voting, remove his reactions
-        if player and player.ladder_mmr < 5000:
+        if player and player.ladder_mmr < 4500:
             for r in message.reactions:
                 await r.remove(user)
             return
