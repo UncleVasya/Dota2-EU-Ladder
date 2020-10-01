@@ -199,12 +199,13 @@ class Command(BaseCommand):
             '!afkping': self.afk_ping_command,
             '!role': self.role_command,
             '!roles': self.role_command,
+            '!recent': self.recent_matches_command,
         }
         free_for_all = ['!register']
         staff_only = ['!vouch', '!add', '!kick', '!mmr']
         chat_channel = [
             '!register', '!vouch', '!wh', '!who', '!whois', '!stats', '!top', '!streak',
-            '!bottom', '!bot', '!afk-ping', '!afkping', '!role', '!roles'
+            '!bottom', '!bot', '!afk-ping', '!afkping', '!role', '!roles', '!recent'
         ]
 
         # if this is a chat channel, check if command is allowed
@@ -707,6 +708,60 @@ class Command(BaseCommand):
         await msg.channel.send(
             f'New role prefs for `{player.name}`: \n'
             f'```\n{Command.roles_str(roles)}\n```'
+        )
+
+    async def recent_matches_command(self, msg, **kwargs):
+        command = msg.content
+        player = kwargs['player']
+        print(f'\n!recent command from {player}:\n{command}')
+
+        # possible formats:
+        #   !recent
+        #   !recent 10
+        #   !recent jedi judas
+        #   !recent jedi judas 10
+        name = None
+        num = 5
+        try:
+            params = command.split(None, 1)[1]  # get params string
+            try:
+                # check if matches num present
+                num = int(params.split()[-1])
+                name = ' '.join(params.split()[:-1])  # remove number of games, leaving only the name
+            except ValueError:
+                # only name is present
+                name = params
+        except IndexError:
+            pass  # no params given, use defaults
+
+        if name:
+            player = Command.get_player_by_name(name)
+            if not player:
+                await msg.channel.send(f'`{name}`: I don\'t know him')
+                return
+
+        host = os.environ.get('BASE_URL', 'localhost:8000')
+        url = reverse('ladder:player-overview', args=(player.slug,))
+        player_url = f'{host}{url}'
+
+        if not 0 < num < 10:
+            await msg.channel.send(f'Just visit {player_url}')
+            return
+
+        mps = player.matchplayer_set.all()[:num]
+        for mp in mps:
+            mp.result = 'win' if mp.team == mp.match.winner else 'loss'
+
+        def match_str(mp):
+            dotabuff = f'https://www.dotabuff.com/matches/{mp.match.dota_id}'
+            return f'{timeago.format(mp.match.date, timezone.now()):<15}{mp.result:<6}{dotabuff}'
+
+        await msg.channel.send(
+            f'```\n' +
+            f'Last {num} matches of {player}:\n\n' +
+            f'\n'.join(match_str(x) for x in mps) +
+            f'\n```\n' +
+            f'More on {player_url}'
         )
 
     def player_join_queue(self, player, channel):
