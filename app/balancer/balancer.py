@@ -129,6 +129,18 @@ def role_balance_teams(players: List[Player], mmr_exponent=3):
             'role_score_sum': role_score_max,
         })
 
+    def discard_unbalanced_answers(answers, diff_attempts):
+        if not diff_attempts:
+            return answers
+
+        diff = diff_attempts[0]
+        new = [x for x in answers if x['mmr_diff'] <= diff]
+
+        if not new:
+            new = discard_unbalanced_answers(answers, diff_attempts[1:])
+
+        return new
+
     team_players = 5
 
     # sort players by mmr
@@ -178,8 +190,10 @@ def role_balance_teams(players: List[Player], mmr_exponent=3):
         for answer in answers
     ]
 
+
+
     # discard answers that have too unbalanced teams
-    answers = [x for x in answers if x['mmr_diff'] <= 200]
+    answers = discard_unbalanced_answers(answers, diff_attempts=[200, 300, 400])
 
     # sort answers by mmr difference
     answers.sort(key=lambda x: (-x['role_score_sum'], x['mmr_diff_exp']))
