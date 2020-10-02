@@ -3,6 +3,7 @@ import itertools
 import re
 from collections import defaultdict, deque
 from datetime import timedelta
+import random
 from statistics import mean
 
 import discord
@@ -75,6 +76,20 @@ class Command(BaseCommand):
                 return
             if msg.author.bot:
                 return
+
+            content = msg.content.lower()
+            if ('stupid bot' in content) or ('bot is stupid' in content):
+                response = random.choice([
+                    'Smarter than you.',
+                    'You are stupid.'
+                ])
+                await msg.channel.send(response)
+            elif ('fu bot' in content) or ('fuck you bot' in content) or ('fuck u bot' in content):
+                response = random.choice([
+                    'Bite my shiny metal ass!',
+                    'Fuck you too.'
+                ])
+                await msg.channel.send(response)
 
             # strip whitespaces so bot can handle strings like " !register   Bob   4000"
             msg.content = " ".join(msg.content.split())
