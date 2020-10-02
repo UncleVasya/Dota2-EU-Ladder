@@ -160,7 +160,7 @@ class Command(BaseCommand):
                 await self.queues_show()
 
         """
-        This taks removes unnecessary messages (status and pings);
+        This task removes unnecessary messages (status and pings);
         This is done to make channel clear and also to highlight it 
         when new status message appears after some time.
         """
@@ -170,7 +170,15 @@ class Command(BaseCommand):
             channel = self.bot.get_channel(channel)
 
             db_messages = QueueChannel.objects.values_list('discord_msg', flat=True)
-            await channel.purge(check=lambda x: x.id not in db_messages)
+
+            def should_remove(msg):
+                msg_time = msg.edited_at or msg.created_at
+                lifetime = timedelta(minutes=5)
+                outdated = timezone.now() - timezone.make_aware(msg_time) > lifetime
+
+                return (msg.id not in db_messages) and outdated
+
+            await channel.purge(check=should_remove)
 
         self.bot.run(bot_token)
 
@@ -786,7 +794,7 @@ class Command(BaseCommand):
         if queue:
             # check that player is not in this queue already
             if queue.channel == channel:
-                response = f'`{player}`, already queued, friend.'
+                response = f'`{player}`, already queued friend.'
                 return queue, response
 
             # check that player is not already in a full queue
