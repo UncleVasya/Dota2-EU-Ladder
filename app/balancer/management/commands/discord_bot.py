@@ -1,11 +1,12 @@
 import asyncio
 import itertools
 import re
-from collections import defaultdict
+from collections import defaultdict, deque
 from datetime import timedelta
 from statistics import mean
 
 import discord
+import pytz
 import timeago
 from discord.ext import tasks
 from django.core.management.base import BaseCommand
@@ -28,7 +29,8 @@ class Command(BaseCommand):
         self.bot = None
         self.polls_channel = None
         self.queues_channel = None
-        self.status_message = None  # status text in queues channel
+        self.status_message = None  # status msg in queues channel
+        self.status_responses = deque(maxlen=3)
         self.last_seen = defaultdict(timezone.now)  # to detect afk players
         self.queued_players = set()
         self.last_queues_update = timezone.now()
@@ -784,12 +786,12 @@ class Command(BaseCommand):
         if queue:
             # check that player is not in this queue already
             if queue.channel == channel:
-                response = 'Already queued, friend.'
+                response = f'`{player}`, already queued, friend.'
                 return queue, response
 
             # check that player is not already in a full queue
             if queue.players.count() == 10:
-                response = f'{player}, you are under arrest dodging scum. Play the game.'
+                response = f'`{player}`, you are under arrest dodging scum. Play the game.'
                 return None, response
 
         # remove player from other queues
@@ -1310,12 +1312,20 @@ class Command(BaseCommand):
         if deleted > 0:
             await self.queues_show()
             self.bot.loop.create_task(
-                self.update_status_message(f'`{player}` left the queue.\n')
+                self.update_status_message(f'{player} left the queue.\n')
             )
 
     async def update_status_message(self, text):
         channel = DiscordChannels.get_solo().queues
         channel = self.bot.get_channel(channel)
+
+        event_time = timezone.localtime(timezone.now(), pytz.timezone('CET'))
+        text = text.replace('`', '').replace('\n', '')  # remove unnecessary formatting
+        self.status_responses.append(f'{event_time.strftime("%H:%M %Z"):<15}{text}')
+
+        text = '```\n' + \
+               '\n'.join(self.status_responses) + \
+               '\n```'
 
         try:
             status_msg = discord.utils.get(self.bot.cached_messages, id=self.status_message)
