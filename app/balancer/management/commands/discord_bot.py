@@ -155,7 +155,11 @@ class Command(BaseCommand):
             #  .select_related(`player`, `queue`, `queue__channel`)
             #  but this messes up with itertools.groupby.
             #  Need to measure speed here and investigate.
-            players = QueuePlayer.objects.filter(queue__active=True)
+            players = QueuePlayer.objects\
+                .filter(queue__active=True)\
+                .annotate(Count('queue__players'))\
+                .filter(queue__players__count__lt=10)
+
             # group players by channel
             players = itertools.groupby(players, lambda x: x.queue.channel)
 
@@ -1014,8 +1018,10 @@ class Command(BaseCommand):
         if not afk_list:
             return
 
-        deleted, _ = QueuePlayer.objects \
-            .filter(player__in=afk_list, queue__active=True) \
+        deleted, _ = QueuePlayer.objects\
+            .filter(player__in=afk_list, queue__active=True)\
+            .annotate(Count('queue__players'))\
+            .filter(queue__players__count__lt=10)\
             .delete()
 
         if deleted > 0:
