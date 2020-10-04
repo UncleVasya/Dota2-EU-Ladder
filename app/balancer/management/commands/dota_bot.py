@@ -876,7 +876,7 @@ class Command(BaseCommand):
         bot.channels.lobby.send(
             f'{len(bot.ab_votes)}/{votes_needed} votes for auto balance.')
 
-        if len(bot.pd_votes) >= votes_needed:
+        if len(bot.ab_votes) >= votes_needed:
             bot.player_draft = False
             bot.channels.lobby.send(
                 f'AUTO BALANCE IS ON. Use !teams to see auto-balance.')
