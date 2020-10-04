@@ -922,7 +922,7 @@ class Command(BaseCommand):
         # TODO: make function game_members_to_ids(lobby)
         game_teams = [set(), set()]
         for player in bot.lobby.all_members:
-            if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS):
+            if player.id and player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS):
                 player_id = str(SteamID(player.id).as_32)  # TODO: models.Player.dota_id should be int, not str
                 game_teams[player.team].add(player_id)
 
