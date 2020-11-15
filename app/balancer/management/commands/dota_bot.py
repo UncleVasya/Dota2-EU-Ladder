@@ -1,5 +1,7 @@
 import re
 
+from django.utils import timezone
+
 from app.balancer.balancer import role_names
 from app.balancer.models import BalanceAnswer
 from django.core.management.base import BaseCommand
@@ -186,7 +188,7 @@ class Command(BaseCommand):
                 # game ended, process result and create new lobby
                 dota.game_start_time = None
                 if dota.queue:
-                    dota.queue.game_end_time = datetime.now()
+                    dota.queue.game_end_time = timezone.now()
                     dota.queue.save()
                 self.process_game_result(dota)
                 self.create_new_lobby(dota)
@@ -1179,7 +1181,7 @@ class Command(BaseCommand):
 
     @staticmethod
     def start_game(bot):
-        bot.game_start_time = datetime.now()
+        bot.game_start_time = timezone.now()
         if bot.queue:
             bot.queue.active = False
             bot.queue.game_start_time = bot.game_start_time
