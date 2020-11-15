@@ -19,3 +19,4 @@ jobs:
           DEPLOY_WEBHOOK: ${{ secrets.DEPLOY_WEBHOOK_DISCORD }}
       run: 
         curl -k -X POST $DEPLOY_WEBHOOK
+
