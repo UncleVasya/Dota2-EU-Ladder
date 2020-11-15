@@ -1,0 +1,25 @@
+name: Docker CI
+
+on:
+  push:
+    branches: 
+    - master
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: docker build . -f Dockerfile --tag registry.sbx320.net/rd2l/inhouse:latest
+    - name: Docker Push
+      run: docker push registry.sbx320.net/rd2l/inhouse:latest
+    - name: Deploy
+      env: 
+          DEPLOY_WEBHOOK_WEB: ${{ secrets.DEPLOY_WEBHOOK_WEB }}
+          DEPLOY_WEBHOOK_DISCORD: ${{ secrets.DEPLOY_WEBHOOK_DISCORD }}
+          DEPLOY_WEBHOOK_DOTA: ${{ secrets.DEPLOY_WEBHOOK_DOTA }}
+      run: 
+        curl -k -X POST $DEPLOY_WEBHOOK_WEB
+        curl -k -X POST $DEPLOY_WEBHOOK_DISCORD
+        curl -k -X POST $DEPLOY_WEBHOOK_DOTA
