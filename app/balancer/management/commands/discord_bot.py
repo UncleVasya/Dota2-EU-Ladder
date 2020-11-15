@@ -48,7 +48,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         bot_token = os.environ.get('DISCORD_BOT_TOKEN', '')
 
-        self.bot = discord.Client()
+        intents = discord.Intents.default()
+        intents.members = True
+
+        self.bot = discord.Client(intents=intents)
 
         @self.bot.event
         async def on_ready():
