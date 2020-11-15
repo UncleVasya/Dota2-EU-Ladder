@@ -114,10 +114,10 @@ class ScoreChangeAdmin(admin.ModelAdmin):
     form = ScoreChangeAdminForm
 
     fieldsets = [
-        (None, {'fields': ['player', 'mmr_change', 'info', 'season']}),
+        (None, {'fields': ['player', 'mmr_change', 'score_change', 'info', 'season']}),
     ]
 
-    list_display = ('date', 'player', 'mmr_change', 'info')
+    list_display = ('date', 'player', 'mmr_change', 'score_change', 'info')
 
     def save_model(self, *args, **kwargs):
         super(ScoreChangeAdmin, self).save_model(*args, **kwargs)
@@ -160,7 +160,7 @@ class QueueChannelAdmin(admin.ModelAdmin):
     model = QueueChannel
 
     fieldsets = [
-        (None, {'fields': ['name', 'min_mmr', 'discord_id']}),
+        (None, {'fields': ['name', 'min_mmr', 'discord_id', 'discord_msg']}),
     ]
 
     list_display = ('name', 'min_mmr', 'discord_id')
