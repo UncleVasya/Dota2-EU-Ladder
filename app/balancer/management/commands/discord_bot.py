@@ -213,6 +213,8 @@ class Command(BaseCommand):
             '!wh': self.whois_command,
             '!who': self.whois_command,
             '!whois': self.whois_command,
+            '!ban': self.ban_command,
+            '!unban': self.unban_command,
             '!stats': self.whois_command,
             '!q+': self.join_queue_command,
             '!q-': self.leave_queue_command,
@@ -234,10 +236,11 @@ class Command(BaseCommand):
             '!recent': self.recent_matches_command,
         }
         free_for_all = ['!register']
-        staff_only = ['!vouch', '!add', '!kick', '!mmr']
+        staff_only = ['!vouch', '!add', '!kick', '!mmr', '!ban', '!unban']
         chat_channel = [
             '!register', '!vouch', '!wh', '!who', '!whois', '!stats', '!top', '!streak',
-            '!bottom', '!bot', '!afk-ping', '!afkping', '!role', '!roles', '!recent'
+            '!bottom', '!bot', '!afk-ping', '!afkping', '!role', '!roles', '!recent',
+            '!ban', '!unban'
         ]
 
         # if this is a chat channel, check if command is allowed
@@ -391,6 +394,54 @@ class Command(BaseCommand):
             f'Vouched: {"yes" if player.vouched else "no"}\n'
             f'Roles: {Command.roles_str(player.roles)}\n\n'
             f'{player.description or ""}\n'
+            f'```'
+        )
+
+    async def ban_command(self, msg, **kwargs):
+        command = msg.content
+        player = kwargs['player']
+        print(f'Ban command from {player}:\n {command}')
+
+        try:
+            name = command.split(None, 1)[1]
+        except (IndexError, ValueError):
+            return
+
+        player = Command.get_player_by_name(name)
+        if not player:
+            await msg.channel.send(f'`{name}`: I don\'t know him')
+            return
+
+        player.banned = Player.BAN_PLAYING
+        player.save()
+
+        await msg.channel.send(
+            f'```\n'
+            f'{player.name} has been banned.\n'
+            f'```'
+        )
+
+    async def unban_command(self, msg, **kwargs):
+        command = msg.content
+        player = kwargs['player']
+        print(f'Unban command from {player}:\n {command}')
+
+        try:
+            name = command.split(None, 1)[1]
+        except (IndexError, ValueError):
+            return
+
+        player = Command.get_player_by_name(name)
+        if not player:
+            await msg.channel.send(f'`{name}`: I don\'t know him')
+            return
+
+        player.banned = None
+        player.save()
+
+        await msg.channel.send(
+            f'```\n'
+            f'{player.name} has been unbanned.\n'
             f'```'
         )
 
