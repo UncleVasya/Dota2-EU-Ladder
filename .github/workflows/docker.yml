@@ -16,10 +16,6 @@ jobs:
       run: docker push registry.sbx320.net/rd2l/inhouse:latest
     - name: Deploy
       env: 
-          DEPLOY_WEBHOOK_WEB: ${{ secrets.DEPLOY_WEBHOOK_WEB }}
-          DEPLOY_WEBHOOK_DISCORD: ${{ secrets.DEPLOY_WEBHOOK_DISCORD }}
-          DEPLOY_WEBHOOK_DOTA: ${{ secrets.DEPLOY_WEBHOOK_DOTA }}
+          DEPLOY_WEBHOOK: ${{ secrets.DEPLOY_WEBHOOK_DISCORD }}
       run: 
-        curl -k -X POST $DEPLOY_WEBHOOK_WEB
-        curl -k -X POST $DEPLOY_WEBHOOK_DISCORD
-        curl -k -X POST $DEPLOY_WEBHOOK_DOTA
+        curl -k -X POST $DEPLOY_WEBHOOK
