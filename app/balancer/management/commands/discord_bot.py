@@ -873,7 +873,11 @@ class Command(BaseCommand):
             response = f'`{player}`, your dick is too small. Grow a bigger one.'
             return False, response
 
-        queue = player.ladderqueue_set.filter(active=True).first()
+        queue = player.ladderqueue_set.filter(
+            Q(active=True) |
+            Q(game_start_time__isnull=False) & Q(game_end_time__isnull=True)
+        ).first()
+
         if queue:
             # check that player is not in this queue already
             if queue.channel == channel:
