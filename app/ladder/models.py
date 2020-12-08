@@ -131,6 +131,7 @@ class LadderSettings(SingletonModel):
     balance_exponent = models.PositiveSmallIntegerField(default=3)
     afk_allowed_time = models.PositiveSmallIntegerField(default=40)
     afk_response_time = models.PositiveSmallIntegerField(default=5)
+    votekick_treshold = models.PositiveSmallIntegerField(default=3)
 
     # default draft mode
     AUTO_BALANCE = 0

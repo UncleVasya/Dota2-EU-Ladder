@@ -33,6 +33,7 @@ class Command(BaseCommand):
         self.status_message = None  # status msg in queues channel
         self.status_responses = deque(maxlen=3)
         self.last_seen = defaultdict(timezone.now)  # to detect afk players
+        self.kick_votes = defaultdict(lambda: defaultdict(set))
         self.queued_players = set()
         self.last_queues_update = timezone.now()
 
@@ -234,6 +235,8 @@ class Command(BaseCommand):
             '!list': self.show_queues_command,
             '!add': self.add_to_queue_command,
             '!kick': self.kick_from_queue_command,
+            '!votekick': self.votekick_command,
+            '!vk': self.votekick_command,
             '!mmr': self.mmr_command,
             '!top': self.top_command,
             '!bot': self.bottom_command,
@@ -250,7 +253,7 @@ class Command(BaseCommand):
         chat_channel = [
             '!register', '!vouch', '!wh', '!who', '!whois', '!stats', '!top', '!streak',
             '!bottom', '!bot', '!afk-ping', '!afkping', '!role', '!roles', '!recent',
-            '!ban', '!unban'
+            '!ban', '!unban', '!votekick', '!vk'
         ]
 
         # if this is a chat channel, check if command is allowed
@@ -573,6 +576,56 @@ class Command(BaseCommand):
             await msg.channel.send(f'`{player}` is not queuing.\n')
 
         await self.queues_show()
+
+    async def votekick_command(self, msg, **kwargs):
+        command = msg.content
+        player = kwargs['player']
+        print(f'Vote kick command from {player}:\n {command}')
+
+        try:
+            name = command.split(None, 1)[1]
+        except (IndexError, ValueError):
+            return
+
+        queue = player.ladderqueue_set.filter(active=True).first()
+        if not queue or queue.players.count() < 10:
+            await msg.channel.send(f'`{player}`, you are not in a full queue.')
+            return
+
+        victim = Command.get_player_by_name(name)
+        if not victim:
+            await msg.channel.send(f'`{name}`: I don\'t know him')
+            return
+
+        if victim not in queue.players.all():
+            await msg.channel.send(f'`{victim}` is not in your queue {player}.')
+            return
+
+        votes_needed = LadderSettings.get_solo().votekick_treshold
+        # TODO: im memory becomes an issue, use queue and player ids instead of real objects
+        votes = self.kick_votes[queue][victim]
+        votes.add(player)
+
+        voters_str = ' | '.join(player.name for player in votes)
+        await msg.channel.send(
+            f'```\n'
+            f'{len(votes)}/{votes_needed} votes to kick {victim}.'
+            f' Voters: {voters_str}\n'
+            f'```'
+        )
+
+        if len(votes) >= votes_needed:
+            QueuePlayer.objects \
+                .filter(player=victim, queue__active=True) \
+                .delete()
+
+            del self.kick_votes[queue][victim]
+
+            victim_discord = self.bot.get_user(int(victim.discord_id))
+            mention = victim_discord.mention if victim_discord else victim.name
+            await msg.channel.send(f'{mention} was kicked from the queue.')
+
+            await self.queues_show()
 
     async def mmr_command(self, msg, **kwargs):
         command = msg.content
