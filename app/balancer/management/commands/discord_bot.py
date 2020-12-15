@@ -464,7 +464,7 @@ class Command(BaseCommand):
         print(f'Join command from {player}:\n {command}')
 
         channel = QueueChannel.objects.get(discord_id=msg.channel.id)
-        _, response = self.player_join_queue(player, channel)
+        _, _, response = self.player_join_queue(player, channel)
 
         await msg.channel.send(response)
         await self.queues_show()
@@ -914,17 +914,17 @@ class Command(BaseCommand):
         # check if player is banned
         if player.banned:
             response = f'`{player}`, you are banned.'
-            return False, response
+            return None, False, response
 
         # check if player is vouched
         if not player.vouched:
             response = f'`{player}`, you need to get vouched before you can play.'
-            return False, response
+            return None, False, response
 
         # check if player has enough MMR
         if player.ladder_mmr < channel.min_mmr:
             response = f'`{player}`, your dick is too small. Grow a bigger one.'
-            return False, response
+            return None, False, response
 
         queue = player.ladderqueue_set.filter(
             Q(active=True) |
@@ -935,12 +935,12 @@ class Command(BaseCommand):
             # check that player is not in this queue already
             if queue.channel == channel:
                 response = f'`{player}`, already queued friend.'
-                return queue, response
+                return queue, False, response
 
             # check that player is not already in a full queue
             if queue.players.count() == 10:
                 response = f'`{player}`, you are under arrest dodging scum. Play the game.'
-                return None, response
+                return None, False, response
 
         # remove player from other queues
         QueuePlayer.objects\
@@ -966,7 +966,7 @@ class Command(BaseCommand):
                         f' '.join(self.player_mention(p) for p in queue.players.all()) + \
                         f'\nYou have 5 min to join the lobby.'
 
-        return queue, response
+        return queue, True, response
 
     @staticmethod
     def add_player_to_queue(player, channel):
@@ -1423,11 +1423,11 @@ class Command(BaseCommand):
         if not q_channel:
             return
 
-        queue, response = self.player_join_queue(player, q_channel)
+        queue, added, response = self.player_join_queue(player, q_channel)
         if queue:
             await self.queues_show()
             response = response.split('```')[0]  # take only first part of response text
-            if len(queue.players.all()) == 10:
+            if len(queue.players.all()) == 10 and added:
                 msg = self.queue_full_msg(queue, show_balance=False)
                 await message.channel.send(f'---------------------\n{msg}')
         else:
