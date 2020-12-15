@@ -151,6 +151,7 @@ class Command(BaseCommand):
                 Command.set_min_mmr(dota, 4500)
 
             # if lobby is hung up from previous session, leave it
+            # TODO: is this really needed? I have a feeling these lines are a reason of some bugs
             dota.destroy_lobby()
             self.create_new_lobby(dota)
 
@@ -186,12 +187,10 @@ class Command(BaseCommand):
 
             if int(lobby.state) == LobbyState.POSTGAME:
                 # game ended, process result and create new lobby
-                dota.game_start_time = None
-                if dota.queue:
-                    dota.queue.game_end_time = timezone.now()
-                    dota.queue.save()
-                self.process_game_result(dota)
-                self.create_new_lobby(dota)
+                self.process_game_result(dota, lobby)
+                if lobby.id == dota.lobby.id:
+                    dota.game_start_time = None
+                    self.create_new_lobby(dota)
 
             self.cache_lobby_status(dota)
 
@@ -711,7 +710,7 @@ class Command(BaseCommand):
 
         if unregistered:
             bot.channels.lobby.send('I don\'t know these guys: %s' %
-                                   ', '.join(unregistered))
+                                    ', '.join(unregistered))
             return
 
         # create balance record for these players
@@ -721,6 +720,8 @@ class Command(BaseCommand):
                 if players_steam[int(key)].team == DOTA_GC_TEAM.BAD_GUYS]
 
         bot.balance_answer = BalanceAnswerManager.balance_custom([radiant, dire])
+        bot.queue.balance = bot.balance_answer
+        bot.queue.save()
 
         # TODO: create print_balance func
         # TODO and use it in here, balance_command(), teams_command(), swap_command()
@@ -899,21 +900,25 @@ class Command(BaseCommand):
         bot.channels.lobby.send('Missing players: ' + ' | '.join(missing))
 
     @staticmethod
-    def process_game_result(bot):
+    def process_game_result(bot, lobby):
         print('Game is finished!\n')
         print(bot.lobby)
 
-        if not bot.balance_answer:
+        queue = LadderQueue.objects.filter(game_server=lobby.server_id).last()
+        queue.game_end_time = timezone.now()
+        queue.save()
+
+        if not queue.balance:
             print('No balance exists (probably !forcestart)')
             return
 
         # TODO: write smth like "record_balance(answer, 0 if RadVictory else 1, match_id)"
-        if bot.lobby.match_outcome == EMatchOutcome.RadVictory:
+        if lobby.match_outcome == EMatchOutcome.RadVictory:
             print('Radiant won!')
-            MatchManager.record_balance(bot.balance_answer, 0, bot.lobby.match_id)
-        elif bot.lobby.match_outcome == EMatchOutcome.DireVictory:
+            MatchManager.record_balance(queue.balance, 0, lobby.match_id)
+        elif lobby.match_outcome == EMatchOutcome.DireVictory:
             print('Dire won!')
-            MatchManager.record_balance(bot.balance_answer, 1, bot.lobby.match_id)
+            MatchManager.record_balance(queue.balance, 1, lobby.match_id)
 
     # checks if teams are setup according to balance
     @staticmethod
