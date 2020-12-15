@@ -403,6 +403,7 @@ class Command(BaseCommand):
             f'Ladder: {player_url}\n\n'
             f'Ladder MMR: {player.ladder_mmr}\n'
             f'Score: {player.score}\n'
+            f'Rank: {player.rank_score}\n'
             f'Games: {len(player.matches)} ({wins}-{losses})\n\n'
             f'Vouched: {"yes" if player.vouched else "no"}\n'
             f'Roles: {Command.roles_str(player.roles)}\n\n'
