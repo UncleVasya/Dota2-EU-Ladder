@@ -188,7 +188,7 @@ class Command(BaseCommand):
             if int(lobby.state) == LobbyState.POSTGAME:
                 # game ended, process result and create new lobby
                 self.process_game_result(dota, lobby)
-                if lobby.id == dota.lobby.id:
+                if lobby.lobby_id == dota.lobby.lobby_id:
                     dota.game_start_time = None
                     self.create_new_lobby(dota)
 
