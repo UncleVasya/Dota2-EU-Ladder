@@ -1018,7 +1018,7 @@ class Command(BaseCommand):
 
         result = '```\n'
         for i, team in enumerate(balance.teams):
-            if team['role_score_sum']:
+            if 'role_score_sum' in team:
                 # this is balance with roles
                 player_names = [f'{i+1}. {p[0]}' for i, p in enumerate(team['players'])]
             else:
