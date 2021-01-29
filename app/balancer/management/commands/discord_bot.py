@@ -195,32 +195,35 @@ class Command(BaseCommand):
 
         @tasks.loop(minutes=1)
         async def sky_stock_joke():
-            import yfinance as yf
+            try:
+                import yfinance as yf
 
-            break_even = 330
+                break_even = 330
 
-            ticker_data = yf.download(tickers='GME', period='1d', interval='1m')
-            ticker_price = ticker_data['Close'][-1]
-            print('ticker price: ', ticker_price)
+                ticker_data = yf.download(tickers='GME', period='1d', interval='1m')
+                ticker_price = ticker_data['Close'][-1]
+                print('ticker price: ', ticker_price)
 
-            sky = discord.utils.get(self.bot.get_all_members(), id=153543568126902272)
-            rd2l = self.bot.get_guild(96639095597436928)
+                sky = discord.utils.get(self.bot.get_all_members(), id=153543568126902272)
+                rd2l = self.bot.get_guild(96639095597436928)
 
-            green_role = discord.utils.get(rd2l.roles, name='sky_green')
-            red_role = discord.utils.get(rd2l.roles, name='sky_red')
+                green_role = discord.utils.get(rd2l.roles, name='sky_green')
+                red_role = discord.utils.get(rd2l.roles, name='sky_red')
 
-            if ticker_price <= break_even:
-                await sky.remove_roles(green_role)
-                await sky.add_roles(red_role)
+                if ticker_price <= break_even:
+                    await sky.remove_roles(green_role)
+                    await sky.add_roles(red_role)
 
-                pct_loss = round((break_even - ticker_price) / break_even * 100)
-                await sky.edit(nick=f'Sky is red -{pct_loss}%')
-            else:
-                await sky.remove_roles(red_role)
-                await sky.add_roles(green_role)
+                    pct_loss = round((break_even - ticker_price) / break_even * 100)
+                    await sky.edit(nick=f'Sky is red -{pct_loss}%')
+                else:
+                    await sky.remove_roles(red_role)
+                    await sky.add_roles(green_role)
 
-                pct_gain = round((ticker_price - break_even) / break_even * 100)
-                await sky.edit(nick=f'Sky is green +{pct_gain}%')
+                    pct_gain = round((ticker_price - break_even) / break_even * 100)
+                    await sky.edit(nick=f'Sky is green +{pct_gain}%')
+            except:
+                pass  # avoid crashing on lack of permissions
 
         """
         This task removes unnecessary messages (status and pings);
