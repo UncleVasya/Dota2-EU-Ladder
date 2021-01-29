@@ -193,7 +193,7 @@ class Command(BaseCommand):
             if queued_players != self.queued_players or outdated:
                 await self.queues_show()
 
-        @tasks.loop(seconds=15)
+        @tasks.loop(minutes=1)
         async def sky_stock_joke():
             try:
                 import yfinance as yf
