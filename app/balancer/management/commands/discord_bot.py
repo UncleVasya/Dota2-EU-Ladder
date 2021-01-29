@@ -193,7 +193,7 @@ class Command(BaseCommand):
             if queued_players != self.queued_players or outdated:
                 await self.queues_show()
 
-        @tasks.loop(minutes=1)
+        @tasks.loop(seconds=15)
         async def sky_stock_joke():
             try:
                 import yfinance as yf
@@ -214,14 +214,14 @@ class Command(BaseCommand):
                     await sky.remove_roles(green_role)
                     await sky.add_roles(red_role)
 
-                    pct_loss = round((break_even - ticker_price) / break_even * 100)
-                    await sky.edit(nick=f'Sky is red -{pct_loss}%')
+                    pct_loss = (break_even - ticker_price) / break_even * 100
+                    await sky.edit(nick=f'Sky is red -{pct_loss:.2f}%')
                 else:
                     await sky.remove_roles(red_role)
                     await sky.add_roles(green_role)
 
-                    pct_gain = round((ticker_price - break_even) / break_even * 100)
-                    await sky.edit(nick=f'Sky is green +{pct_gain}%')
+                    pct_gain = (ticker_price - break_even) / break_even * 100
+                    await sky.edit(nick=f'Sky is green +{pct_gain:.2f}%')
             except:
                 pass  # avoid crashing on lack of permissions
 
