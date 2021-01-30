@@ -195,35 +195,40 @@ class Command(BaseCommand):
 
         @tasks.loop(minutes=1)
         async def sky_stock_joke():
+            import yfinance as yf
+            from app.stock_joke.models import StockJokeSettings
+            from app.stock_joke.models import StockBuyer
+
+            settings = StockJokeSettings.get_solo()
+            if not settings.enabled:
+                return
+
             try:
-                import yfinance as yf
-
-                break_even = 330
-
-                ticker_data = yf.download(tickers='GME', period='1d', interval='1m')
+                ticker_data = yf.download(tickers=settings.stock_ticker, period='1d', interval='1m')
                 ticker_price = ticker_data['Close'][-1]
                 print('ticker price: ', ticker_price)
 
-                sky = discord.utils.get(self.bot.get_all_members(), id=153543568126902272)
-                rd2l = self.bot.get_guild(96639095597436928)
+                guild = self.bot.get_guild(settings.discord_server_id)
+                green_role = discord.utils.get(guild.roles, id=settings.greed_role_id)
+                red_role = discord.utils.get(guild.roles, id=settings.red_role_id)
 
-                green_role = discord.utils.get(rd2l.roles, name='sky_green')
-                red_role = discord.utils.get(rd2l.roles, name='sky_red')
+                for buyer in StockBuyer.objects.all():
+                    buyer_discord = discord.utils.get(self.bot.get_all_members(), id=buyer.discord_id)
+                    entry_price = buyer.entry_price
+                    if ticker_price <= entry_price:
+                        await buyer_discord.remove_roles(green_role)
+                        await buyer_discord.add_roles(red_role)
 
-                if ticker_price <= break_even:
-                    await sky.remove_roles(green_role)
-                    await sky.add_roles(red_role)
+                        pct_loss = (entry_price - ticker_price) / entry_price * 100
+                        await buyer_discord.edit(nick=f'{buyer.name} is red -{pct_loss:.2f}%')
+                    else:
+                        await buyer_discord.remove_roles(red_role)
+                        await buyer_discord.add_roles(green_role)
 
-                    pct_loss = (break_even - ticker_price) / break_even * 100
-                    await sky.edit(nick=f'Sky is red -{pct_loss:.2f}%')
-                else:
-                    await sky.remove_roles(red_role)
-                    await sky.add_roles(green_role)
-
-                    pct_gain = (ticker_price - break_even) / break_even * 100
-                    await sky.edit(nick=f'Sky is green +{pct_gain:.2f}%')
+                        pct_gain = (ticker_price - entry_price) / entry_price * 100
+                        await buyer_discord.edit(nick=f'{buyer.name} is green +{pct_gain:.2f}%')
             except:
-                pass  # avoid crashing on lack of permissions
+                pass  # avoid crashing on lack of permissions or yahoo finance throttle
 
         """
         This task removes unnecessary messages (status and pings);

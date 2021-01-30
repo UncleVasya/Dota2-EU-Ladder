@@ -52,6 +52,7 @@ INSTALLED_APPS = [
 
     'app.ladder.apps.LadderConfig',
     'app.balancer.apps.BalancerConfig',
+    'app.stock_joke.apps.StockJokeConfig',
 ]
 
 MIDDLEWARE_CLASSES = [
