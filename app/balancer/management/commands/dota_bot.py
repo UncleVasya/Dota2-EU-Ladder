@@ -1,4 +1,5 @@
 import re
+import random
 
 from django.utils import timezone
 
@@ -48,6 +49,14 @@ GameServers = {
     'AU': dota2.enums.EServerRegion.Australia,
     'SEA': dota2.enums.EServerRegion.Singapore,
 }
+
+
+class SidePickOptions(object):
+    def __init__(self):
+        self.captains = []
+        self.turn = 0
+        self.fp = None
+        self.radiant = None
 
 
 # TODO: make DotaBot class
@@ -103,6 +112,7 @@ class Command(BaseCommand):
         dota.players = {}  # TODO: this isn't used atm, make use of it
         dota.queue = None
         dota.use_queue = LadderSettings.get_solo().use_queue
+        dota.sidepick = None
 
         dota.player_draft = False
         dota.pd_votes = set()
@@ -219,6 +229,7 @@ class Command(BaseCommand):
         bot.balance_answer = None
         bot.game_start_time = None
         bot.queue = None
+        bot.sidepick = None
 
         bot.player_draft = (LadderSettings.get_solo().draft_mode == LadderSettings.PLAYER_DRAFT)
         bot.pd_votes = set()
@@ -281,6 +292,11 @@ class Command(BaseCommand):
             '!auto': Command.auto_balance_command,
             '!ab': Command.auto_balance_command,
             '!missing': Command.missing_command,
+            '!sidepick': Command.sidepick_command,
+            '!fp': Command.sidepick_fp_command,
+            '!sp': Command.sidepick_sp_command,
+            '!radiant': Command.sidepick_radiant_command,
+            '!dire': Command.sidepick_dire_command,
         }
         free_for_all = ['!register']
         staff_only = ['!staff', '!forcestart', '!fs', '!new', '!lobbykick', '!lk']
@@ -900,6 +916,174 @@ class Command(BaseCommand):
         bot.channels.lobby.send('Missing players: ' + ' | '.join(missing))
 
     @staticmethod
+    def sidepick_command(bot, msg):
+        print('\n!sidepick command.')
+
+        if bot.sidepick:
+            bot.channels.lobby.send('Sidepick is already on.')
+            return
+
+        if bot.queue.players.count() < 10:
+            bot.channels.lobby.send('Queue is not full.')
+            return
+
+        captain_names = [team['players'][0][0] for team in bot.queue.balance.teams]
+        captains = [Player.objects.get(name=name) for name in captain_names]
+        random.shuffle(captains)
+
+        sidepick = SidePickOptions()
+        sidepick.captains = captains
+        bot.sidepick = sidepick
+
+        bot.channels.lobby.send(f'{sidepick.captains[0]}, choose one of these: !fp !sp !radiant !dire')
+
+    # TODO: combine !fp !sp !radiant !dire functions in one? So I can use checks like this:
+    #       if cmd in ['!fp', '!sp'] and sidepick.fp:
+    #       ...
+    #       if cmd in ['!radiant', '!dire`] and sidepick.radiant:
+    #  or maybe even move it to SidePick.command(cmd, player)
+    @staticmethod
+    def sidepick_fp_command(bot, msg):
+        print('\n!sidepick_fp command.')
+
+        if not bot.sidepick:
+            bot.channels.lobby.send('Use !sidepick first')
+            return
+
+        sidepick = bot.sidepick
+
+        if sidepick.turn > 1:
+            bot.channels.lobby.send(f'Sidepick is over. Radiant: {sidepick.radiant}. First pick: {sidepick.fp}')
+            return
+
+        player = Player.objects.get(dota_id=msg.account_id)
+        if player != sidepick.captains[sidepick.turn]:
+            bot.channels.lobby.send(f'This is not your turn to pick. {sidepick.captains[sidepick.turn]} is picking now.')
+            return
+
+        if sidepick.fp:
+            bot.channels.lobby.send(f'Choose one of these: !radiant !dire')
+            return
+
+        # all is good
+        sidepick.fp = player
+        sidepick.turn += 1
+        bot.sidepick = sidepick
+
+        if sidepick.turn > 1:
+            bot.channels.lobby.send(f'Sidepick is over. Radiant: {sidepick.radiant}. First pick: {sidepick.fp}')
+            Command.sidepick_finish(bot)
+        else:
+            bot.channels.lobby.send(f'Now {sidepick.captains[sidepick.turn]} choose one of these: !radiant !dire')
+
+    @staticmethod
+    def sidepick_sp_command(bot, msg):
+        print('\n!sidepick_sp command.')
+
+        if not bot.sidepick:
+            bot.channels.lobby.send('Use !sidepick first')
+            return
+
+        sidepick = bot.sidepick
+
+        if sidepick.turn > 1:
+            bot.channels.lobby.send(f'Sidepick is over. Radiant: {sidepick.radiant}. First pick: {sidepick.fp}')
+            return
+
+        player = Player.objects.get(dota_id=msg.account_id)
+        if player != sidepick.captains[sidepick.turn]:
+            bot.channels.lobby.send(
+                f'This is not your turn to pick. {sidepick.captains[sidepick.turn]} is picking now.')
+            return
+
+        if sidepick.fp:
+            bot.channels.lobby.send(f'Choose one of these: !radiant !dire')
+            return
+
+        # all is good
+        other_captain = next(p for p in sidepick.captains if p != player)
+        sidepick.fp = other_captain
+        sidepick.turn += 1
+        bot.sidepick = sidepick
+
+        if sidepick.turn > 1:
+            bot.channels.lobby.send(f'Sidepick is over. Radiant: {sidepick.radiant}. First pick: {sidepick.fp}')
+            Command.sidepick_finish(bot)
+        else:
+            bot.channels.lobby.send(f'Now {sidepick.captains[sidepick.turn]} choose one of these: !radiant !dire')
+
+    @staticmethod
+    def sidepick_radiant_command(bot, msg):
+        print('\n!sidepick_radiant command.')
+
+        if not bot.sidepick:
+            bot.channels.lobby.send('Use !sidepick first')
+            return
+
+        sidepick = bot.sidepick
+
+        if sidepick.turn > 1:
+            bot.channels.lobby.send(f'Sidepick is over. Radiant: {sidepick.radiant}. First pick: {sidepick.fp}')
+            return
+
+        player = Player.objects.get(dota_id=msg.account_id)
+        if player != sidepick.captains[sidepick.turn]:
+            bot.channels.lobby.send(
+                f'This is not your turn to pick. {sidepick.captains[sidepick.turn]} is picking now.')
+            return
+
+        if sidepick.radiant:
+            bot.channels.lobby.send(f'Choose one of these: !fp !sp')
+            return
+
+        # all is good
+        sidepick.radiant = player
+        sidepick.turn += 1
+        bot.sidepick = sidepick
+
+        if sidepick.turn > 1:
+            bot.channels.lobby.send(f'Sidepick is over. Radiant: {sidepick.radiant}. First pick: {sidepick.fp}')
+            Command.sidepick_finish(bot)
+        else:
+            bot.channels.lobby.send(f'Now {sidepick.captains[sidepick.turn]} choose one of these: !fp !sp')
+
+    @staticmethod
+    def sidepick_dire_command(bot, msg):
+        print('\n!sidepick_dire command.')
+
+        if not bot.sidepick:
+            bot.channels.lobby.send('Use !sidepick first')
+            return
+
+        sidepick = bot.sidepick
+
+        if sidepick.turn > 1:
+            bot.channels.lobby.send(f'Sidepick is over. Radiant: {sidepick.radiant}. First pick: {sidepick.fp}')
+            return
+
+        player = Player.objects.get(dota_id=msg.account_id)
+        if player != sidepick.captains[sidepick.turn]:
+            bot.channels.lobby.send(
+                f'This is not your turn to pick. {sidepick.captains[sidepick.turn]} is picking now.')
+            return
+
+        if sidepick.radiant:
+            bot.channels.lobby.send(f'Choose one of these: !fp !sp')
+            return
+
+        # all is good
+        other_captain = next(p for p in sidepick.captains if p != player)
+        sidepick.radiant = other_captain
+        sidepick.turn += 1
+        bot.sidepick = sidepick
+
+        if sidepick.turn > 1:
+            bot.channels.lobby.send(f'Sidepick is over. Radiant: {sidepick.radiant}. First pick: {sidepick.fp}')
+            Command.sidepick_finish(bot)
+        else:
+            bot.channels.lobby.send(f'Now {sidepick.captains[sidepick.turn]} choose one of these: !radiant !dire')
+
+    @staticmethod
     def process_game_result(bot, lobby):
         print('Game is finished!\n')
         print(bot.lobby)
@@ -1225,6 +1409,16 @@ class Command(BaseCommand):
             Command.invite_players(bot)
 
         bot.lobby_options['game_name'] = Command.generate_lobby_queue_name(bot)
+        bot.config_practice_lobby(bot.lobby_options)
+
+    @staticmethod
+    def sidepick_finish(bot):
+        if bot.sidepick.fp == bot.sidepick.radiant:
+            pick = dota2.enums.DOTA_CM_PICK.DOTA_CM_GOOD_GUYS
+        else:
+            pick = dota2.enums.DOTA_CM_PICK.DOTA_CM_BAD_GUYS
+
+        bot.lobby_options['cm_pick'] = pick
         bot.config_practice_lobby(bot.lobby_options)
 
     def sync_queue(self):
