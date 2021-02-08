@@ -132,6 +132,7 @@ class LadderSettings(SingletonModel):
     afk_allowed_time = models.PositiveSmallIntegerField(default=40)
     afk_response_time = models.PositiveSmallIntegerField(default=5)
     votekick_treshold = models.PositiveSmallIntegerField(default=3)
+    dota_lobby_name = models.CharField(max_length=200, default='RD2L')
 
     # default draft mode
     AUTO_BALANCE = 0

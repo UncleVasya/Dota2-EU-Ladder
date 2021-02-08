@@ -1159,9 +1159,9 @@ class Command(BaseCommand):
 
     @staticmethod
     def generate_lobby_name(bot):
-        # TODO: get lobby name from env
-        lobby_name = 'RD2L Ladder %s' %\
-                     re.search('(\d+)$', bot.steam.username).group(0)
+        bot_number = re.search("(\d+)$", bot.steam.username).group(0)
+        lobby_name = f'{LadderSettings.get_solo().dota_lobby_name} Ladder {bot_number}'
+
 
         if bot.min_mmr > 0:
             lobby_name += ' %d+' % bot.min_mmr
@@ -1175,7 +1175,7 @@ class Command(BaseCommand):
         if not bot.queue:
             return Command.generate_lobby_name(bot)
 
-        lobby_name = f'RD2L Queue #{bot.queue.id}'
+        lobby_name = f'{LadderSettings.get_solo().dota_lobby_name} Queue #{bot.queue.id}'
 
         if bot.queue.min_mmr > 0:
             lobby_name += f' {bot.queue.min_mmr}+'
