@@ -24,6 +24,9 @@ from dota2.enums import DOTA_GC_TEAM, EMatchOutcome, DOTAChatChannelType_t
 from steam.client.builtins.friends import SteamFriendlist
 
 
+VERSION = '1.0.0'
+
+
 class LobbyState(IntEnum):
     UI = 0
     READYUP = 4
@@ -297,6 +300,8 @@ class Command(BaseCommand):
             '!sp': Command.sidepick_sp_command,
             '!radiant': Command.sidepick_radiant_command,
             '!dire': Command.sidepick_dire_command,
+            '!version': Command.version_command,
+            '!v': Command.version_command,
         }
         free_for_all = ['!register']
         staff_only = ['!staff', '!forcestart', '!fs', '!new', '!lobbykick', '!lk']
@@ -1082,6 +1087,11 @@ class Command(BaseCommand):
             Command.sidepick_finish(bot)
         else:
             bot.channels.lobby.send(f'Now {sidepick.captains[sidepick.turn]} choose one of these: !radiant !dire')
+
+    @staticmethod
+    def version_command(bot, msg):
+        print('\n!version command')
+        bot.channels.lobby.send(f'Bot version is: {VERSION}')
 
     @staticmethod
     def process_game_result(bot, lobby):
