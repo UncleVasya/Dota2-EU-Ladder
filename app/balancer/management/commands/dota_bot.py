@@ -24,7 +24,7 @@ from dota2.enums import DOTA_GC_TEAM, EMatchOutcome, DOTAChatChannelType_t
 from steam.client.builtins.friends import SteamFriendlist
 
 
-VERSION = '1.0.0'
+VERSION = '1.0.1'
 
 
 class LobbyState(IntEnum):
