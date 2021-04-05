@@ -146,24 +146,24 @@ class LadderQueueAdmin(admin.ModelAdmin):
     model = LadderQueue
 
     fieldsets = [
-        (None, {'fields': ['date', 'active', 'min_mmr', 'channel']}),
+        (None, {'fields': ['date', 'active', 'min_mmr', 'max_mmr', 'channel']}),
         (None, {'fields': ['game_start_time', 'game_end_time']}),
     ]
     readonly_fields = ['date']
 
     inlines = (QueuePlayerInline, )
 
-    list_display = ('date', 'active', 'min_mmr', 'channel')
+    list_display = ('date', 'active', 'min_mmr', 'max_mmr', 'channel')
 
 
 class QueueChannelAdmin(admin.ModelAdmin):
     model = QueueChannel
 
     fieldsets = [
-        (None, {'fields': ['name', 'min_mmr', 'discord_id', 'discord_msg']}),
+        (None, {'fields': ['name', 'min_mmr', 'max_mmr', 'discord_id', 'discord_msg']}),
     ]
 
-    list_display = ('name', 'min_mmr', 'discord_id')
+    list_display = ('name', 'min_mmr', 'max_mmr', 'discord_id')
 
 
 class DiscordPollAdmin(admin.ModelAdmin):

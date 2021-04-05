@@ -965,6 +965,11 @@ class Command(BaseCommand):
             response = f'`{player}`, your dick is too small. Grow a bigger one.'
             return None, False, response
 
+        # check if player's mmr does not exceed limit, if there's any
+        if player.ladder_mmr > channel.max_mmr > 0:
+            response = f'`{player}`, your dick is too big. Chop it off.'
+            return None, False, response
+
         queue = player.ladderqueue_set.filter(
             Q(active=True) |
             Q(game_start_time__isnull=False) & Q(game_end_time__isnull=True)
@@ -1021,6 +1026,7 @@ class Command(BaseCommand):
         if not queue:
             queue = LadderQueue.objects.create(
                 min_mmr=channel.min_mmr,  # todo this should be done automatically when saving a new queue instance
+                max_mmr=channel.max_mmr,
                 channel=channel
             )
 
@@ -1378,7 +1384,8 @@ class Command(BaseCommand):
         for q_type in QueueChannel.objects.all():
             message = self.queue_messages[q_type.discord_msg]
 
-            mmr_string = f'({q_type.min_mmr}+)' if q_type.min_mmr > 0 else ''
+            min_mmr_string = f'({q_type.min_mmr}+)' if q_type.min_mmr > 0 else ''
+            max_mmr_string = f'({q_type.max_mmr}-)' if q_type.max_mmr > 0 else ''
             queues = LadderQueue.objects\
                 .filter(channel=q_type)\
                 .filter(Q(active=True) |
@@ -1389,7 +1396,7 @@ class Command(BaseCommand):
                 queues_text = f'\n'.join(queue_show(q) for q in queues)
 
             text = f'\n-------------------------------\n' + \
-                   f'**{q_type.name}** {mmr_string}\n' + \
+                   f'**{q_type.name}** {min_mmr_string} {max_mmr_string}\n' + \
                    f'-------------------------------\n' + \
                    f'{queues_text}' + \
                    f'-------------------------------\n' + \

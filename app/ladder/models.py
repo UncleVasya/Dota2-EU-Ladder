@@ -158,6 +158,7 @@ class DiscordPoll(models.Model):
 class QueueChannel(models.Model):
     name = models.CharField(max_length=200)
     min_mmr = models.PositiveSmallIntegerField(default=0)
+    max_mmr = models.PositiveSmallIntegerField(default=0)
     discord_id = models.PositiveIntegerField()
     discord_msg = models.PositiveIntegerField(null=True, blank=True)
 
@@ -171,6 +172,7 @@ class LadderQueue(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     channel = models.ForeignKey(QueueChannel)
     min_mmr = models.PositiveSmallIntegerField(default=0)
+    max_mmr = models.PositiveSmallIntegerField(default=0)
     balance = models.OneToOneField(BalanceAnswer, null=True, blank=True)
 
     game_start_time = models.DateTimeField(null=True, blank=True)
