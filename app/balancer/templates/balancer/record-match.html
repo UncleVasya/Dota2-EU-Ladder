@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+
+{% block page_scripts %}
+    {{ form.media }} {# django-autocomplete-light stuff #}
+{% endblock page_scripts %}
+
+{% block page_styles %}
+    <link href="{% static 'balancer/css/balancer-input.css' %}" rel="stylesheet">
+{% endblock page_styles %}
+
+{% block content %}
+
+<div class="page-overview">
+    <div class="page-overview-primary">
+        <div class="page-overview-title">
+            <h1>
+                Record match
+            </h1>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <form action="{% url 'balancer:record-match' %}" method="post">
+    {% csrf_token %}
+        <div class="col-md-6">
+            <section>
+                <header>
+                    <a> Radiant team </a>
+                </header>
+                <article>
+                    <div class="table-responsive">
+                        <table class="table table-borderless">
+                            <tbody>
+                            {% for field in form %}
+                                {% if forloop.counter <= 5 %}
+                                <tr>
+                                    <td class="cell-centered col-xs-1">{{ forloop.counter }}</td>
+                                    <td>
+                                        <div class="field-wrapper"> {{ field }} </div>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+            </section>
+        </div>
+
+        <div class="col-md-6">
+            <section>
+                <header>
+                    <a> Dire team </a>
+                </header>
+                <article>
+                    <div class="table-responsive">
+                        <table class="table table-borderless">
+                            <tbody>
+                            {% for field in form %}
+                                {% if forloop.counter > 5 %}
+                                <tr>
+                                    <td class="cell-centered col-xs-1">{{ forloop.counter|add:"-5" }}</td>
+                                    <td>
+                                        <div class="field-wrapper"> {{ field }} </div>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+            </section>
+        </div>
+
+        <input type="submit" value="Record match" class="button"/>
+
+        {#  form errors #}
+        {% if form.errors %}
+            <div class="alert alert-danger">
+                <strong> Errors: </strong>
+                <br>
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger">
+                            <strong>{{ field.name }}:</strong> {{ error|escape }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <strong>{{ error|escape }}</strong>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </form>
+</div>
+
+{% endblock %}
