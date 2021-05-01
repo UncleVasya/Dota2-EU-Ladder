@@ -18,7 +18,7 @@ class BalancerInput(FormView):
     template_name = 'balancer/balancer-input.html'
 
     def form_valid(self, form):
-        players = form.cleaned_data.values()
+        players = list(form.cleaned_data.values())
 
         self.result = BalanceResultManager.balance_teams(players)
 
