@@ -1,7 +1,7 @@
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from app.balancer.balancer import balance_teams, role_names
 from app.balancer.forms import BalancerForm, BalancerCustomForm
-from app.balancer.managers import BalanceResultManager
+from app.balancer.managers import BalanceResultManager, BalanceAnswerManager
 from app.balancer.models import BalanceResult, BalanceAnswer
 from app.ladder.models import Player, Match, MatchPlayer
 from django.core.paginator import PageNotAnInteger
@@ -42,6 +42,24 @@ class BalancerInputCustom(FormView):
 
     def get_success_url(self):
         return reverse('balancer:balancer-result', args=(self.result.id,))
+
+
+class RecordMatch(FormView):
+    form_class = BalancerForm
+    template_name = 'balancer/record-match.html'
+
+    def form_valid(self, form):
+        players = list(form.cleaned_data.values())
+
+        radiant = [(p.name, p.ladder_mmr) for p in players[:5]]
+        dire = [(p.name, p.ladder_mmr) for p in players[5:]]
+
+        self.answer = BalanceAnswerManager.balance_custom([radiant, dire])
+
+        return super(RecordMatch, self).form_valid(form)
+
+    def get_success_url(self):
+        return reverse('balancer:balancer-answer', args=(self.answer.id,))
 
 
 class BalancerResult(DetailView):

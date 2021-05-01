@@ -16,6 +16,7 @@ urlpatterns = [
     url(r'player-autocomplete', PlayerAutocomplete.as_view(), name='player-autocomplete'),
 
     url(r'^matches/$', MatchList.as_view(), name='match-list'),
+
     url(r'^stats/$', LadderStats.as_view(), name='stats'),
     url(r'^lobby-status/$', LobbyStatus.as_view(), name='lobby-status'),
     url(r'^kimer-stats/$', KimerStats.as_view(), name='kimer-stats'),

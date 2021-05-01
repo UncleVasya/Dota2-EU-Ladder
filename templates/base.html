@@ -59,6 +59,10 @@
                         <li class="{% if 'balancer' in url_name %}active{% endif %}">
                             {% url 'balancer:balancer-input' as url %}
                             <a href="{{ url }}"> Team balancer </a></li>
+
+                        <li class="{% if url_name == 'record-match' %}active{% endif %}">
+                            {% url 'balancer:record-match' as url %}
+                            <a href="{{ url }}"> Record match </a></li>
                     </ul>
                 </nav>
                 {% endwith %}
