@@ -96,13 +96,9 @@ class Command(BaseCommand):
                 ])
                 await msg.channel.send(response)
             elif self.bot.user.mentioned_in(msg):
-                poly = Player.objects.get(name__iexact='Poly')
-                poly = self.bot.get_user(int(poly.discord_id))
-
                 response = random.choice([
                     'Imagine thinking inhouse-bot and inhouse-ping are same thing :thinking:',
                     'Ping your mum.',
-                    poly.mention,
                 ])
                 await msg.channel.send(response)
 
