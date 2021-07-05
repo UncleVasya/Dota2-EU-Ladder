@@ -17,11 +17,11 @@ from django.core.urlresolvers import reverse
 from django.db.models import Q, Count, Prefetch, Case, When, F
 from django.utils import timezone
 
-from app.balancer.managers import BalanceResultManager
+from app.balancer.managers import BalanceResultManager, BalanceAnswerManager
 from app.balancer.models import BalanceAnswer
 from app.ladder.managers import MatchManager
 from app.ladder.models import Player, LadderSettings, LadderQueue, QueuePlayer, QueueChannel, MatchPlayer, \
-    RolesPreference, DiscordChannels, DiscordPoll
+    RolesPreference, DiscordChannels, DiscordPoll, ScoreChange
 
 
 class Command(BaseCommand):
@@ -285,13 +285,21 @@ class Command(BaseCommand):
             '!role': self.role_command,
             '!roles': self.role_command,
             '!recent': self.recent_matches_command,
+            '!set-name': self.set_name_command,
+            '!set-mmr': self.set_mmr_command,
+            '!set-dota-id': self.set_dota_id_command,
+            '!record-match': self.record_match,
         }
         free_for_all = ['!register']
-        staff_only = ['!vouch', '!add', '!kick', '!mmr', '!ban', '!unban']
+        staff_only = [
+            '!vouch', '!add', '!kick', '!mmr', '!ban', '!unban',
+            '!set-name', '!set-mmr', '!set-dota-id', '!record-match'
+        ]
         chat_channel = [
             '!register', '!vouch', '!wh', '!who', '!whois', '!stats', '!top', '!streak',
             '!bottom', '!bot', '!afk-ping', '!afkping', '!role', '!roles', '!recent',
-            '!ban', '!unban', '!votekick', '!vk'
+            '!ban', '!unban', '!votekick', '!vk', '!set-name', '!set-mmr', '!set-dota-id',
+            '!record-match'
         ]
 
         # if this is a chat channel, check if command is allowed
@@ -947,6 +955,150 @@ class Command(BaseCommand):
             f'\n'.join(match_str(x) for x in mps) +
             f'\n```\n' +
             f'More on {player_url}'
+        )
+
+    async def help_command(self, msg, **kwargs):
+        await msg.channel.send(
+            'Documentation is coming. ' +
+            'It\'s not coming in your lifetime, but it\'s coming.')
+
+    async def set_name_command(self, msg, **kwargs):
+        command = msg.content
+        admin = kwargs['player']
+        print(f'\n!set-name command from {admin}:\n{command}')
+
+        try:
+            params = command.split(None, 1)[1]  # get params string
+            mention = params.split()[0]
+            new_name = ' '.join(params.split()[1:])  # rest of the string is a new name
+        except (IndexError, ValueError):
+            await msg.channel.send(
+                f'Wrong command usage. Correct example: `!set-name @Nappa Napster`')
+            return
+
+        # check if name is a mention
+        match = re.match(r'<@!?([0-9]+)>$', mention)
+        if not match:
+            await msg.channel.send(
+                f'Wrong command usage. Use mention here. Correct example: `!set-name @Nappa Napster`')
+            return
+
+        player = Command.get_player_by_name(mention)
+        if not player:
+            await msg.channel.send(f'I don\'t know him')
+            return
+
+        player.name = new_name
+        player.save()
+        await msg.channel.send(f'{mention} is now known as `{new_name}`')
+
+    async def set_mmr_command(self, msg, **kwargs):
+        command = msg.content
+        admin = kwargs['player']
+        print(f'\n!set-mmr command from {admin}:\n{command}')
+
+        try:
+            params = command.split(None, 1)[1]  # get params string
+            new_mmr = int(params.split()[-1])
+            name = ' '.join(params.split()[:-1])  # remove mmr, leaving only the name
+        except (IndexError, ValueError):
+            await msg.channel.send(
+                f'Wrong command usage. Correct example: `!set-mmr Nappa 6500`')
+            return
+
+        player = Command.get_player_by_name(name)
+        if not player:
+            await msg.channel.send(f'`{name}`: I don\'t know him')
+            return
+
+        ScoreChange.objects.create(
+            player=player,
+            mmr_change=(new_mmr - player.ladder_mmr),
+            season=LadderSettings.get_solo().current_season,
+            info=f'Admin action. MMR updated by {admin}'
+        )
+        await msg.channel.send(f'`{player}` is a `{new_mmr} mmr` gamer now!')
+
+    async def set_dota_id_command(self, msg, **kwargs):
+        command = msg.content
+        admin = kwargs['player']
+        print(f'\n!set-dota-id command from {admin}:\n{command}')
+
+        try:
+            params = command.split(None, 1)[1]  # get params string
+            dota_id = params.split()[-1]
+            name = ' '.join(params.split()[:-1])  # remove dota id, leaving only the name
+        except (IndexError, ValueError):
+            await msg.channel.send(
+                f'Wrong command usage. Correct example: `!set-dota-id Nappa 111886427`')
+            return
+
+        player = Command.get_player_by_name(name)
+        if not player:
+            await msg.channel.send(f'I don\'t know him')
+            return
+
+        player.dota_id = dota_id
+        player.save()
+        await msg.channel.send(f'`{player}` dota id updated.')
+
+    async def record_match(self, msg, **kwargs):
+        command = msg.content
+        admin = kwargs['player']
+        print(f'\n!set-name command from {admin}:\n{command}')
+
+        try:
+            params = command.split(None, 1)[1]  # get params string
+            winner = params.split()[0].lower()
+            players = ' '.join(params.split()[1:])  # rest of the string are 10 player mentions
+        except (IndexError, ValueError):
+            await msg.channel.send(
+                f'Wrong command usage. '
+                f'Correct example: `!record-match radiant @Nappa @Uvs ... (10 player mentions)`')
+            return
+
+        if winner not in ['radiant', 'dire']:
+            await msg.channel.send(
+                f'Scientists are baffled. Dota has 2 teams: `radiant` and `dire`. '
+                f'You invented a third one: `{winner}`. Congratulations!')
+            return
+
+        players = re.findall(r'<@!?([0-9]+)>', players)
+        players = list(dict.fromkeys(players))  # remove duplicates while preserving order
+
+        # check if we have 10 mentions of players
+        if len(players) != 10:
+            await msg.channel.send(
+                f'Can you count to 10? Why do we have {len(players)} unique mentions here?')
+            return
+
+        radiant = Player.objects.filter(discord_id__in=players[:5])
+        dire = Player.objects.filter(discord_id__in=players[5:])
+
+        print(f'radiant: {radiant}')
+        print(f'dire: {dire}')
+
+        # check if all mentioned players are registered as players
+        if len(radiant) != 5 or len(dire) != 5:
+            await msg.channel.send(
+                f'Some of mentioned players are not registered. '
+                f'I could tell you which ones but I won\'t.')
+            return
+
+        _radiant = [(p.name, p.ladder_mmr) for p in radiant]
+        _dire = [(p.name, p.ladder_mmr) for p in dire]
+        winner = 0 if winner == 'radiant' else 1
+
+        balance = BalanceAnswerManager.balance_custom([_radiant, _dire])
+        MatchManager.record_balance(balance, winner)
+
+        await msg.channel.send(
+            f'```\n' +
+            f'Match recorded!\n\n' +
+            f'Radiant: {", ".join([p.name for p in radiant])}\n' +
+            f'Dire: {", ".join([p.name for p in dire])}\n' +
+            f'\n{"Radiant" if winner == 0 else "Dire"} won.\n'
+            f'\n```'
         )
 
     def player_join_queue(self, player, channel):
