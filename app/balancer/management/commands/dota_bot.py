@@ -304,7 +304,7 @@ class Command(BaseCommand):
             '!v': Command.version_command,
         }
         free_for_all = ['!register']
-        staff_only = ['!staff', '!forcestart', '!fs', '!new', '!lobbykick', '!lk']
+        staff_only = ['!staff', '!forcestart', '!fs', '!new', '!lobbykick', '!lk', '!mode', '!server']
 
         disabled_by_queue = [
             '!register', '!b', '!balance', '!mmr', '!swap', '!voice',
