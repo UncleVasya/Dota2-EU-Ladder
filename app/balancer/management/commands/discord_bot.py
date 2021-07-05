@@ -64,7 +64,7 @@ class Command(BaseCommand):
             queues_channel = DiscordChannels.get_solo().queues
             self.queues_channel = self.bot.get_channel(queues_channel)
 
-            await self.setup_poll_messages()
+            # await self.setup_poll_messages()
             await self.setup_queue_messages()
 
             queue_afk_check.start()
