@@ -1243,13 +1243,15 @@ class Command(BaseCommand):
             time_game = timeago.format(q.game_start_time, timezone.now())
             game_str = f'Game started {time_game}. Spectate: watch_server {q.game_server}\n'
 
+        suffix = LadderSettings.get_solo().noob_queue_suffix
+
         return f'```\n' + \
                f'Queue #{q.id}\n' + \
                game_str + \
                (f'Min MMR: {q.min_mmr}\n' if show_min_mmr else '\n') + \
                f'Players: {q.players.count()} (' + \
                f' | '.join(f'{p.name}-{p.ladder_mmr}' for p in players) + ')\n\n' + \
-               f'Avg. MMR: {avg_mmr} {"LUL" if avg_mmr < 4000 else ""} \n' + \
+               f'Avg. MMR: {avg_mmr} {suffix if avg_mmr < 4000 else ""} \n' + \
                f'```'
 
     @staticmethod
