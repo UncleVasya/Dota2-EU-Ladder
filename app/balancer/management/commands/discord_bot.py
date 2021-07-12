@@ -1109,12 +1109,12 @@ class Command(BaseCommand):
             return None, False, response
 
         # check if player has enough MMR
-        if player.ladder_mmr < channel.min_mmr:
+        if player.filter_mmr < channel.min_mmr:
             response = f'`{player}`, your dick is too small. Grow a bigger one.'
             return None, False, response
 
         # check if player's mmr does not exceed limit, if there's any
-        if player.ladder_mmr > channel.max_mmr > 0:
+        if player.filter_mmr > channel.max_mmr > 0:
             response = f'`{player}`, your dick is too big. Chop it off.'
             return None, False, response
 

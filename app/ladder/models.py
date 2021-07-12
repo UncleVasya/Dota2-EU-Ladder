@@ -67,6 +67,11 @@ class Player(models.Model):
     def __str__(self):
         return '%s' % self.name
 
+    @property
+    def filter_mmr(self):
+        filter = LadderSettings.get_solo().queue_mmr_filter
+        return self.dota_mmr if filter == LadderSettings.DOTA_MMR else self.ladder_mmr
+
     def save(self, *args, **kwargs):
         # TODO: Move this to clean_fields() later
         # TODO: (can't do it atm, because of empty dota_id in test data).
@@ -143,6 +148,15 @@ class LadderSettings(SingletonModel):
         (PLAYER_DRAFT, 'Player draft'),
     )
     draft_mode = models.PositiveSmallIntegerField(choices=DRAFT_CHOICES, default=AUTO_BALANCE)
+
+    # queue mmr filter
+    DOTA_MMR = 0
+    LADDER_MMR = 1
+    QFILTER_CHOICES = (
+        (DOTA_MMR, 'Dota MMR'),
+        (LADDER_MMR, 'Ladder MMR'),
+    )
+    queue_mmr_filter = models.PositiveSmallIntegerField(choices=QFILTER_CHOICES, default=LADDER_MMR)
 
 
 class DiscordChannels(SingletonModel):
