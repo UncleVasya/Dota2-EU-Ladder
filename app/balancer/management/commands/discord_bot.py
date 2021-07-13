@@ -234,8 +234,8 @@ class Command(BaseCommand):
         async def activate_queue_channels():
             dt = timezone.localtime(timezone.now(), pytz.timezone('CET'))
 
-            # at 24:01 activate qchannels that should be active today
-            if dt.hour == 0 and dt.minute == 1:
+            # at 24:00 activate qchannels that should be active today
+            if dt.hour == 0 and dt.minute == 0:
                 print('Activating queue channels.')
                 QueueChannelManager.activate_qchannels()
                 await self.setup_queue_messages()
@@ -244,8 +244,8 @@ class Command(BaseCommand):
         async def deactivate_queue_channels():
             dt = timezone.localtime(timezone.now(), pytz.timezone('CET'))
 
-            # at 08:01 deactivate qchannels that should be inactive today
-            if dt.hour == 8 and dt.minute == 1:
+            # at 08:00 deactivate qchannels that should be inactive today
+            if dt.hour == 8 and dt.minute == 0:
                 print('Deactivating queue channels')
                 QueueChannelManager.deactivate_qchannels()
                 await self.setup_queue_messages()
