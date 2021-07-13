@@ -163,7 +163,6 @@ class QueueChannelAdmin(admin.ModelAdmin):
         (None, {'fields': ['name', 'min_mmr', 'max_mmr', 'discord_id', 'discord_msg']}),
         (None, {'fields': ['active', 'active_on']}),
     ]
-    readonly_fields = ['active']
 
     list_display = ('name', 'min_mmr', 'max_mmr', 'discord_id', 'active')
 
