@@ -232,20 +232,20 @@ class Command(BaseCommand):
 
         @tasks.loop(minutes=1)
         async def activate_queue_channels():
-            time = datetime.datetime.now()
+            dt = timezone.localtime(timezone.now(), pytz.timezone('CET'))
 
             # at 24:01 activate qchannels that should be active today
-            if time.hour == 0 and time.minute == 1:
+            if dt.hour == 0 and dt.minute == 1:
                 print('Activating queue channels.')
                 QueueChannelManager.activate_qchannels()
                 await self.setup_queue_messages()
 
         @tasks.loop(minutes=1)
         async def deactivate_queue_channels():
-            time = datetime.datetime.now()
+            dt = timezone.localtime(timezone.now(), pytz.timezone('CET'))
 
             # at 08:01 deactivate qchannels that should be inactive today
-            if time.hour == 8 and time.minute == 1:
+            if dt.hour == 8 and dt.minute == 1:
                 print('Deactivating queue channels')
                 QueueChannelManager.deactivate_qchannels()
                 await self.setup_queue_messages()
