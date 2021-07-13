@@ -1,7 +1,9 @@
 from collections import defaultdict
 import datetime
 
+import pytz
 from django.db import models, transaction
+from django.utils import timezone
 
 
 class PlayerManager(models.Manager):
@@ -154,7 +156,9 @@ class QueueChannelManager(models.Manager):
     def activate_qchannels():
         from app.ladder.models import QueueChannel
 
-        day = datetime.datetime.today().weekday()
+        dt = timezone.localtime(timezone.now(), pytz.timezone('CET'))
+        day = dt.weekday()
+
         QueueChannel.objects\
             .filter(active=False, active_on__contains=str(day))\
             .update(active=True)
@@ -164,7 +168,9 @@ class QueueChannelManager(models.Manager):
         from app.ladder.models import QueueChannel
         from app.ladder.models import LadderQueue
 
-        day = datetime.datetime.today().weekday()
+        dt = timezone.localtime(timezone.now(), pytz.timezone('CET'))
+        day = dt.weekday()
+
         QueueChannel.objects\
             .filter(active=True)\
             .exclude(active_on__contains=str(day))\
