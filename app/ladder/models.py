@@ -1,4 +1,8 @@
+import calendar
+
 from django.db import models
+from multiselectfield import MultiSelectField
+
 from app.balancer.models import BalanceAnswer
 from autoslug import AutoSlugField
 from app.ladder.managers import PlayerManager, ScoreChangeManager
@@ -176,6 +180,9 @@ class QueueChannel(models.Model):
     max_mmr = models.PositiveSmallIntegerField(default=0)
     discord_id = models.PositiveIntegerField()
     discord_msg = models.PositiveIntegerField(null=True, blank=True)
+
+    active_on = MultiSelectField(choices=enumerate(calendar.day_name),
+                                 default=range(7))
 
     def __str__(self):
         return self.name

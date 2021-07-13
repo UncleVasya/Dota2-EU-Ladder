@@ -161,6 +161,7 @@ class QueueChannelAdmin(admin.ModelAdmin):
 
     fieldsets = [
         (None, {'fields': ['name', 'min_mmr', 'max_mmr', 'discord_id', 'discord_msg']}),
+        (None, {'fields': ['active_on']}),
     ]
 
     list_display = ('name', 'min_mmr', 'max_mmr', 'discord_id')
