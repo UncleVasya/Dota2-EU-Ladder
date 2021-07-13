@@ -1,4 +1,6 @@
 from collections import defaultdict
+import datetime
+
 from django.db import models, transaction
 
 
@@ -145,3 +147,30 @@ class MatchManager(models.Manager):
 
 class ScoreChangeManager(models.Manager):
     pass
+
+
+class QueueChannelManager(models.Manager):
+    @staticmethod
+    def activate_qchannels():
+        from app.ladder.models import QueueChannel
+
+        day = datetime.datetime.today().weekday()
+        QueueChannel.objects\
+            .filter(active=False, active_on__contains=str(day))\
+            .update(active=True)
+
+    @staticmethod
+    def deactivate_qchannels():
+        from app.ladder.models import QueueChannel
+        from app.ladder.models import LadderQueue
+
+        day = datetime.datetime.today().weekday()
+        QueueChannel.objects\
+            .filter(active=True)\
+            .exclude(active_on__contains=str(day))\
+            .update(active=False, discord_msg=None)
+
+        # close queues from deactivated qchannels
+        LadderQueue.objects\
+            .filter(channel__active=False)\
+            .update(active=False)

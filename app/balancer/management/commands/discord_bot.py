@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import itertools
 import re
 from collections import defaultdict, deque
@@ -19,7 +20,7 @@ from django.utils import timezone
 
 from app.balancer.managers import BalanceResultManager, BalanceAnswerManager
 from app.balancer.models import BalanceAnswer
-from app.ladder.managers import MatchManager
+from app.ladder.managers import MatchManager, QueueChannelManager
 from app.ladder.models import Player, LadderSettings, LadderQueue, QueuePlayer, QueueChannel, MatchPlayer, \
     RolesPreference, DiscordChannels, DiscordPoll, ScoreChange
 
@@ -71,6 +72,9 @@ class Command(BaseCommand):
             update_queues_shown.start()
             clear_queues_channel.start()
             sky_stock_joke.start()
+
+            activate_queue_channels.start()
+            deactivate_queue_channels.start()
 
         @self.bot.event
         async def on_message(msg):
@@ -225,6 +229,26 @@ class Command(BaseCommand):
                         await buyer_discord.edit(nick=f'{buyer.name} is green +{pct_gain:.2f}%')
             except:
                 pass  # avoid crashing on lack of permissions or yahoo finance throttle
+
+        @tasks.loop(minutes=1)
+        async def activate_queue_channels():
+            time = datetime.datetime.now()
+
+            # at 24:01 activate qchannels that should be active today
+            if time.hour == 0 and time.minute == 1:
+                print('Activating queue channels.')
+                QueueChannelManager.activate_qchannels()
+                await self.setup_queue_messages()
+
+        @tasks.loop(minutes=1)
+        async def deactivate_queue_channels():
+            time = datetime.datetime.now()
+
+            # at 08:01 deactivate qchannels that should be inactive today
+            if time.hour == 8 and time.minute == 1:
+                print('Deactivating queue channels')
+                QueueChannelManager.deactivate_qchannels()
+                await self.setup_queue_messages()
 
         """
         This task removes unnecessary messages (status and pings);
@@ -1504,7 +1528,7 @@ class Command(BaseCommand):
         await channel.purge(check=lambda x: x.id not in db_messages)
 
         # create queues messages that are not already present
-        for q_type in QueueChannel.objects.all():
+        for q_type in QueueChannel.objects.filter(active=True):
             msg, created = await self.get_or_create_message(self.queues_channel, q_type.discord_msg)
             await msg.add_reaction('✅')
             self.queue_messages[msg.id] = msg
@@ -1531,7 +1555,7 @@ class Command(BaseCommand):
         self.last_queues_update = timezone.now()
 
         # show queues info
-        for q_type in QueueChannel.objects.all():
+        for q_type in QueueChannel.objects.filter(active=True):
             message = self.queue_messages[q_type.discord_msg]
 
             min_mmr_string = f'({q_type.min_mmr}+)' if q_type.min_mmr > 0 else ''
