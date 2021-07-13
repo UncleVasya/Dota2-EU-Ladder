@@ -181,8 +181,10 @@ class QueueChannel(models.Model):
     discord_id = models.PositiveIntegerField()
     discord_msg = models.PositiveIntegerField(null=True, blank=True)
 
+    active = models.BooleanField(default=True)
     active_on = MultiSelectField(choices=enumerate(calendar.day_name),
-                                 default=range(7))
+                                 default=range(7),
+                                 null=True, blank=True)
 
     def __str__(self):
         return self.name
