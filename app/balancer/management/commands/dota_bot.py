@@ -266,7 +266,7 @@ class Command(BaseCommand):
             '!b': Command.balance_command,
             '!start': Command.start_command,
             '!mmr': Command.mmr_command,
-            '!flip': bot.flip_lobby_teams,
+            '!flip': Command.flip_command,
             '!voice': Command.voice_command,
             '!teamkick': Command.teamkick_command,
             '!tk': Command.teamkick_command,
@@ -555,6 +555,15 @@ class Command(BaseCommand):
     def forcestart_command(bot, msg):
         bot.balance_answer = None
         Command.start_game(bot)
+
+    @staticmethod
+    def flip_command(bot, msg):
+        command = msg.text
+        print()
+        print('Flip command')
+        print(command)
+
+        bot.flip_lobby_teams()
 
     @staticmethod
     def mode_command(bot, msg):
