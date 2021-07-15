@@ -165,8 +165,17 @@ class Command(BaseCommand):
 
             # if lobby is hung up from previous session, leave it
             # TODO: is this really needed? I have a feeling these lines are a reason of some bugs
-            dota.destroy_lobby()
+            # dota.destroy_lobby()
             self.create_new_lobby(dota)
+
+        @dota.on('notready')
+        def dota_connection_lost():
+            print('Dota connection lost: %s %s' % (dota.steam.username, dota.account_id))
+            delay = 30
+            gevent.sleep(delay)
+
+            print('Trying to launch dota again.')
+            dota.launch()
 
         @dota.on(dota2.features.Lobby.EVENT_LOBBY_NEW)
         def lobby_new(lobby):
@@ -177,6 +186,11 @@ class Command(BaseCommand):
 
         @dota.on(dota2.features.Lobby.EVENT_LOBBY_CHANGED)
         def lobby_changed(lobby):
+            print(f'=== Lobby changed ==== Lobby: {lobby}')
+            if not lobby:
+                print('Lobby is NONE. Doing nothing')
+                return
+
             if int(lobby.state) == LobbyState.UI:
                 # game isn't launched yet;
                 # check if all players have right to play
