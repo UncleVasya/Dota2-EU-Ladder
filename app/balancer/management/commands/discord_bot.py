@@ -749,6 +749,13 @@ class Command(BaseCommand):
         bottom = kwargs.get('bottom', False)  # for '!bottom' command
         print(f'\n!top command:\n{command}')
 
+        if LadderSettings.get_solo().casual_mode:
+            joke_top = "this command is enabled only when Panda is top 1"
+            joke_bot = "this command is disabled when Panda is on the list"
+            txt = f'Play for fun! Who cares. ({joke_bot if bottom else joke_top})'
+            await msg.channel.send(txt)
+            return
+
         try:
             limit = int(command.split(' ')[1])
         except IndexError:
