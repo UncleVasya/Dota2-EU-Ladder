@@ -282,6 +282,7 @@ class Command(BaseCommand):
             '!wh': self.whois_command,
             '!who': self.whois_command,
             '!whois': self.whois_command,
+            '!profile': self.whois_command,
             '!ban': self.ban_command,
             '!unban': self.unban_command,
             '!stats': self.whois_command,
@@ -306,20 +307,24 @@ class Command(BaseCommand):
             '!roles': self.role_command,
             '!recent': self.recent_matches_command,
             '!set-name': self.set_name_command,
+            '!rename': self.set_name_command,
             '!set-mmr': self.set_mmr_command,
+            '!adjust': self.set_mmr_command,
             '!set-dota-id': self.set_dota_id_command,
-            '!record-match': self.record_match,
+            '!record-match': self.record_match_command,
+            '!help': self.help_command,
         }
-        free_for_all = ['!register']
+        free_for_all = ['!register', '!help']
         staff_only = [
             '!vouch', '!add', '!kick', '!mmr', '!ban', '!unban',
             '!set-name', '!set-mmr', '!set-dota-id', '!record-match'
         ]
+        # TODO: do something with this, getting too big. Replace with disabled_in_chat list?
         chat_channel = [
-            '!register', '!vouch', '!wh', '!who', '!whois', '!stats', '!top', '!streak',
-            '!bottom', '!bot', '!afk-ping', '!afkping', '!role', '!roles', '!recent',
-            '!ban', '!unban', '!votekick', '!vk', '!set-name', '!set-mmr', '!set-dota-id',
-            '!record-match'
+            '!register', '!vouch', '!wh', '!who', '!whois', '!profile', '!stats', '!top',
+            '!streak', '!bottom', '!bot', '!afk-ping', '!afkping', '!role', '!roles', '!recent',
+            '!ban', '!unban', '!votekick', '!vk', '!set-name', 'rename' '!set-mmr',
+            'adjust', '!set-dota-id', '!record-match', '!help'
         ]
 
         # if this is a chat channel, check if command is allowed
@@ -1069,10 +1074,10 @@ class Command(BaseCommand):
         player.save()
         await msg.channel.send(f'`{player}` dota id updated.')
 
-    async def record_match(self, msg, **kwargs):
+    async def record_match_command(self, msg, **kwargs):
         command = msg.content
         admin = kwargs['player']
-        print(f'\n!set-name command from {admin}:\n{command}')
+        print(f'\n!record-match command from {admin}:\n{command}')
 
         try:
             params = command.split(None, 1)[1]  # get params string
@@ -1372,6 +1377,7 @@ class Command(BaseCommand):
             .delete()
 
         if deleted > 0:
+            await self.queues_show()
             await channel.send(
                 'Purge all heretics from the queue!\n' +
                 '```\n' +
