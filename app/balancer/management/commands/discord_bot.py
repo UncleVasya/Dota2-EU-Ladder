@@ -313,18 +313,20 @@ class Command(BaseCommand):
             '!set-dota-id': self.set_dota_id_command,
             '!record-match': self.record_match_command,
             '!help': self.help_command,
+            '!close': self.close_queue_command,
         }
         free_for_all = ['!register', '!help']
         staff_only = [
             '!vouch', '!add', '!kick', '!mmr', '!ban', '!unban',
-            '!set-name', '!set-mmr', '!set-dota-id', '!record-match'
+            '!set-name', '!set-mmr', '!set-dota-id', '!record-match',
+            '!close',
         ]
         # TODO: do something with this, getting too big. Replace with disabled_in_chat list?
         chat_channel = [
             '!register', '!vouch', '!wh', '!who', '!whois', '!profile', '!stats', '!top',
             '!streak', '!bottom', '!bot', '!afk-ping', '!afkping', '!role', '!roles', '!recent',
             '!ban', '!unban', '!votekick', '!vk', '!set-name', 'rename' '!set-mmr',
-            'adjust', '!set-dota-id', '!record-match', '!help'
+            'adjust', '!set-dota-id', '!record-match', '!help', '!close',
         ]
 
         # if this is a chat channel, check if command is allowed
@@ -1132,6 +1134,32 @@ class Command(BaseCommand):
             f'\n{"Radiant" if winner == 0 else "Dire"} won.\n'
             f'\n```'
         )
+
+    async def close_queue_command(self, msg, **kwargs):
+        command = msg.content
+        player = kwargs['player']
+        print(f'\n!close command from {player}:\n{command}')
+
+        try:
+            qnumber = int(command.split(' ')[1])
+        except (IndexError, ValueError):
+            await msg.channel.send(
+                f'Format: `!close QUEUE_NUMBER`. Example: `!close 454`')
+            return
+
+        try:
+            queue = LadderQueue.objects.get(id=qnumber)
+        except LadderQueue.DoesNotExist:
+            await msg.channel.send(f'No such queue exists.')
+            return
+
+        queue.active = False
+        if queue.game_start_time:  # queue that is stuck in the game
+            queue.game_end_time = timezone.now()
+        queue.save()
+
+        await self.queues_show()
+        await msg.channel.send(f'`Queue #{qnumber}` has been closed.')
 
     def player_join_queue(self, player, channel):
         # check if player is banned
