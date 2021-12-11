@@ -877,7 +877,7 @@ class Command(BaseCommand):
         print('\n!playerdraft command.')
         print(bot.pd_votes)
 
-        votes_needed = 5
+        votes_needed = LadderSettings.get_solo().pd_votes_needed
 
         if not (bot.queue and bot.queue.players.count() == 10):
             bot.channels.lobby.send('Queue is not yet full.')
@@ -905,7 +905,7 @@ class Command(BaseCommand):
         print('\n!auto_balance command.')
         print(bot.ab_votes)
 
-        votes_needed = 5
+        votes_needed = LadderSettings.get_solo().pd_votes_needed
 
         if not (bot.queue and bot.queue.players.count() == 10):
             bot.channels.lobby.send('Queue is not yet full.')

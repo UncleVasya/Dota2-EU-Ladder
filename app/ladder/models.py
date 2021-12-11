@@ -141,6 +141,7 @@ class LadderSettings(SingletonModel):
     afk_allowed_time = models.PositiveSmallIntegerField(default=40)
     afk_response_time = models.PositiveSmallIntegerField(default=5)
     votekick_treshold = models.PositiveSmallIntegerField(default=3)
+    pd_votes_needed = models.PositiveSmallIntegerField(default=5)
     dota_lobby_name = models.CharField(max_length=200, default='RD2L')
     noob_queue_suffix = models.CharField(max_length=10, default='LUL', blank=True)
     casual_mode = models.BooleanField(default=False)
