@@ -260,7 +260,7 @@ class Command(BaseCommand):
             channel = DiscordChannels.get_solo().queues
             channel = self.bot.get_channel(channel)
 
-            db_messages = QueueChannel.objects.values_list('discord_msg', flat=True)
+            db_messages = QueueChannel.objects.filter(active=True).values_list('discord_msg', flat=True)
 
             def should_remove(msg):
                 msg_time = msg.edited_at or msg.created_at
@@ -1565,7 +1565,7 @@ class Command(BaseCommand):
         channel = self.queues_channel
 
         # remove all messages but queues
-        db_messages = QueueChannel.objects.values_list('discord_msg', flat=True)
+        db_messages = QueueChannel.objects.filter(active=True).values_list('discord_msg', flat=True)
         await channel.purge(check=lambda x: x.id not in db_messages)
 
         # create queues messages that are not already present
