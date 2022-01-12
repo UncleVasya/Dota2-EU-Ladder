@@ -36,6 +36,7 @@ class LobbyState(IntEnum):
     NOTREADY = 5
     SERVERASSIGN = 6
 
+
 GameModes = {
     'AP': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_AP,
     'AR': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_AR,
@@ -43,6 +44,9 @@ GameModes = {
     'SD': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_SD,
     'CD': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_CD,
     'CM': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_CM,
+    'RCM': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_REVERSE_CM,
+    'ARDM': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_ARDM,
+    'AD': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_ABILITY_DRAFT,
 }
 
 GameServers = {
@@ -1442,6 +1446,7 @@ class Command(BaseCommand):
             Command.invite_players(bot)
 
         bot.lobby_options['game_name'] = Command.generate_lobby_queue_name(bot)
+        bot.lobby_options['game_mode'] = GameModes[queue.channel.game_mode]
         bot.config_practice_lobby(bot.lobby_options)
 
     @staticmethod

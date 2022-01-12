@@ -162,9 +162,10 @@ class QueueChannelAdmin(admin.ModelAdmin):
     fieldsets = [
         (None, {'fields': ['name', 'min_mmr', 'max_mmr', 'discord_id', 'discord_msg']}),
         (None, {'fields': ['active', 'active_on']}),
+        (None, {'fields': ['game_mode']}),
     ]
 
-    list_display = ('name', 'min_mmr', 'max_mmr', 'discord_id', 'active')
+    list_display = ('name', 'min_mmr', 'max_mmr', 'discord_id', 'active', 'game_mode')
 
 
 class DiscordPollAdmin(admin.ModelAdmin):

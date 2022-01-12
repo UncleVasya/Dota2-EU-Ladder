@@ -188,6 +188,19 @@ class QueueChannel(models.Model):
                                  default=range(7),
                                  null=True, blank=True)
 
+    GAME_MODES = (
+        ('AP', 'All Pick'),
+        ('AR', 'All Random'),
+        ('RD', 'Random Draft'),
+        ('SD', 'Single Draft'),
+        ('CD', 'Captains Draft'),
+        ('CM', 'Captains Mode'),
+        ('RCM', 'Reverse Captains Mode'),
+        ('ARDM', 'All Random Death Match'),
+        ('AD', 'Ability Draft'),
+    )
+    game_mode = models.CharField(choices=GAME_MODES, default='CM', max_length=200)
+
     def __str__(self):
         return self.name
 
