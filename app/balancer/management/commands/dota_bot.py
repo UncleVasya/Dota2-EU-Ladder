@@ -1133,6 +1133,10 @@ class Command(BaseCommand):
             print('No balance exists (probably !forcestart)')
             return
 
+        if not queue.channel.record_matches:
+            print('No need to record match result for this queue')
+            return
+
         # TODO: write smth like "record_balance(answer, 0 if RadVictory else 1, match_id)"
         if lobby.match_outcome == EMatchOutcome.RadVictory:
             print('Radiant won!')
