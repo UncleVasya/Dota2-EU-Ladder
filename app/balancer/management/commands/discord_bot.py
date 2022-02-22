@@ -1627,7 +1627,7 @@ class Command(BaseCommand):
 
             r = discord.utils.get(message.reactions, emoji='✅')
             if not r:
-                return  # no reactions setup yet
+                continue  # no reactions setup yet
 
             async for user in r.users():
                 if not user.bot and (str(user.id) not in queue_players):
@@ -1684,6 +1684,8 @@ class Command(BaseCommand):
         if not q_channel:
             return
 
+        self.queue_messages[message.id] = message  # update message in cache
+
         queue, added, response = self.player_join_queue(player, q_channel)
         if queue:
             await self.queues_show()
@@ -1706,6 +1708,8 @@ class Command(BaseCommand):
         q_channel = QueueChannel.objects.filter(discord_msg=message.id).first()
         if (payload.emoji.name not in allowed_reactions) or not q_channel:
             return
+
+        self.queue_messages[message.id] = message  # update message in cache
 
         qs = QueuePlayer.objects \
             .filter(player=player, queue__channel=q_channel, queue__active=True) \
