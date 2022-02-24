@@ -61,7 +61,7 @@ class Player(models.Model):
     description = models.CharField(max_length=200, null=True, blank=True)
     vouch_info = models.CharField(max_length=200, null=True, blank=True)
 
-    roles = AutoOneToOneField(RolesPreference)
+    roles = AutoOneToOneField(RolesPreference, on_delete=models.CASCADE)
 
     objects = PlayerManager()
 
@@ -98,15 +98,15 @@ class Player(models.Model):
 class Match(models.Model):
     players = models.ManyToManyField(Player, through='MatchPlayer')
     winner = models.PositiveSmallIntegerField()
-    balance = models.OneToOneField(BalanceAnswer, null=True)
+    balance = models.OneToOneField(BalanceAnswer, null=True, on_delete=models.CASCADE)
     date = models.DateTimeField(auto_now_add=True)
     season = models.PositiveSmallIntegerField(default=1)
     dota_id = models.CharField(max_length=255, null=True)
 
 
 class MatchPlayer(models.Model):
-    match = models.ForeignKey(Match)
-    player = models.ForeignKey(Player)
+    match = models.ForeignKey(Match, on_delete=models.CASCADE)
+    player = models.ForeignKey(Player, on_delete=models.CASCADE)
     team = models.PositiveSmallIntegerField()
 
     class Meta:
@@ -118,10 +118,11 @@ class MatchPlayer(models.Model):
 
 
 class ScoreChange(models.Model):
-    player = models.ForeignKey(Player)
+    player = models.ForeignKey(Player, on_delete=models.CASCADE)
     score_change = models.SmallIntegerField(default=0)
     mmr_change = models.SmallIntegerField(default=0)
-    match = models.OneToOneField(MatchPlayer, null=True, blank=True)
+    match = models.OneToOneField(MatchPlayer, null=True, blank=True,
+                                 on_delete=models.CASCADE)
     info = models.CharField(max_length=255)
     date = models.DateTimeField(auto_now_add=True)
     season = models.PositiveSmallIntegerField(default=1)
@@ -210,10 +211,11 @@ class LadderQueue(models.Model):
     players = models.ManyToManyField(Player, through='QueuePlayer')
     active = models.BooleanField(default=True)
     date = models.DateTimeField(auto_now_add=True)
-    channel = models.ForeignKey(QueueChannel)
+    channel = models.ForeignKey(QueueChannel, on_delete=models.CASCADE)
     min_mmr = models.PositiveSmallIntegerField(default=0)
     max_mmr = models.PositiveSmallIntegerField(default=0)
-    balance = models.OneToOneField(BalanceAnswer, null=True, blank=True)
+    balance = models.OneToOneField(BalanceAnswer, null=True, blank=True,
+                                   on_delete=models.CASCADE)
 
     game_start_time = models.DateTimeField(null=True, blank=True)
     game_end_time = models.DateTimeField(null=True, blank=True)
@@ -227,8 +229,8 @@ class LadderQueue(models.Model):
 
 
 class QueuePlayer(models.Model):
-    queue = models.ForeignKey(LadderQueue)
-    player = models.ForeignKey(Player)
+    queue = models.ForeignKey(LadderQueue, on_delete=models.CASCADE)
+    player = models.ForeignKey(Player, on_delete=models.CASCADE)
     joined_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -9,9 +9,9 @@ https://docs.djangoproject.com/en/1.9/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.9/ref/settings/
 """
-from django.core.urlresolvers import reverse_lazy
+from django.urls import reverse_lazy
+import mimetypes
 import sys
-
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -30,6 +30,11 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 LOGIN_URL = reverse_lazy('admin:login')
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+INTERNAL_IPS = ('127.0.0.1',)
+mimetypes.add_type('application/javascript', '.js', True)
 
 
 # Application definition
@@ -55,14 +60,13 @@ INSTALLED_APPS = [
     'app.stock_joke.apps.StockJokeConfig',
 ]
 
-MIDDLEWARE_CLASSES = [
+MIDDLEWARE = [
     'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
@@ -179,9 +183,9 @@ LOGGING = {
         #     'handlers': ['console'],
         #     'level': 'DEBUG',
         # },
-        # 'Dota2Client': {
-        #     'handlers': ['console'],
-        #     'level': 'DEBUG',
-        # },
+        'Dota2Client': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
     },
 }

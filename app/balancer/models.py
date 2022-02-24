@@ -16,4 +16,5 @@ class BalanceAnswer(models.Model):
     teams = JSONField(load_kwargs={'object_pairs_hook': collections.OrderedDict})
     mmr_diff = models.IntegerField()
     mmr_diff_exp = models.IntegerField()
-    result = models.ForeignKey(BalanceResult, related_name='answers', null=True)
+    result = models.ForeignKey(BalanceResult, related_name='answers', null=True,
+                               on_delete=models.CASCADE)

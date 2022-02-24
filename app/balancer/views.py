@@ -5,7 +5,7 @@ from app.balancer.managers import BalanceResultManager, BalanceAnswerManager
 from app.balancer.models import BalanceResult, BalanceAnswer
 from app.ladder.models import Player, Match, MatchPlayer
 from django.core.paginator import PageNotAnInteger
-from django.core.urlresolvers import reverse_lazy, reverse
+from django.urls import reverse_lazy, reverse
 from django.db import transaction
 from django.http import Http404, HttpResponseBadRequest
 from django.views.generic import FormView, DetailView, RedirectView

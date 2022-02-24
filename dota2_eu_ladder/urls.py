@@ -15,19 +15,20 @@ Including another URLconf
     3. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
 """
 from app.ladder.views import PlayersSuccessful
-from django.conf.urls import url, include
+from django.conf.urls import url
 from django.contrib import admin
 
 from app.ladder import urls as ladder_urls
 from app.balancer import urls as balancer_urls
 from dota2_eu_ladder import settings
+from django.urls import include, path
 
 
 urlpatterns = [
     url(r'^$', PlayersSuccessful.as_view(), name='index'),
 
-    url(r'^', include(ladder_urls, namespace='ladder')),
-    url(r'^balancer/', include(balancer_urls, namespace='balancer')),
+    url(r'^', include((ladder_urls, 'ladder'), namespace='ladder')),
+    url(r'^balancer/', include((balancer_urls, 'balancer'), namespace='balancer')),
 
     url(r'^admin/', admin.site.urls),
 ]
@@ -35,5 +36,5 @@ urlpatterns = [
 if settings.DEBUG:
     import debug_toolbar
     urlpatterns += [
-        url(r'^__debug__/', include(debug_toolbar.urls)),
+        path('__debug__/', include('debug_toolbar.urls')),
     ]
