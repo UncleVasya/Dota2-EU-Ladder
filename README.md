@@ -15,7 +15,7 @@ A full-featured inhouse lobby system for Dota2 leagues.
 
 **Python 3.7.1 or higher is required**
 
-- Initial project setup: https://github.com/UncleVasya/Dota2-EU-Ladder/wiki/Dota-2-EU-Ladder-setup
+- Initial project setup: https://github.com/UncleVasya/Dota2-EU-Ladder/wiki/Initial-project-setup
 - Project deploy on OpenShift: https://github.com/UncleVasya/Dota2-EU-Ladder/wiki/Project-deploy-on-OpenShift
 
 ### Usage
