@@ -8,7 +8,7 @@ import random
 from statistics import mean
 
 import discord
-from discord import Button, ButtonStyle
+from discord import Button, ButtonStyle, user
 import pytz
 import timeago
 from discord.ext import tasks
@@ -35,7 +35,7 @@ def is_player_registered(msg, dota_id, name):
 
 
 class Command(BaseCommand):
-    REGISTER_MSG_TEXT = "Odpowiedz na tą wiadomość podając: MMR, SteamID"
+    REGISTER_MSG_TEXT = "Odpowiedz na tę wiadomość podając: MMR, SteamID"
 
     def __init__(self):
         super().__init__()
@@ -93,7 +93,7 @@ class Command(BaseCommand):
             # Check if the message is a response to the form
             if message.author != self.bot.user and message.reference:
                 original_message = await message.channel.fetch_message(message.reference.message_id)
-                if original_message.author == self.bot.user and original_message.content == self.REGISTER_MSG_TEXT:
+                if original_message.author == self.bot.user:
                     fields = message.content.split(',')
                     fields.append(message.author.name)
                     print(f"Fields: {fields}")
@@ -101,7 +101,6 @@ class Command(BaseCommand):
                     steam_id = str(int(fields[1]))
                     discord_main = fields[2]
                     await self.register_new_player(message, discord_main, mmr, steam_id)
-                    await self.purge_buttons_from_msg(original_message)
 
         @self.bot.event
         async def on_message(msg):
@@ -127,6 +126,7 @@ class Command(BaseCommand):
                 return
 
             type, value = button_parts
+            print(button_parts)
 
             player = Command.get_player_by_name(interaction.user.name)
 
@@ -178,64 +178,16 @@ class Command(BaseCommand):
 
                     return
 
-                await interaction.respond(
-                        content=self.REGISTER_MSG_TEXT)
+                text = f"""Hej, {self.unregistered_mention(interaction.author)},
+                     \npodaj swój MMR, STEAM_ID w wątku do tej wiadomości"""
+
+                await interaction.author.send(text)
+
+                await interaction.defer()
 
                 return
 
             await self.queues_show()
-
-        # @self.bot.event
-        # async def on_raw_reaction_add(payload):
-        #     channel = self.bot.get_channel(payload.channel_id)
-        #     message = await channel.fetch_message(payload.message_id)
-        #     user = self.bot.get_user(payload.user_id)
-        #
-        #     self.last_seen[user.id] = timezone.now()
-        #     if user.bot:
-        #         return
-        #
-        #     # check if reaction is in bot channels
-        #     db_channels = DiscordChannels.get_solo()
-        #     if channel.id not in [db_channels.polls, db_channels.queues]:
-        #         return
-        #
-        #     # if player is unknown, remove reaction
-        #     try:
-        #         player = Player.objects.get(discord_id=payload.user_id)
-        #     except Player.DoesNotExist:
-        #         for reaction in message.reactions:
-        #             await reaction.remove(user)
-        #         return
-        #
-        #     # process reaction
-        #     if channel.id == db_channels.polls:
-        #         await self.on_poll_reaction_add(message, user, payload, player)
-        #     elif channel.id == db_channels.queues:
-        #         await self.on_queue_reaction_add(message, user, payload, player)
-        #
-        # @self.bot.event
-        # async def on_raw_reaction_remove(payload):
-        #     channel = self.bot.get_channel(payload.channel_id)
-        #     message = await channel.fetch_message(payload.message_id)
-        #     user = self.bot.get_user(payload.user_id)
-        #
-        #     # check if reaction is in bot channels
-        #     db_channels = DiscordChannels.get_solo()
-        #     if channel.id not in [db_channels.polls, db_channels.queues]:
-        #         return
-        #
-        #     # if player is unknown, nothing to do
-        #     try:
-        #         player = Player.objects.get(discord_id=payload.user_id)
-        #     except Player.DoesNotExist:
-        #         return
-        #
-        #     # process reaction
-        #     if channel.id == db_channels.polls:
-        #         await self.on_poll_reaction_remove(message, user, payload, player)
-        #     elif channel.id == db_channels.queues:
-        #         await self.on_queue_reaction_remove(message, user, payload, player)
 
         @tasks.loop(minutes=5)
         async def queue_afk_check():
@@ -350,7 +302,7 @@ class Command(BaseCommand):
         command = msg.content.split(' ')[0].lower()
 
         commands = self.get_available_bot_commands()
-        free_for_all = ['!register', '!help', '!reg']
+        free_for_all = ['!register', '!help', '!reg', '!r']
         staff_only = [
             '!vouch', '!add', '!kick', '!mmr', '!ban', '!unban',
             '!set-name', '!set-mmr', '!set-dota-id', '!record-match',
@@ -361,7 +313,7 @@ class Command(BaseCommand):
             '!register', '!vouch', '!wh', '!who', '!whois', '!profile', '!stats', '!top',
             '!streak', '!bottom', '!bot', '!afk-ping', '!afkping', '!role', '!roles', '!recent',
             '!ban', '!unban', '!votekick', '!vk', '!set-name', 'rename' '!set-mmr',
-            'adjust', '!set-dota-id', '!record-match', '!help', '!close', '!reg',
+            'adjust', '!set-dota-id', '!record-match', '!help', '!close', '!reg', '!r'
         ]
 
         # if this is a chat channel, check if command is allowed
@@ -378,7 +330,9 @@ class Command(BaseCommand):
         try:
             player = Player.objects.get(discord_id=msg.author.id)
         except Player.DoesNotExist:
-            await msg.channel.send(f'{msg.author.name}, who the fuck are you?')
+            mention = self.unregistered_mention(msg.author)
+            print(mention)
+            await msg.channel.send(f'{mention}, not registered to use commands')
             return
 
         if player.banned:
@@ -418,7 +372,25 @@ class Command(BaseCommand):
             return
 
         if not 0 <= mmr < 10000:
-            await msg.channel.send('Haha, very funny. :thinking:')
+            sent_message = await msg.channel.send('Haha, very funny. :thinking:')
+
+            #TRY to set visibility to only single user - not working.
+            # Get the @everyone role
+            # everyone_role_id = msg.guild.default_role.id
+            # # Set permissions to only allow the specified user to read the message
+            # overwrite = {
+            #     str(everyone_role_id): {
+            #         'read_messages': False
+            #     },
+            #     str(msg.author.id): {
+            #         'read_messages': True
+            #     }
+            # }
+            #
+            # await sent_message.edit(overwrites=overwrite)
+
+            # await sent.edit(overwrites=overwrite)
+
             return
 
         await self.register_new_player(msg, name, mmr, dota_id)
@@ -429,29 +401,29 @@ class Command(BaseCommand):
             return
 
         # all is good, can register
-        Player.objects.create(
+        player = Player.objects.create(
             name=name,
             dota_mmr=mmr,
             dota_id=dota_id,
             discord_id=msg.author.id,
         )
+
+
         Player.objects.update_ranks()
 
-        admins_to_ping = Player.objects.filter(new_reg_pings=True)
+        await self.player_vouched(player)
 
-        msg = await msg.channel.send(
-            f"""Witamy w Polkiej Lidze DOTY KURŁAAAAAAAA, `{name}`! 
-                           \nKtoś z dziekanatu musi Cię zatwierdzić. Używając !vouch 
-                           \n{' '.join(self.player_mention(p) for p in admins_to_ping)}"""
+        queue_channel = DiscordChannels.get_solo().queues
+        chat_channel = DiscordChannels.get_solo().chat
+        channel = self.bot.get_channel(chat_channel)
+        await msg.channel.send(
+            f"""Witamy w Polish Dota2 Inhouse League!, `{name}`! 
+               \nMożesz dołączyć do gry na kanale <#{queue_channel}>"""
         )
 
-        await self.attach_buttons_to_msg(msg, [
-            [
-                Button(label="!vouch",
-                       custom_id="vouch-" + str(name),
-                       style=ButtonStyle.blurple),
-            ]
-        ])
+        await channel.send(
+            f"""'Witamy nowego gracza `{name}`'"""
+        )
 
 
 
@@ -606,8 +578,8 @@ class Command(BaseCommand):
             await msg.channel.send('Spoko, już z nami jesteś.')
             return
 
-        await msg.channel.send(components=[
-        [Button(label="!register", custom_id="register_form-0", style=ButtonStyle.blurple)]
+        await msg.author.send(components=[
+        [Button(label="!register", custom_id="register_form-"+str(msg.channel.id), style=ButtonStyle.blurple)]
     ])
 
 
@@ -869,6 +841,11 @@ class Command(BaseCommand):
         results = ['win' if x.team == x.match.winner else 'loss' for x in mps]
 
         streaks = [list(g) for k, g in itertools.groupby(results)]
+
+        if not streaks:
+            await msg.channel.send(f'`{player.name}`: You didn\'t play a thing to have streak.')
+            return
+
         streak = streaks[0]
         max_streak = max(streaks, key=len)
 
@@ -1042,14 +1019,36 @@ class Command(BaseCommand):
             f'More on {player_url}'
         )
 
+    # async def help_command(self, msg, **kwargs):
+    #     commands_dict = self.get_available_bot_commands()
+    #     keys_as_string = ', '.join(commands_dict.keys())
+    #
+    #     await msg.channel.send(
+    #         f'```\n' +
+    #         f'Lista komend:\n\n' +
+    #         keys_as_string +
+    #         f'\n```\n'
+    #     )
+
     async def help_command(self, msg, **kwargs):
-        commands_dict = self.get_available_bot_commands()
-        keys_as_string = ', '.join(commands_dict.keys())
+        commands_dict = self.get_help_commands()
+
+        # Create a dictionary to store aliases
+        aliases = {}
+
+        master_text = ''
+        # Iterate through the commands and gather aliases
+        for group, texts in commands_dict.items():
+            master_text += f'\n\n{group}\n'
+            for key, text in texts.items():
+                master_text += key + ": " + text + "\n"
+
+        # Create a string representation of commands and aliases
 
         await msg.channel.send(
             f'```\n' +
             f'Lista komend:\n\n' +
-            keys_as_string +
+            master_text +
             f'\n```\n'
         )
 
@@ -1418,6 +1417,12 @@ class Command(BaseCommand):
 
         return mention
 
+    def unregistered_mention(self, discord_user):
+        user_discord = self.bot.get_user(discord_user.id)
+        mention = user_discord.mention if user_discord else discord_user.name
+
+        return mention
+
     async def channel_check_afk(self, channel: discord.TextChannel, players):
         def last_seen(p):
             return self.last_seen[int(p.discord_id or 0)]
@@ -1726,67 +1731,6 @@ class Command(BaseCommand):
 
         return msg, created
 
-    # async def on_queue_reaction_add(self, message, user, payload, player):
-    #     # if emoji is invalid or message is not a queue message, remove reaction
-    #     allowed_reactions = ['✅']
-    #     q_channel = QueueChannel.objects.filter(discord_msg=message.id).first()
-    #     if (payload.emoji.name not in allowed_reactions) or not q_channel:
-    #         # TODO: instead of "not q_channel" this should be "message.id not in self.queue_messages"
-    #         r = discord.utils.get(message.reactions, emoji=payload.emoji.name)
-    #         await r.clear()
-    #         return
-    #
-    #     # if not a queue message, ignore reaction
-    #     # TODO: this check should be on the top
-    #     if not q_channel:
-    #         return
-    #
-    #     self.queue_messages[message.id] = message  # update message in cache
-    #
-    #     queue, added, response = self.player_join_queue(player, q_channel)
-    #     if queue:
-    #         await self.queues_show()
-    #         response = response.split('```')[0]  # take only first part of response text
-    #         if len(queue.players.all()) == 10 and added:
-    #             msg = self.queue_full_msg(queue, show_balance=False)
-    #             await message.channel.send(f'---------------------\n{msg}')
-    #     else:
-    #         # if couldn't join queue, remove reaction
-    #         r = discord.utils.get(message.reactions, emoji='✅')
-    #         await r.remove(user)
-    #
-    #     self.bot.loop.create_task(
-    #         self.update_status_message(response)
-    #     )
-    #
-    # async def on_queue_reaction_remove(self, message, user, payload, player):
-    #     # if emoji is invalid or message is not a queue message, do nothing
-    #     allowed_reactions = ['✅']
-    #     q_channel = QueueChannel.objects.filter(discord_msg=message.id).first()
-    #     if (payload.emoji.name not in allowed_reactions) or not q_channel:
-    #         return
-    #
-    #     self.queue_messages[message.id] = message  # update message in cache
-    #
-    #     qs = QueuePlayer.objects \
-    #         .filter(player=player, queue__channel=q_channel, queue__active=True) \
-    #         .annotate(Count('queue__players'))
-    #
-    #     if any(x.queue__players__count == 10 for x in qs):
-    #         self.bot.loop.create_task(
-    #             self.update_status_message(
-    #                 f'`{player}`, you are under arrest dodging scum. Play the game.\n'
-    #             )
-    #         )
-    #         return
-    #
-    #     deleted, _ = qs.delete()
-    #     if deleted > 0:
-    #         await self.queues_show()
-    #         self.bot.loop.create_task(
-    #             self.update_status_message(f'{player} left the queue.\n')
-    #         )
-
     async def update_status_message(self, text):
         channel = DiscordChannels.get_solo().queues
         channel = self.bot.get_channel(channel)
@@ -1834,6 +1778,43 @@ class Command(BaseCommand):
         else:
             return f'`{player}` nie ma Cię w tej kolejce.\n'
 
+    def get_help_commands(self):
+        return {
+            'Basic': {
+                '!help': 'This command',
+                '!r/!reg': 'Used to register a new Player',
+                '!register': 'Text mode of registration',
+                '!wh/!who/!whois/!profile/!stats': 'Shows statistics about the player',
+                '!top': 'Top players',
+                '!bot/!bottom': 'Bottom players',
+                '!streak': 'Your streak current & ath',
+                '!role/!roles': 'Set your role preferences',
+                '!recent': 'Show recent matches',
+            },
+            'Queue': {
+                '!join/!q+': 'Join queue',
+                '!leave/!q-': 'Leave queue',
+                '!list/!q': 'List of queues',
+                '!vk/!votekick': 'Vote kick player',
+                '!afk-ping/!afkping': 'Ping AFK players',
+            },
+            'Admin': {
+                '!vouch': 'Used to accept players to league(currently off)',
+                '!ban': 'Ban player',
+                '!unban': 'Unban player',
+                '!set-mmr/!adjust': 'Set MMR of a player',
+                '!set-dota-id': 'Set STEAM ID of a player'
+            },
+            'AdminQueue': {
+                '!add': 'Add player manually to queue',
+                '!kick': 'Kick player from queue',
+                '!close': 'Close opened queue',
+                '!record-match': 'Record a win using [dire/radiant] [@10 mentions]',
+                '!mmr': 'Set MMR for a queue',
+                '!set-name/!rename': 'Rename player(careful)',
+            },
+        }
+
     def get_available_bot_commands(self):
         return {
             '!register': self.register_command,
@@ -1873,5 +1854,7 @@ class Command(BaseCommand):
             '!record-match': self.record_match_command,
             '!help': self.help_command,
             '!close': self.close_queue_command,
-            '!reg': self.attach_help_buttons_to_msg
+            '!reg': self.attach_help_buttons_to_msg,
+            '!r': self.attach_help_buttons_to_msg
         }
+
