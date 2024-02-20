@@ -84,7 +84,6 @@ class Command(BaseCommand):
             queue_afk_check.start()
             update_queues_shown.start()
             clear_queues_channel.start()
-            sky_stock_joke.start()
 
             activate_queue_channels.start()
             deactivate_queue_channels.start()
