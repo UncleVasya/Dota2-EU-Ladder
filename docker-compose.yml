@@ -1,0 +1,19 @@
+version: '3.1'
+
+services:
+  db:
+    image: mysql:5.7
+    container_name: mysql_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: db # 9938_dotabot
+      MYSQL_USER: dbuser # 9938_dotabot
+      MYSQL_PASSWORD: dbpass # Yi6**V43k@9*x
+    ports:
+      - "3306:3306"  # Map port 3306 of the container to port 3306 on the host
+    volumes:
+      - my_db_data:/var/lib/mysql  # Persist database data
+
+volumes:
+  my_db_data:  # This names the volume where your database data is stored
