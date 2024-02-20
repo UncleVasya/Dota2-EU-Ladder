@@ -27,7 +27,7 @@ SECRET_KEY = 'mw3%!kaud!x33oc72by2zs2j--x#6n=-6c_wiil+w9jpvd)s^6'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['http://okqy.pl']
 
 LOGIN_URL = reverse_lazy('admin:login')
 
@@ -163,29 +163,47 @@ PAGINATION_SETTINGS = {
     'SHOW_FIRST_PAGE_WHEN_INVALID': True,
 }
 
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'standard': {
-            'format': '[%(asctime)s] %(levelname)s %(name)s: %(message)s'
+            'format': '[%(asctime)s] %(levelname)s %(name)s: %(message)s',
         },
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'standard',
-            'level': 'DEBUG'
+            'level': 'DEBUG',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': 'django_errors.log',
+            'formatter': 'standard',
+            'level': 'WARNING',
+        },
+        'integrations': {
+            'class': 'logging.FileHandler',
+            'filename': 'integration_errors.log',
+            'formatter': 'standard',
+            'level': 'WARNING',
         },
     },
     'loggers': {
-        # 'SteamClient': {
-        #     'handlers': ['console'],
-        #     'level': 'DEBUG',
-        # },
-        # 'Dota2Client': {
-        #     'handlers': ['console'],
-        #     'level': 'DEBUG',
-        # },
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'SteamClient': {
+            'handlers': ['integrations'],
+            'level': 'INFO',
+        },
+        'Dota2Client': {
+            'handlers': ['integrations'],
+            'level': 'INFO',
+        },
     },
 }

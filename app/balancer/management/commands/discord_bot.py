@@ -218,42 +218,6 @@ class Command(BaseCommand):
             if queued_players != self.queued_players or outdated:
                 await self.queues_show()
 
-        @tasks.loop(minutes=1)
-        async def sky_stock_joke():
-            import yfinance as yf
-            from app.stock_joke.models import StockJokeSettings
-            from app.stock_joke.models import StockBuyer
-
-            settings = StockJokeSettings.get_solo()
-            if not settings.enabled:
-                return
-
-            try:
-                ticker_data = yf.download(tickers=settings.stock_ticker, period='1d', interval='1m')
-                ticker_price = ticker_data['Close'][-1]
-                print('ticker price: ', ticker_price)
-
-                guild = self.bot.get_guild(settings.discord_server_id)
-                green_role = discord.utils.get(guild.roles, id=settings.greed_role_id)
-                red_role = discord.utils.get(guild.roles, id=settings.red_role_id)
-
-                for buyer in StockBuyer.objects.all():
-                    buyer_discord = discord.utils.get(self.bot.get_all_members(), id=buyer.discord_id)
-                    entry_price = buyer.entry_price
-                    if ticker_price <= entry_price:
-                        await buyer_discord.remove_roles(green_role)
-                        await buyer_discord.add_roles(red_role)
-
-                        pct_loss = (entry_price - ticker_price) / entry_price * 100
-                        await buyer_discord.edit(nick=f'{buyer.name} is red -{pct_loss:.2f}%')
-                    else:
-                        await buyer_discord.remove_roles(red_role)
-                        await buyer_discord.add_roles(green_role)
-
-                        pct_gain = (ticker_price - entry_price) / entry_price * 100
-                        await buyer_discord.edit(nick=f'{buyer.name} is green +{pct_gain:.2f}%')
-            except:
-                pass  # avoid crashing on lack of permissions or yahoo finance throttle
 
         @tasks.loop(minutes=1)
         async def activate_queue_channels():

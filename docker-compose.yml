@@ -9,7 +9,7 @@ services:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: db # 9938_dotabot
       MYSQL_USER: dbuser # 9938_dotabot
-      MYSQL_PASSWORD: dbpass # Yi6**V43k@9*x
+      MYSQL_PASSWORD: dbpass #
     ports:
       - "3306:3306"  # Map port 3306 of the container to port 3306 on the host
     volumes:
