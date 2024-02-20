@@ -8,6 +8,7 @@ import random
 from statistics import mean
 
 import discord
+from discord import Button, ButtonStyle, user
 import pytz
 import timeago
 from discord.ext import tasks
@@ -25,7 +26,17 @@ from app.ladder.models import Player, LadderSettings, LadderQueue, QueuePlayer, 
     RolesPreference, DiscordChannels, DiscordPoll, ScoreChange
 
 
+def is_player_registered(msg, dota_id, name):
+    # check if we can register this player
+    if Player.objects.filter(Q(discord_id=msg.author.id) | Q(dota_id=dota_id)).exists():
+        return True
+    if Player.objects.filter(name__iexact=name).exists():
+        return True
+
+
 class Command(BaseCommand):
+    REGISTER_MSG_TEXT = "Odpowiedz na tę wiadomość podając: MMR, SteamID"
+
     def __init__(self):
         super().__init__()
         self.bot = None
@@ -66,6 +77,8 @@ class Command(BaseCommand):
             self.queues_channel = self.bot.get_channel(queues_channel)
 
             # await self.setup_poll_messages()
+
+            await self.purge_queue_channels()
             await self.setup_queue_messages()
 
             queue_afk_check.start()
@@ -76,8 +89,22 @@ class Command(BaseCommand):
             activate_queue_channels.start()
             deactivate_queue_channels.start()
 
+        async def on_register_form_answer(message):
+            # Check if the message is a response to the form
+            if message.author != self.bot.user and message.reference:
+                original_message = await message.channel.fetch_message(message.reference.message_id)
+                if original_message.author == self.bot.user:
+                    fields = message.content.split(',')
+                    fields.append(message.author.name)
+                    print(f"Fields: {fields}")
+                    mmr = int(fields[0])
+                    steam_id = str(int(fields[1]))
+                    discord_main = fields[2]
+                    await self.register_new_player(message, discord_main, mmr, steam_id)
+
         @self.bot.event
         async def on_message(msg):
+            await on_register_form_answer(msg)
             self.last_seen[msg.author.id] = timezone.now()
 
             if not QueueChannel.objects.filter(discord_id=msg.channel.id).exists() \
@@ -86,83 +113,81 @@ class Command(BaseCommand):
             if msg.author.bot:
                 return
 
-            content = msg.content.lower()
-            if ('stupid bot' in content) or ('bot is stupid' in content):
-                response = random.choice([
-                    'Smarter than you.',
-                    'You are stupid.'
-                ])
-                await msg.channel.send(response)
-            elif ('fu bot' in content) or ('fuck you bot' in content) or ('fuck u bot' in content):
-                response = random.choice([
-                    'Bite my shiny metal ass!',
-                    'Fuck you too.'
-                ])
-                await msg.channel.send(response)
-            elif self.bot.user.mentioned_in(msg):
-                response = random.choice([
-                    'Imagine thinking inhouse-bot and inhouse-ping are same thing :thinking:',
-                    'Ping your mum.',
-                ])
-                await msg.channel.send(response)
-
-            # strip whitespaces so bot can handle strings like " !register   Bob   4000"
             msg.content = " ".join(msg.content.split())
             if msg.content.startswith('!'):
                 # looks like this is a bot command
                 await self.bot_cmd(msg)
 
         @self.bot.event
-        async def on_raw_reaction_add(payload):
-            channel = self.bot.get_channel(payload.channel_id)
-            message = await channel.fetch_message(payload.message_id)
-            user = self.bot.get_user(payload.user_id)
-
-            self.last_seen[user.id] = timezone.now()
-            if user.bot:
+        async def on_button_click(interaction: discord.Interaction, button):
+            button_parts = button.custom_id.split('-')
+            if len(button_parts) != 2:
+                print("Invalid button custom_id format.")
                 return
 
-            # check if reaction is in bot channels
-            db_channels = DiscordChannels.get_solo()
-            if channel.id not in [db_channels.polls, db_channels.queues]:
+            type, value = button_parts
+            print(button_parts)
+
+            player = Command.get_player_by_name(interaction.user.name)
+
+            if not player and type != 'register_form':
+                await interaction.channel.send(f'`{interaction.user.name}`: I don\'t know him')
                 return
 
-            # if player is unknown, remove reaction
-            try:
-                player = Player.objects.get(discord_id=payload.user_id)
-            except Player.DoesNotExist:
-                for reaction in message.reactions:
-                    await reaction.remove(user)
+            if type == 'green':
+                q_channel = QueueChannel.objects.filter(discord_msg=value).first()
+
+                _, _, response = await self.player_join_queue(player, q_channel)
+                embed = discord.Embed(title='Zbierają się do bitwy!',
+                                      description=response,
+                                      color=discord.Color.green())
+                # await interaction.respond(embed=embed, allowed_mentions=None, delete_after=5)
+                await interaction.edit(embed=embed)
+
+            elif type == 'red':
+                response = await self.player_leave_queue(player, interaction.message)
+                embed = discord.Embed(title='Gracz uchyla się od gry...',
+                                      description=response,
+                                      color=discord.Color.red())
+                await interaction.edit(embed=embed)
+
+            elif type == 'vouch':
+                vouched_player = Command.get_player_by_name(value)
+
+                if not player.bot_access:
+                    await interaction.defer()
+                    return
+
+                if not vouched_player:
+                    embed = discord.Embed(title='Błąd nazwy gracza do !vouch',
+                                          color=discord.Color.red())
+                    await interaction.message.edit(embed=embed)
+                    return
+
+                await self.player_vouched(vouched_player)
+                embed = discord.Embed(title='Wiwat! Gracz zatwierdzony!',
+                                      description=value + ' zatwierdzony przez ' + player.name,
+                                      color=discord.Color.blue())
+                await interaction.edit(embed=embed)
+                await self.purge_buttons_from_msg(interaction.message)
+
+
+            elif type == "register_form":
+                if player:
+                    await interaction.defer()
+
+                    return
+
+                text = f"""Hej, {self.unregistered_mention(interaction.author)},
+                     \npodaj swój MMR, STEAM_ID w wątku do tej wiadomości"""
+
+                await interaction.author.send(text)
+
+                await interaction.defer()
+
                 return
 
-            # process reaction
-            if channel.id == db_channels.polls:
-                await self.on_poll_reaction_add(message, user, payload, player)
-            elif channel.id == db_channels.queues:
-                await self.on_queue_reaction_add(message, user, payload, player)
-
-        @self.bot.event
-        async def on_raw_reaction_remove(payload):
-            channel = self.bot.get_channel(payload.channel_id)
-            message = await channel.fetch_message(payload.message_id)
-            user = self.bot.get_user(payload.user_id)
-
-            # check if reaction is in bot channels
-            db_channels = DiscordChannels.get_solo()
-            if channel.id not in [db_channels.polls, db_channels.queues]:
-                return
-
-            # if player is unknown, nothing to do
-            try:
-                player = Player.objects.get(discord_id=payload.user_id)
-            except Player.DoesNotExist:
-                return
-
-            # process reaction
-            if channel.id == db_channels.polls:
-                await self.on_poll_reaction_remove(message, user, payload, player)
-            elif channel.id == db_channels.queues:
-                await self.on_queue_reaction_remove(message, user, payload, player)
+            await self.queues_show()
 
         @tasks.loop(minutes=5)
         async def queue_afk_check():
@@ -276,46 +301,8 @@ class Command(BaseCommand):
     async def bot_cmd(self, msg):
         command = msg.content.split(' ')[0].lower()
 
-        commands = {
-            '!register': self.register_command,
-            '!vouch': self.vouch_command,
-            '!wh': self.whois_command,
-            '!who': self.whois_command,
-            '!whois': self.whois_command,
-            '!profile': self.whois_command,
-            '!ban': self.ban_command,
-            '!unban': self.unban_command,
-            '!stats': self.whois_command,
-            '!q+': self.join_queue_command,
-            '!q-': self.leave_queue_command,
-            '!q': self.show_queues_command,
-            '!join': self.join_queue_command,
-            '!leave': self.leave_queue_command,
-            '!list': self.show_queues_command,
-            '!add': self.add_to_queue_command,
-            '!kick': self.kick_from_queue_command,
-            '!votekick': self.votekick_command,
-            '!vk': self.votekick_command,
-            '!mmr': self.mmr_command,
-            '!top': self.top_command,
-            '!bot': self.bottom_command,
-            '!bottom': self.bottom_command,
-            '!streak': self.streak_command,
-            '!afk-ping': self.afk_ping_command,
-            '!afkping': self.afk_ping_command,
-            '!role': self.role_command,
-            '!roles': self.role_command,
-            '!recent': self.recent_matches_command,
-            '!set-name': self.set_name_command,
-            '!rename': self.set_name_command,
-            '!set-mmr': self.set_mmr_command,
-            '!adjust': self.set_mmr_command,
-            '!set-dota-id': self.set_dota_id_command,
-            '!record-match': self.record_match_command,
-            '!help': self.help_command,
-            '!close': self.close_queue_command,
-        }
-        free_for_all = ['!register', '!help']
+        commands = self.get_available_bot_commands()
+        free_for_all = ['!register', '!help', '!reg', '!r']
         staff_only = [
             '!vouch', '!add', '!kick', '!mmr', '!ban', '!unban',
             '!set-name', '!set-mmr', '!set-dota-id', '!record-match',
@@ -326,7 +313,7 @@ class Command(BaseCommand):
             '!register', '!vouch', '!wh', '!who', '!whois', '!profile', '!stats', '!top',
             '!streak', '!bottom', '!bot', '!afk-ping', '!afkping', '!role', '!roles', '!recent',
             '!ban', '!unban', '!votekick', '!vk', '!set-name', 'rename' '!set-mmr',
-            'adjust', '!set-dota-id', '!record-match', '!help', '!close',
+            'adjust', '!set-dota-id', '!record-match', '!help', '!close', '!reg', '!r'
         ]
 
         # if this is a chat channel, check if command is allowed
@@ -343,7 +330,9 @@ class Command(BaseCommand):
         try:
             player = Player.objects.get(discord_id=msg.author.id)
         except Player.DoesNotExist:
-            await msg.channel.send(f'{msg.author.name}, who the fuck are you?')
+            mention = self.unregistered_mention(msg.author)
+            print(mention)
+            await msg.channel.send(f'{mention}, not registered to use commands')
             return
 
         if player.banned:
@@ -383,36 +372,60 @@ class Command(BaseCommand):
             return
 
         if not 0 <= mmr < 10000:
-            await msg.channel.send('Haha, very funny. :thinking:')
+            sent_message = await msg.channel.send('Haha, very funny. :thinking:')
+
+            #TRY to set visibility to only single user - not working.
+            # Get the @everyone role
+            # everyone_role_id = msg.guild.default_role.id
+            # # Set permissions to only allow the specified user to read the message
+            # overwrite = {
+            #     str(everyone_role_id): {
+            #         'read_messages': False
+            #     },
+            #     str(msg.author.id): {
+            #         'read_messages': True
+            #     }
+            # }
+            #
+            # await sent_message.edit(overwrites=overwrite)
+
+            # await sent.edit(overwrites=overwrite)
+
             return
 
-        # check if we can register this player
-        if Player.objects.filter(Q(discord_id=msg.author.id) | Q(dota_id=dota_id)).exists():
-            await msg.channel.send('Already registered, bro.')
-            return
+        await self.register_new_player(msg, name, mmr, dota_id)
 
-        if Player.objects.filter(name__iexact=name).exists():
-            await msg.channel.send(
-                'This name is already taken. Try another or talk to admins.'
-            )
+    async def register_new_player(self, msg, name, mmr, dota_id):
+        if is_player_registered(msg, dota_id, name):
+            await msg.channel.send('Spoko, już z nami jesteś.')
             return
 
         # all is good, can register
-        Player.objects.create(
+        player = Player.objects.create(
             name=name,
             dota_mmr=mmr,
             dota_id=dota_id,
             discord_id=msg.author.id,
         )
+
+
         Player.objects.update_ranks()
 
-        admins_to_ping = Player.objects.filter(new_reg_pings=True)
+        await self.player_vouched(player)
+
+        queue_channel = DiscordChannels.get_solo().queues
+        chat_channel = DiscordChannels.get_solo().chat
+        channel = self.bot.get_channel(chat_channel)
         await msg.channel.send(
-            f"""Welcome to the ladder, `{name}`! 
-            \nYou need to get vouched before you can play. Wait for inhouse staff to review your signup. 
-            \nYou can ping their lazy asses if it takes too long ;)
-            \n{' '.join(self.player_mention(p) for p in admins_to_ping)}"""
+            f"""Witamy w Polish Dota2 Inhouse League!, `{name}`! 
+               \nMożesz dołączyć do gry na kanale <#{queue_channel}>"""
         )
+
+        await channel.send(
+            f"""'Witamy nowego gracza `{name}`'"""
+        )
+
+
 
     async def vouch_command(self, msg, **kwargs):
         command = msg.content
@@ -430,8 +443,7 @@ class Command(BaseCommand):
             await msg.channel.send(f'`{name}`: I don\'t know him')
             return
 
-        player.vouched = True
-        player.save()
+        await self.player_vouched(player)
 
         await msg.channel.send(
             f'{self.player_mention(player)} has been vouched. He can play now!'
@@ -543,29 +555,40 @@ class Command(BaseCommand):
         await msg.channel.send(response)
         await self.queues_show()
 
+    async def attach_join_buttons_to_queue_msg(self, msg, **kwargs):
+        await self.attach_buttons_to_msg(msg, [
+            [
+                Button(label="Wchodzę",
+                       custom_id="green-" + str(msg.id),
+                       style=ButtonStyle.green),
+                Button(label="Out",
+                       custom_id="red-" + str(msg.id),
+                       style=ButtonStyle.red),
+            ]
+        ])
+
+    async def attach_buttons_to_msg(self, msg, buttons, **kwargs):
+        await msg.edit(components=buttons)
+    
+    async def purge_buttons_from_msg(self, msg):
+        await msg.edit(components=[])
+
+    async def attach_help_buttons_to_msg(self, msg):
+        if is_player_registered(msg, 0, "blank"):
+            await msg.channel.send('Spoko, już z nami jesteś.')
+            return
+
+        await msg.author.send(components=[
+        [Button(label="!register", custom_id="register_form-"+str(msg.channel.id), style=ButtonStyle.blurple)]
+    ])
+
+
     async def leave_queue_command(self, msg, **kwargs):
         command = msg.content
         player = kwargs['player']
         print(f'Leave command from {player}:\n {command}')
 
-        # TODO: this should be  a player_leave_queue() function;
-        #       reuse it in on_queue_reaction_remove()
-        qs = QueuePlayer.objects\
-            .filter(player=player, queue__active=True)\
-            .annotate(Count('queue__players'))
-
-        if any(x.queue__players__count == 10 for x in qs):
-            await msg.channel.send(
-                f'`{player}`, you are under arrest dodging scum. Play the game.\n'
-            )
-            return
-
-        deleted, _ = qs.delete()
-        if deleted > 0:
-            await msg.channel.send(f'`{player}` left the queue.\n')
-        else:
-            await msg.channel.send(f'`{player}` is not queuing.\n')
-
+        await self.player_leave_queue(player, msg)
         await self.queues_show()
 
     async def show_queues_command(self, msg, **kwargs):
@@ -818,6 +841,11 @@ class Command(BaseCommand):
         results = ['win' if x.team == x.match.winner else 'loss' for x in mps]
 
         streaks = [list(g) for k, g in itertools.groupby(results)]
+
+        if not streaks:
+            await msg.channel.send(f'`{player.name}`: You didn\'t play a thing to have streak.')
+            return
+
         streak = streaks[0]
         max_streak = max(streaks, key=len)
 
@@ -991,10 +1019,38 @@ class Command(BaseCommand):
             f'More on {player_url}'
         )
 
+    # async def help_command(self, msg, **kwargs):
+    #     commands_dict = self.get_available_bot_commands()
+    #     keys_as_string = ', '.join(commands_dict.keys())
+    #
+    #     await msg.channel.send(
+    #         f'```\n' +
+    #         f'Lista komend:\n\n' +
+    #         keys_as_string +
+    #         f'\n```\n'
+    #     )
+
     async def help_command(self, msg, **kwargs):
+        commands_dict = self.get_help_commands()
+
+        # Create a dictionary to store aliases
+        aliases = {}
+
+        master_text = ''
+        # Iterate through the commands and gather aliases
+        for group, texts in commands_dict.items():
+            master_text += f'\n\n{group}\n'
+            for key, text in texts.items():
+                master_text += key + ": " + text + "\n"
+
+        # Create a string representation of commands and aliases
+
         await msg.channel.send(
-            'Documentation is coming. ' +
-            'It\'s not coming in your lifetime, but it\'s coming.')
+            f'```\n' +
+            f'Lista komend:\n\n' +
+            master_text +
+            f'\n```\n'
+        )
 
     async def set_name_command(self, msg, **kwargs):
         command = msg.content
@@ -1007,14 +1063,14 @@ class Command(BaseCommand):
             new_name = ' '.join(params.split()[1:])  # rest of the string is a new name
         except (IndexError, ValueError):
             await msg.channel.send(
-                f'Wrong command usage. Correct example: `!set-name @Nappa Napster`')
+                f'Wrong command usage. Correct example: `!set-name @Baron g4mbl3r`')
             return
 
         # check if name is a mention
         match = re.match(r'<@!?([0-9]+)>$', mention)
         if not match:
             await msg.channel.send(
-                f'Wrong command usage. Use mention here. Correct example: `!set-name @Nappa Napster`')
+                f'Wrong command usage. Use mention here. Correct example: `!set-name @Baron g4mbl3r`')
             return
 
         player = Command.get_player_by_name(mention)
@@ -1037,7 +1093,7 @@ class Command(BaseCommand):
             name = ' '.join(params.split()[:-1])  # remove mmr, leaving only the name
         except (IndexError, ValueError):
             await msg.channel.send(
-                f'Wrong command usage. Correct example: `!set-mmr Nappa 6500`')
+                f'Wrong command usage. Correct example: `!set-mmr Baron 6500`')
             return
 
         player = Command.get_player_by_name(name)
@@ -1051,7 +1107,7 @@ class Command(BaseCommand):
             season=LadderSettings.get_solo().current_season,
             info=f'Admin action. MMR updated by {admin}'
         )
-        await msg.channel.send(f'`{player}` is a `{new_mmr} mmr` gamer now!')
+        await msg.channel.send(f'`{player}` is a `{new_mmr} MMR` gamer now!')
 
     async def set_dota_id_command(self, msg, **kwargs):
         command = msg.content
@@ -1088,7 +1144,7 @@ class Command(BaseCommand):
         except (IndexError, ValueError):
             await msg.channel.send(
                 f'Wrong command usage. '
-                f'Correct example: `!record-match radiant @Nappa @Uvs ... (10 player mentions)`')
+                f'Correct example: `!record-match radiant @Baron @lis ... (10 player mentions)`')
             return
 
         if winner not in ['radiant', 'dire']:
@@ -1161,7 +1217,7 @@ class Command(BaseCommand):
         await self.queues_show()
         await msg.channel.send(f'`Queue #{qnumber}` has been closed.')
 
-    def player_join_queue(self, player, channel):
+    async def player_join_queue(self, player, channel):
         # check if player is banned
         if player.banned:
             response = f'`{player}`, you are banned.'
@@ -1305,17 +1361,17 @@ class Command(BaseCommand):
         game_str = ''
         if q.game_start_time:
             time_game = timeago.format(q.game_start_time, timezone.now())
-            game_str = f'Game started {time_game}. Spectate: watch_server {q.game_server}\n'
+            game_str = f'Gra ruszyła {time_game}. Oglądaj tu: {q.game_server}\n'
 
         suffix = LadderSettings.get_solo().noob_queue_suffix
 
         return f'```\n' + \
-               f'Queue #{q.id}\n' + \
+               f'Kolejka #{q.id}\n' + \
                game_str + \
                (f'Min MMR: {q.min_mmr}\n' if show_min_mmr else '\n') + \
-               f'Players: {q.players.count()} (' + \
+               f'Gracze: {q.players.count()} (' + \
                f' | '.join(f'{p.name}-{p.ladder_mmr}' for p in players) + ')\n\n' + \
-               f'Avg. MMR: {avg_mmr} {suffix if avg_mmr < 4000 else ""} \n' + \
+               f'Śr. MMR: {avg_mmr} {suffix if avg_mmr < 4000 else ""} \n' + \
                f'```'
 
     @staticmethod
@@ -1358,6 +1414,12 @@ class Command(BaseCommand):
         discord_id = int(player.discord_id) if player.discord_id else 0
         player_discord = self.bot.get_user(discord_id)
         mention = player_discord.mention if player_discord else player.name
+
+        return mention
+
+    def unregistered_mention(self, discord_user):
+        user_discord = self.bot.get_user(discord_user.id)
+        mention = user_discord.mention if user_discord else discord_user.name
 
         return mention
 
@@ -1561,6 +1623,11 @@ class Command(BaseCommand):
     async def on_faceit_reaction(self, message, user, player=None):
         pass
 
+    async def purge_queue_channels(self):
+        channel = self.queues_channel
+        await channel.purge()
+
+
     async def setup_queue_messages(self):
         channel = self.queues_channel
 
@@ -1571,7 +1638,7 @@ class Command(BaseCommand):
         # create queues messages that are not already present
         for q_type in QueueChannel.objects.filter(active=True):
             msg, created = await self.get_or_create_message(self.queues_channel, q_type.discord_msg)
-            await msg.add_reaction('✅')
+            # await msg.add_reaction('✅')
             self.queue_messages[msg.id] = msg
             if created:
                 q_type.discord_msg = msg.id
@@ -1579,17 +1646,16 @@ class Command(BaseCommand):
 
         await self.queues_show()
 
+        # create queues messages that are not already present
+        for q_type in QueueChannel.objects.filter(active=True):
+            msg, created = await self.get_or_create_message(self.queues_channel, q_type.discord_msg)
+            # await msg.add_reaction('✅')
+            self.queue_messages[msg.id] = msg
+            if created:
+                q_type.discord_msg = msg.id
+                q_type.save()
+
     async def queues_show(self):
-        def queue_show(q):
-            q_string = self.queue_str(q, show_min_mmr=False)
-
-            if q.players.count() == 10:
-                auto_balance = LadderSettings.get_solo().draft_mode == LadderSettings.AUTO_BALANCE
-                if auto_balance:
-                    q_string += self.balance_str(q.balance, verbose=q.active) + '\n'
-
-            return q_string
-
         # remember queued players to check for changes in periodic task
         queued_players = [qp for qp in QueuePlayer.objects.filter(queue__active=True)]
         self.queued_players = set(qp.player.discord_id for qp in queued_players)
@@ -1606,32 +1672,28 @@ class Command(BaseCommand):
                 .filter(Q(active=True) |
                         Q(game_start_time__isnull=False) & Q(game_end_time__isnull=True))
 
-            queues_text = '```\nNoone is currently queueing.\n```'
+            queues_text = '```\nPusto. Jak do tego doszło, nie wiem.\n```'
             if queues:
-                queues_text = f'\n'.join(queue_show(q) for q in queues)
+                queues_text =  f'\n'.join(self.show_queue(q) for q in queues)
 
-            text = f'\n-------------------------------\n' + \
-                   f'**{q_type.name}** {min_mmr_string} {max_mmr_string}\n' + \
-                   f'-------------------------------\n' + \
-                   f'{queues_text}' + \
-                   f'-------------------------------\n' + \
-                   f'✅ - join the queue\n' + \
-                   f'-------------------------------\n'
+            text = f'**{q_type.name}** {min_mmr_string} {max_mmr_string}\n' + \
+                   f'{queues_text}'
 
             await message.edit(content=text)
 
+            await self.attach_join_buttons_to_queue_msg(message)
             # remove reactions of players who are no longer in this queue
-            queue_players = QueuePlayer.objects\
-                .filter(queue__channel=q_type, queue__active=True) \
-                .values_list('player__discord_id', flat=True)
+            # queue_players = QueuePlayer.objects\
+            #     .filter(queue__channel=q_type, queue__active=True) \
+            #     .values_list('player__discord_id', flat=True)
 
-            r = discord.utils.get(message.reactions, emoji='✅')
-            if not r:
-                continue  # no reactions setup yet
-
-            async for user in r.users():
-                if not user.bot and (str(user.id) not in queue_players):
-                    await r.remove(user)
+            # r = discord.utils.get(message.reactions, emoji='✅')
+            # if not r:
+            #     continue  # no reactions setup yet
+            #
+            # async for user in r.users():
+            #     if not user.bot and (str(user.id) not in queue_players):
+            #         await r.remove(user)
 
     async def on_poll_reaction_add(self, message, user, payload, player):
         poll = DiscordPoll.objects.filter(message_id=message.id).first()
@@ -1669,67 +1731,6 @@ class Command(BaseCommand):
 
         return msg, created
 
-    async def on_queue_reaction_add(self, message, user, payload, player):
-        # if emoji is invalid or message is not a queue message, remove reaction
-        allowed_reactions = ['✅']
-        q_channel = QueueChannel.objects.filter(discord_msg=message.id).first()
-        if (payload.emoji.name not in allowed_reactions) or not q_channel:
-            # TODO: instead of "not q_channel" this should be "message.id not in self.queue_messages"
-            r = discord.utils.get(message.reactions, emoji=payload.emoji.name)
-            await r.clear()
-            return
-
-        # if not a queue message, ignore reaction
-        # TODO: this check should be on the top
-        if not q_channel:
-            return
-
-        self.queue_messages[message.id] = message  # update message in cache
-
-        queue, added, response = self.player_join_queue(player, q_channel)
-        if queue:
-            await self.queues_show()
-            response = response.split('```')[0]  # take only first part of response text
-            if len(queue.players.all()) == 10 and added:
-                msg = self.queue_full_msg(queue, show_balance=False)
-                await message.channel.send(f'---------------------\n{msg}')
-        else:
-            # if couldn't join queue, remove reaction
-            r = discord.utils.get(message.reactions, emoji='✅')
-            await r.remove(user)
-
-        self.bot.loop.create_task(
-            self.update_status_message(response)
-        )
-
-    async def on_queue_reaction_remove(self, message, user, payload, player):
-        # if emoji is invalid or message is not a queue message, do nothing
-        allowed_reactions = ['✅']
-        q_channel = QueueChannel.objects.filter(discord_msg=message.id).first()
-        if (payload.emoji.name not in allowed_reactions) or not q_channel:
-            return
-
-        self.queue_messages[message.id] = message  # update message in cache
-
-        qs = QueuePlayer.objects \
-            .filter(player=player, queue__channel=q_channel, queue__active=True) \
-            .annotate(Count('queue__players'))
-
-        if any(x.queue__players__count == 10 for x in qs):
-            self.bot.loop.create_task(
-                self.update_status_message(
-                    f'`{player}`, you are under arrest dodging scum. Play the game.\n'
-                )
-            )
-            return
-
-        deleted, _ = qs.delete()
-        if deleted > 0:
-            await self.queues_show()
-            self.bot.loop.create_task(
-                self.update_status_message(f'{player} left the queue.\n')
-            )
-
     async def update_status_message(self, text):
         channel = DiscordChannels.get_solo().queues
         channel = self.bot.get_channel(channel)
@@ -1748,4 +1749,112 @@ class Command(BaseCommand):
         except (DiscordPoll.DoesNotExist, discord.NotFound, discord.HTTPException, AttributeError):
             msg = await channel.send(text)
             self.status_message = msg.id
+
+    def show_queue(self, q):
+        q_string = self.queue_str(q, show_min_mmr=False)
+
+        if q.players.count() == 10:
+            auto_balance = LadderSettings.get_solo().draft_mode == LadderSettings.AUTO_BALANCE
+            if auto_balance:
+                q_string += self.balance_str(q.balance, verbose=q.active) + '\n'
+
+        return q_string
+
+    async def player_vouched(self, player):
+        player.vouched = True
+        player.save()
+
+    async def player_leave_queue(self, player, msg):
+        qs = QueuePlayer.objects \
+            .filter(player=player, queue__active=True) \
+            .annotate(Count('queue__players'))
+
+        if any(x.queue__players__count == 10 for x in qs):
+            return f'`{player}`, you are under arrest dodging scum. Play the game.\n'
+
+        deleted, _ = qs.delete()
+        if deleted > 0:
+            return f'`{player}` opuścił kolejkę.\n'
+        else:
+            return f'`{player}` nie ma Cię w tej kolejce.\n'
+
+    def get_help_commands(self):
+        return {
+            'Basic': {
+                '!help': 'This command',
+                '!r/!reg': 'Used to register a new Player',
+                '!register': 'Text mode of registration',
+                '!wh/!who/!whois/!profile/!stats': 'Shows statistics about the player',
+                '!top': 'Top players',
+                '!bot/!bottom': 'Bottom players',
+                '!streak': 'Your streak current & ath',
+                '!role/!roles': 'Set your role preferences',
+                '!recent': 'Show recent matches',
+            },
+            'Queue': {
+                '!join/!q+': 'Join queue',
+                '!leave/!q-': 'Leave queue',
+                '!list/!q': 'List of queues',
+                '!vk/!votekick': 'Vote kick player',
+                '!afk-ping/!afkping': 'Ping AFK players',
+            },
+            'Admin': {
+                '!vouch': 'Used to accept players to league(currently off)',
+                '!ban': 'Ban player',
+                '!unban': 'Unban player',
+                '!set-mmr/!adjust': 'Set MMR of a player',
+                '!set-dota-id': 'Set STEAM ID of a player'
+            },
+            'AdminQueue': {
+                '!add': 'Add player manually to queue',
+                '!kick': 'Kick player from queue',
+                '!close': 'Close opened queue',
+                '!record-match': 'Record a win using [dire/radiant] [@10 mentions]',
+                '!mmr': 'Set MMR for a queue',
+                '!set-name/!rename': 'Rename player(careful)',
+            },
+        }
+
+    def get_available_bot_commands(self):
+        return {
+            '!register': self.register_command,
+            '!vouch': self.vouch_command,
+            '!wh': self.whois_command,
+            '!who': self.whois_command,
+            '!whois': self.whois_command,
+            '!profile': self.whois_command,
+            '!ban': self.ban_command,
+            '!unban': self.unban_command,
+            '!stats': self.whois_command,
+            '!q+': self.join_queue_command,
+            '!q-': self.leave_queue_command,
+            '!q': self.show_queues_command,
+            '!join': self.join_queue_command,
+            '!leave': self.leave_queue_command,
+            '!list': self.show_queues_command,
+            '!add': self.add_to_queue_command,
+            '!kick': self.kick_from_queue_command,
+            '!votekick': self.votekick_command,
+            '!vk': self.votekick_command,
+            '!mmr': self.mmr_command,
+            '!top': self.top_command,
+            '!bot': self.bottom_command,
+            '!bottom': self.bottom_command,
+            '!streak': self.streak_command,
+            '!afk-ping': self.afk_ping_command,
+            '!afkping': self.afk_ping_command,
+            '!role': self.role_command,
+            '!roles': self.role_command,
+            '!recent': self.recent_matches_command,
+            '!set-name': self.set_name_command,
+            '!rename': self.set_name_command,
+            '!set-mmr': self.set_mmr_command,
+            '!adjust': self.set_mmr_command,
+            '!set-dota-id': self.set_dota_id_command,
+            '!record-match': self.record_match_command,
+            '!help': self.help_command,
+            '!close': self.close_queue_command,
+            '!reg': self.attach_help_buttons_to_msg,
+            '!r': self.attach_help_buttons_to_msg
+        }
 
