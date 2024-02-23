@@ -138,7 +138,7 @@ class LadderSettings(SingletonModel):
     use_queue = models.BooleanField(default=True)
     mmr_per_game = models.PositiveSmallIntegerField(default=50)
     balance_exponent = models.PositiveSmallIntegerField(default=3)
-    afk_allowed_time = models.PositiveSmallIntegerField(default=40)
+    afk_allowed_time = models.PositiveSmallIntegerField(default=25)
     afk_response_time = models.PositiveSmallIntegerField(default=5)
     votekick_treshold = models.PositiveSmallIntegerField(default=3)
     pd_votes_needed = models.PositiveSmallIntegerField(default=5)

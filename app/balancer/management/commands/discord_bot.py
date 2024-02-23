@@ -265,7 +265,7 @@ class Command(BaseCommand):
         command = msg.content.split(' ')[0].lower()
 
         commands = self.get_available_bot_commands()
-        free_for_all = ['!register', '!help', '!reg', '!r']
+        free_for_all = ['!register', '!help', '!reg', '!r', '!jak', '!info']
         staff_only = [
             '!vouch', '!add', '!kick', '!mmr', '!ban', '!unban',
             '!set-name', '!set-mmr', '!set-dota-id', '!record-match',
@@ -334,7 +334,7 @@ class Command(BaseCommand):
             )
             return
 
-        if not 0 <= mmr < 10000:
+        if not 0 <= mmr < 12000:
             sent_message = await msg.channel.send('Haha, very funny. :thinking:')
 
             #TRY to set visibility to only single user - not working.
@@ -561,7 +561,7 @@ class Command(BaseCommand):
                 ''.join(Command.queue_str(q) for q in queues)
             )
         else:
-            await msg.channel.send('Noone is currently queueing.')
+            await msg.channel.send('No one is currently queueing.')
 
         await self.queues_show()
 
@@ -633,7 +633,7 @@ class Command(BaseCommand):
             mention = player_discord.mention if player_discord else player.name
             await msg.channel.send(f'{mention} was kicked from the queue.')
         else:
-            await msg.channel.send(f'`{player}` is not queuing.\n')
+            await msg.channel.send(f'`{player}` is not in any queue.\n')
 
         await self.queues_show()
 
@@ -683,7 +683,7 @@ class Command(BaseCommand):
 
             victim_discord = self.bot.get_user(int(victim.discord_id))
             mention = victim_discord.mention if victim_discord else victim.name
-            await msg.channel.send(f'{mention} was kicked from the queue.')
+            await msg.channel.send(f'{mention} was Walrus Kicked from the queue.')
 
             await self.queues_show()
 
@@ -701,7 +701,7 @@ class Command(BaseCommand):
 
         if LadderQueue.objects.filter(channel=channel, active=True).exists():
             await msg.channel.send(
-                f'Cannot change MMR when there are active queue in the channel')
+                f'Cannot change MMR when there is an active queue in the channel')
             return
 
         channel.min_mmr = min_mmr
@@ -836,7 +836,7 @@ class Command(BaseCommand):
             await msg.channel.send('Aye aye, captain')
         else:
             await msg.channel.send(
-                f'`{player.name}`, you current mode is `{"ON" if player.queue_afk_ping else "OFF"}`. '
+                f'`{player.name}`, your current mode is `{"ON" if player.queue_afk_ping else "OFF"}`. '
                 f'Available modes: \n'
                 f'```\n'
                 f'!afk-ping ON   - will ping you before kicking for afk.\n'
@@ -898,7 +898,7 @@ class Command(BaseCommand):
         elif len(args) == 0:
             # !role command without args, show current role prefs
             await msg.channel.send(
-                f'Current role prefs for `{player.name}`: \n'
+                f'Current roles for `{player.name}`: \n'
                 f'```\n{Command.roles_str(roles)}\n```'
             )
             return
@@ -924,7 +924,7 @@ class Command(BaseCommand):
 
         roles.save()
         await msg.channel.send(
-            f'New role prefs for `{player.name}`: \n'
+            f'New roles for `{player.name}`: \n'
             f'```\n{Command.roles_str(roles)}\n```'
         )
 
@@ -1013,6 +1013,20 @@ class Command(BaseCommand):
             f'Lista komend:\n\n' +
             master_text +
             f'\n```\n'
+        )
+
+    async def registration_help_command(self, msg, **kwargs):
+        print('jak command')
+        await msg.channel.send(
+            f'```\n'
+            f'Instrukcja Ligi nhousowej - KROK po KROKU\n\n'
+            f'1. Rejestracja do ligi ->  wpisz **!reg**\n'
+            f'2. Odpowiadając botowi na wiadomość podaj swój obecny **MMR, STEAM_ID **( 2137, 12356789).\n'
+            f'3. Czekaj na zatwierdzenie przez ADMINA.\n'
+            f'4. Po zatwierdzeniu możesz dołączyć do kolejki na kanale <#1204430964948738110>\n'
+            f'5. Regulamin ligi znajdziesz na kanale #regulamin (kanał jeszcze nie ustalony)\n\n'
+            f'Powodzenia!\n'
+            f'```'
         )
 
     async def set_name_command(self, msg, **kwargs):
@@ -1730,21 +1744,28 @@ class Command(BaseCommand):
     async def player_leave_queue(self, player, msg):
         qs = QueuePlayer.objects \
             .filter(player=player, queue__active=True) \
-            .annotate(Count('queue__players'))
+            .select_related('queue') \
+            .annotate(players_in_queue=Count('queue__players'))
 
-        if any(x.queue__players__count == 10 for x in qs):
-            return f'`{player}`, you are under arrest dodging scum. Play the game.\n'
+        full_queue = next((q for q in qs if q.players_in_queue == 10), None)
+
+        if full_queue:
+            return f'`{player}`, you are in active game from Queue #{full_queue.queue.id}.\n'
+
+        # if any(x.players_in_queue == 10 for x in qs):
+        #     return f'`{player}`, you should be now playing Dota friend {x.queue.id}.\n'
 
         deleted, _ = qs.delete()
         if deleted > 0:
-            return f'`{player}` opuścił kolejkę.\n'
+            return f'`{player}` left the queue.\n'
         else:
-            return f'`{player}` nie ma Cię w tej kolejce.\n'
+            return f'`{player}` you are not in this queue.\n'
 
     def get_help_commands(self):
         return {
             'Basic': {
                 '!help': 'This command',
+                '!jak/!info': 'How to REGISTER: STEP-BY-STEP',
                 '!r/!reg': 'Used to register a new Player',
                 '!register': 'Text mode of registration',
                 '!wh/!who/!whois/!profile/!stats': 'Shows statistics about the player',
@@ -1818,6 +1839,8 @@ class Command(BaseCommand):
             '!help': self.help_command,
             '!close': self.close_queue_command,
             '!reg': self.attach_help_buttons_to_msg,
-            '!r': self.attach_help_buttons_to_msg
+            '!r': self.attach_help_buttons_to_msg,
+            '!jak': self.registration_help_command,
+            '!info': self.registration_help_command,
         }
 
