@@ -27,7 +27,7 @@ SECRET_KEY = 'mw3%!kaud!x33oc72by2zs2j--x#6n=-6c_wiil+w9jpvd)s^6'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['http://okqy.pl']
+ALLOWED_HOSTS = []
 
 LOGIN_URL = reverse_lazy('admin:login')
 
