@@ -1,6 +1,6 @@
 from collections import defaultdict
 from decimal import Decimal
-from datetime import timedelta
+from datetime import timedelta, timezone
 from django.core.cache import cache
 import itertools
 from app.ladder.models import Player, MatchPlayer, Match, LadderSettings
@@ -389,7 +389,7 @@ class LobbyStatus(TemplateView):
         # calc duration for started games
         for lobby in lobbies:
             if lobby['state'] == 'game':
-                lobby['game_duration_mins'] = (datetime.now() - lobby['game_start_time']).seconds // 60
+                lobby['game_duration_mins'] = (datetime.now(tz=timezone.utc) - lobby['game_start_time']).seconds // 60
 
         context.update({
             'lobbies': lobbies,
