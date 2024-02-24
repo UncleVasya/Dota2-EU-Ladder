@@ -14,6 +14,6 @@ class BalanceResult(models.Model):
 class BalanceAnswer(models.Model):
     # TODO: check if we need load_kwargs here
     teams = JSONField(load_kwargs={'object_pairs_hook': collections.OrderedDict})
-    mmr_diff = models.IntegerField()
-    mmr_diff_exp = models.IntegerField()
+    mmr_diff = models.BigIntegerField()
+    mmr_diff_exp = models.BigIntegerField()
     result = models.ForeignKey(BalanceResult, related_name='answers', null=True)

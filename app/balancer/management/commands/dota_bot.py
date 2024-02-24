@@ -644,6 +644,7 @@ class Command(BaseCommand):
         try:
             name = command.split(None, 1)[1].lower()
         except (IndexError, ValueError):
+            bot.channels.lobby.send('I need a name, Try !wh [name]')
             return
 
         # first search with 'startswith' and if no one found repeat with 'contains'
@@ -812,8 +813,7 @@ class Command(BaseCommand):
     @staticmethod
     def help_command(bot, msg):
         bot.channels.lobby.send(
-            'Documentation is coming. '
-            'It\'s not coming in your lifetime, but it\'s coming.')
+            '!mode, !missing, !start, !new(resets lobby), !ban, !whois, !register',)
 
     @staticmethod
     def register_command(bot, msg):

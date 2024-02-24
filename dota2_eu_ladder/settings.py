@@ -96,8 +96,12 @@ WSGI_APPLICATION = 'dota2_eu_ladder.wsgi.application'
 DATABASE_DIR = os.environ.get('OPENSHIFT_DATA_DIR', BASE_DIR)
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(DATABASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.environ.get('DB_NAME', ''),
+        'USER': os.environ.get('DB_USER', ''),
+        'PASSWORD': os.environ.get('DB_PW', ''),
+        'HOST': os.environ.get('DB_HOST', "localhost"),
+        'PORT': os.environ.get('DB_PORT', "3306"),
     }
 }
 
@@ -159,29 +163,47 @@ PAGINATION_SETTINGS = {
     'SHOW_FIRST_PAGE_WHEN_INVALID': True,
 }
 
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'standard': {
-            'format': '[%(asctime)s] %(levelname)s %(name)s: %(message)s'
+            'format': '[%(asctime)s] %(levelname)s %(name)s: %(message)s',
         },
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'standard',
-            'level': 'DEBUG'
+            'level': 'INFO',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'django_errors.log'),
+            'formatter': 'standard',
+            'level': 'WARNING',
+        },
+        'integrations': {
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'integration_errors.log'),
+            'formatter': 'standard',
+            'level': 'WARNING',
         },
     },
     'loggers': {
-        # 'SteamClient': {
-        #     'handlers': ['console'],
-        #     'level': 'DEBUG',
-        # },
-        # 'Dota2Client': {
-        #     'handlers': ['console'],
-        #     'level': 'DEBUG',
-        # },
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'WARNING',
+            'propagate': True,
+        },
+        'SteamClient': {
+            'handlers': ['integrations'],
+            'level': 'INFO',
+        },
+        'Dota2Client': {
+            'handlers': ['integrations'],
+            'level': 'INFO',
+        },
     },
 }
