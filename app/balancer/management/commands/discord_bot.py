@@ -1752,9 +1752,6 @@ class Command(BaseCommand):
         if full_queue:
             return f'`{player}`, you are in active game from Queue #{full_queue.queue.id}.\n'
 
-        # if any(x.players_in_queue == 10 for x in qs):
-        #     return f'`{player}`, you should be now playing Dota friend {x.queue.id}.\n'
-
         deleted, _ = qs.delete()
         if deleted > 0:
             return f'`{player}` left the queue.\n'

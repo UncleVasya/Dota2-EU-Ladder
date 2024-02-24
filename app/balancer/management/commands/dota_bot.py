@@ -644,6 +644,7 @@ class Command(BaseCommand):
         try:
             name = command.split(None, 1)[1].lower()
         except (IndexError, ValueError):
+            bot.channels.lobby.send('I need a name, Try !wh [name]')
             return
 
         # first search with 'startswith' and if no one found repeat with 'contains'

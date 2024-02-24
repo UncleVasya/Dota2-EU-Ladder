@@ -176,17 +176,17 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'standard',
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
         'file': {
             'class': 'logging.FileHandler',
-            'filename': 'django_errors.log',
+            'filename': os.path.join(BASE_DIR, 'django_errors.log'),
             'formatter': 'standard',
             'level': 'WARNING',
         },
         'integrations': {
             'class': 'logging.FileHandler',
-            'filename': 'integration_errors.log',
+            'filename': os.path.join(BASE_DIR, 'integration_errors.log'),
             'formatter': 'standard',
             'level': 'WARNING',
         },
@@ -194,7 +194,7 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['console', 'file'],
-            'level': 'DEBUG',
+            'level': 'WARNING',
             'propagate': True,
         },
         'SteamClient': {
