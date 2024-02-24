@@ -813,8 +813,7 @@ class Command(BaseCommand):
     @staticmethod
     def help_command(bot, msg):
         bot.channels.lobby.send(
-            'Documentation is coming. '
-            'It\'s not coming in your lifetime, but it\'s coming.')
+            '!mode, !missing, !start, !new(resets lobby), !ban, !whois, !register',)
 
     @staticmethod
     def register_command(bot, msg):
