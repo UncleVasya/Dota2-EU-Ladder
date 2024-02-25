@@ -78,7 +78,7 @@ class Command(BaseCommand):
 
             # await self.setup_poll_messages()
 
-            await self.purge_queue_channels()
+            # await self.purge_queue_channels()
             await self.setup_queue_messages()
 
             queue_afk_check.start()
