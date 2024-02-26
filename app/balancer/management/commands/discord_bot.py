@@ -147,11 +147,9 @@ class Command(BaseCommand):
                 await interaction.edit(embed=embed)
 
             elif type == 'red':
+                print("LEAVING THIS")
                 response = await self.player_leave_queue(player, interaction.message)
-                embed = discord.Embed(title='Gracz uchyla się od gry...',
-                                      description=response,
-                                      color=discord.Color.red())
-                await interaction.edit(embed=embed)
+                await interaction.defer()
 
             elif type == 'vouch':
                 vouched_player = Command.get_player_by_name(value)
@@ -268,7 +266,7 @@ class Command(BaseCommand):
         command = msg.content.split(' ')[0].lower()
 
         commands = self.get_available_bot_commands()
-        free_for_all = ['!register', '!help', '!reg', '!r', '!jak', '!info']
+        free_for_all = ['!register', '!help', '!reg', '!r', '!jak', '!info', '!rename', '!list', '!q']
         staff_only = [
             '!vouch', '!add', '!kick', '!mmr', '!ban', '!unban',
             '!set-name', '!set-mmr', '!set-dota-id', '!record-match',
@@ -278,8 +276,8 @@ class Command(BaseCommand):
         chat_channel = [
             '!register', '!vouch', '!wh', '!who', '!whois', '!profile', '!stats', '!top',
             '!streak', '!bottom', '!bot', '!afk-ping', '!afkping', '!role', '!roles', '!recent',
-            '!ban', '!unban', '!votekick', '!vk', '!set-name', 'rename' '!set-mmr',
-            'adjust', '!set-dota-id', '!record-match', '!help', '!close', '!reg', '!r'
+            '!ban', '!unban', '!votekick', '!vk', '!set-name', 'rename' '!set-mmr', '!jak', '!info',
+            'adjust', '!set-dota-id', '!record-match', '!help', '!close', '!reg', '!r', '!rename', '!list', '!q'
         ]
 
         # if this is a chat channel, check if command is allowed
@@ -516,7 +514,7 @@ class Command(BaseCommand):
         print(f'Join command from {player}:\n {command}')
 
         channel = QueueChannel.objects.get(discord_id=msg.channel.id)
-        _, _, response = self.player_join_queue(player, channel)
+        _, _, response = await self.player_join_queue(player, channel)
 
         await msg.channel.send(response)
         await self.queues_show()
@@ -1020,16 +1018,16 @@ class Command(BaseCommand):
 
     async def registration_help_command(self, msg, **kwargs):
         print('jak command')
+        queue_channel = DiscordChannels.get_solo().queues
+        # \nMożesz dołączyć do gry na kanale <#{queue_channel}>"""
         await msg.channel.send(
             f'```\n'
-            f'Instrukcja Ligi nhousowej - KROK po KROKU\n\n'
-            f'1. Rejestracja do ligi ->  wpisz **!reg**\n'
-            f'2. Odpowiadając botowi na wiadomość podaj swój obecny **MMR, STEAM_ID **( 2137, 12356789).\n'
-            f'3. Czekaj na zatwierdzenie przez ADMINA.\n'
-            f'4. Po zatwierdzeniu możesz dołączyć do kolejki na kanale <#1204430964948738110>\n'
-            f'5. Regulamin ligi znajdziesz na kanale #regulamin (kanał jeszcze nie ustalony)\n\n'
-            f'Powodzenia!\n'
-            f'```'
+            f'Rejestracja - KROK po KROKU\n\n'
+            f'1. Wpisz **!reg**\n'
+            f'2. Odpowiadając botowi na PRIV wiadomość którą dostałeś podaj swój obecny **MMR, STEAM_ID**, np: 2137, 12356789.\n'
+            f'3. Czekaj na zatwierdzenie przez ADMINA(jak nie ma z automatu).\n'
+            f'```\n\n'
+            f'4. Po zatwierdzeniu możesz dołączyć do kolejki na kanale <#{queue_channel}> \n'
         )
 
     async def set_name_command(self, msg, **kwargs):
@@ -1061,6 +1059,36 @@ class Command(BaseCommand):
         player.name = new_name
         player.save()
         await msg.channel.send(f'{mention} is now known as `{new_name}`')
+
+    async def rename_myself_command(self, msg, **kwargs):
+        command = msg.content
+        print(f'\n!rename command from {msg.author.name}:\n{command}')
+
+        player = Player.objects.filter(discord_id=msg.author.id).first()
+        if not player:
+            await msg.channel.send(f'I don\'t know him')
+            return
+
+        try:
+            # Assuming the command format is "!rename new_name"
+            new_name = command.split(' ', 1)[1]  # Everything after "!rename"
+        except IndexError:
+            await msg.channel.send(
+                'Usage: `!rename NewNameHere`. Example: `!rename BonzoBazooka`')
+            return
+
+        player.name = new_name
+        player.save()
+        await msg.channel.send(f'{self.player_mention(player)} is now known as `{new_name}`')
+        # Optionally, validate the new_name to ensure it meets your criteria
+        # This might include checking length, disallowed words, etc.
+
+        # Assuming you have a method to update the player's name in your database
+        # Here, discord_guy represents the player object you're modifying
+        # discord_guy.name = new_name
+        # discord_guy.save()
+
+        # await msg.channel.send(f'Your name has been changed to `{new_name}`')
 
     async def set_mmr_command(self, msg, **kwargs):
         command = msg.content
@@ -1467,8 +1495,12 @@ class Command(BaseCommand):
         # remove all Queue messages. The channel is closed, no other msgs should be around.
         db_messages = QueueChannel.objects.filter(active=True).values_list('discord_msg', flat=True)
         for msg in db_messages:
-            msg = await channel.fetch_message(msg)
-            await msg.delete()
+            try:
+                msg = await channel.fetch_message(msg)
+                await msg.delete()
+            except:
+                print("No message to delete")
+
         print("Purged queue messages")
 
         # recreate queues messages
@@ -1591,13 +1623,13 @@ class Command(BaseCommand):
         full_queue = next((q for q in qs if q.players_in_queue == 10), None)
 
         if full_queue:
-            return f'`{player}`, you are in active game from Queue #{full_queue.queue.id}.\n'
+            return f'`{player.name}`, you are in active Game #{full_queue.queue.id}.\n'
 
         deleted, _ = qs.delete()
         if deleted > 0:
-            return f'`{player}` left the queue.\n'
+            return f'`{player.name}` left the queue.\n'
         else:
-            return f'`{player}` you are not in this queue.\n'
+            return f'`{player.name}` you are not in this qweqweqwe queue.\n'
 
     def get_help_commands(self):
         return {
@@ -1669,7 +1701,7 @@ class Command(BaseCommand):
             '!roles': self.role_command,
             '!recent': self.recent_matches_command,
             '!set-name': self.set_name_command,
-            '!rename': self.set_name_command,
+            '!rename': self.rename_myself_command,
             '!set-mmr': self.set_mmr_command,
             '!adjust': self.set_mmr_command,
             '!set-dota-id': self.set_dota_id_command,

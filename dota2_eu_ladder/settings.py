@@ -25,7 +25,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'mw3%!kaud!x33oc72by2zs2j--x#6n=-6c_wiil+w9jpvd)s^6'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = []
 
@@ -176,7 +176,7 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'standard',
-            'level': 'INFO',
+            'level': 'DEBUG',
         },
         'file': {
             'class': 'logging.FileHandler',
@@ -188,7 +188,7 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'integration_errors.log'),
             'formatter': 'standard',
-            'level': 'WARNING',
+            'level': 'DEBUG',
         },
     },
     'loggers': {
