@@ -148,9 +148,12 @@ class Command(BaseCommand):
                 await interaction.edit(embed=embed)
 
             elif type == 'red':
-                print("LEAVING THIS")
-                response = await self.player_leave_queue(player, interaction.message)
-                await interaction.defer()
+                await self.player_leave_queue(player, interaction.message)
+                embed = discord.Embed(title='Gracz opuszcza kolejkę!',
+                                      description=player.name,
+                                      color=discord.Color.green())
+                await interaction.edit(embed=embed)
+
 
             elif type == 'vouch':
                 vouched_player = Command.get_player_by_name(value)
