@@ -176,7 +176,7 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'standard',
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
         'file': {
             'class': 'logging.FileHandler',
@@ -188,7 +188,7 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'integration_errors.log'),
             'formatter': 'standard',
-            'level': 'DEBUG',
+            'level': 'WARNING',
         },
     },
     'loggers': {
