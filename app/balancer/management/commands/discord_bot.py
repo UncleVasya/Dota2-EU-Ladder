@@ -133,7 +133,8 @@ class Command(BaseCommand):
             player = Player.objects.filter(discord_id=interaction.user.id).first()
 
             if not player and type != 'register_form':
-                await interaction.channel.send(f'`{interaction.user.name}`: I don\'t know him')
+                # await interaction.channel.send(f'`{interaction.user.name}`: I don\'t know him')
+                await interaction.defer()
                 return
 
             if type == 'green':
