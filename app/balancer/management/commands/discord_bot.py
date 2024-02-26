@@ -1070,7 +1070,6 @@ class Command(BaseCommand):
             return
 
         try:
-            # Assuming the command format is "!rename new_name"
             new_name = command.split(' ', 1)[1]  # Everything after "!rename"
         except IndexError:
             await msg.channel.send(
@@ -1080,15 +1079,6 @@ class Command(BaseCommand):
         player.name = new_name
         player.save()
         await msg.channel.send(f'{self.player_mention(player)} is now known as `{new_name}`')
-        # Optionally, validate the new_name to ensure it meets your criteria
-        # This might include checking length, disallowed words, etc.
-
-        # Assuming you have a method to update the player's name in your database
-        # Here, discord_guy represents the player object you're modifying
-        # discord_guy.name = new_name
-        # discord_guy.save()
-
-        # await msg.channel.send(f'Your name has been changed to `{new_name}`')
 
     async def set_mmr_command(self, msg, **kwargs):
         command = msg.content
