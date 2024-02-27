@@ -25,6 +25,8 @@ from app.ladder.managers import MatchManager, QueueChannelManager
 from app.ladder.models import Player, LadderSettings, LadderQueue, QueuePlayer, QueueChannel, MatchPlayer, \
     RolesPreference, DiscordChannels, DiscordPoll, ScoreChange
 
+from app.balancer.management.commands.discord.poll_commands import PollService
+
 
 def is_player_registered(msg, dota_id, name):
     # check if we can register this player
@@ -52,11 +54,13 @@ class Command(BaseCommand):
         # cached discord models
         self.queue_messages = {}
 
-        self.poll_reaction_funcs = {
-            'DraftMode': self.on_draft_mode_reaction,
-            'EliteMMR': self.on_elite_mmr_reaction,
-            'Faceit': self.on_faceit_reaction,
-        }
+        # self.poll_commands = PollService(self.bot)
+        #
+        # self.poll_reaction_funcs = {
+        #     'DraftMode': self.poll_commands.on_draft_mode_reaction,
+        #     'EliteMMR': self.poll_commands.on_elite_mmr_reaction,
+        #     'Faceit': self.poll_commands.on_faceit_reaction,
+        # }
 
     def handle(self, *args, **options):
         bot_token = os.environ.get('DISCORD_BOT_TOKEN', '')
@@ -70,20 +74,19 @@ class Command(BaseCommand):
         async def on_ready():
             print(f'Logged in: {self.bot.user} {self.bot.user.id}')
 
-            polls_channel = DiscordChannels.get_solo().polls
-            self.polls_channel = self.bot.get_channel(polls_channel)
 
             queues_channel = DiscordChannels.get_solo().queues
             self.queues_channel = self.bot.get_channel(queues_channel)
 
-            # await self.setup_poll_messages()
+            # await self.poll_commands.setup_poll_messages()
 
-            await self.purge_queue_channels()
+            # await self.purge_queue_channels()
             await self.setup_queue_messages()
 
             queue_afk_check.start()
             update_queues_shown.start()
-            clear_queues_channel.start()
+            # It needs too high privileges to channel.purge() or 2FA for bot
+            # clear_queues_channel.start()
 
             activate_queue_channels.start()
             deactivate_queue_channels.start()
@@ -127,10 +130,11 @@ class Command(BaseCommand):
             type, value = button_parts
             print(button_parts)
 
-            player = Command.get_player_by_name(interaction.user.name)
+            player = Player.objects.filter(discord_id=interaction.user.id).first()
 
             if not player and type != 'register_form':
-                await interaction.channel.send(f'`{interaction.user.name}`: I don\'t know him')
+                # await interaction.channel.send(f'`{interaction.user.name}`: I don\'t know him')
+                await interaction.defer()
                 return
 
             if type == 'green':
@@ -144,11 +148,12 @@ class Command(BaseCommand):
                 await interaction.edit(embed=embed)
 
             elif type == 'red':
-                response = await self.player_leave_queue(player, interaction.message)
-                embed = discord.Embed(title='Gracz uchyla się od gry...',
-                                      description=response,
-                                      color=discord.Color.red())
+                await self.player_leave_queue(player, interaction.message)
+                embed = discord.Embed(title='Gracz opuszcza kolejkę!',
+                                      description=player.name,
+                                      color=discord.Color.green())
                 await interaction.edit(embed=embed)
+
 
             elif type == 'vouch':
                 vouched_player = Command.get_player_by_name(value)
@@ -265,7 +270,7 @@ class Command(BaseCommand):
         command = msg.content.split(' ')[0].lower()
 
         commands = self.get_available_bot_commands()
-        free_for_all = ['!register', '!help', '!reg', '!r', '!jak', '!info']
+        free_for_all = ['!register', '!help', '!reg', '!r', '!jak', '!info', '!rename', '!list', '!q']
         staff_only = [
             '!vouch', '!add', '!kick', '!mmr', '!ban', '!unban',
             '!set-name', '!set-mmr', '!set-dota-id', '!record-match',
@@ -275,8 +280,8 @@ class Command(BaseCommand):
         chat_channel = [
             '!register', '!vouch', '!wh', '!who', '!whois', '!profile', '!stats', '!top',
             '!streak', '!bottom', '!bot', '!afk-ping', '!afkping', '!role', '!roles', '!recent',
-            '!ban', '!unban', '!votekick', '!vk', '!set-name', 'rename' '!set-mmr',
-            'adjust', '!set-dota-id', '!record-match', '!help', '!close', '!reg', '!r'
+            '!ban', '!unban', '!votekick', '!vk', '!set-name', 'rename' '!set-mmr', '!jak', '!info',
+            'adjust', '!set-dota-id', '!record-match', '!help', '!close', '!reg', '!r', '!rename', '!list', '!q'
         ]
 
         # if this is a chat channel, check if command is allowed
@@ -513,7 +518,7 @@ class Command(BaseCommand):
         print(f'Join command from {player}:\n {command}')
 
         channel = QueueChannel.objects.get(discord_id=msg.channel.id)
-        _, _, response = self.player_join_queue(player, channel)
+        _, _, response = await self.player_join_queue(player, channel)
 
         await msg.channel.send(response)
         await self.queues_show()
@@ -1017,16 +1022,16 @@ class Command(BaseCommand):
 
     async def registration_help_command(self, msg, **kwargs):
         print('jak command')
+        queue_channel = DiscordChannels.get_solo().queues
+        # \nMożesz dołączyć do gry na kanale <#{queue_channel}>"""
         await msg.channel.send(
             f'```\n'
-            f'Instrukcja Ligi nhousowej - KROK po KROKU\n\n'
-            f'1. Rejestracja do ligi ->  wpisz **!reg**\n'
-            f'2. Odpowiadając botowi na wiadomość podaj swój obecny **MMR, STEAM_ID **( 2137, 12356789).\n'
-            f'3. Czekaj na zatwierdzenie przez ADMINA.\n'
-            f'4. Po zatwierdzeniu możesz dołączyć do kolejki na kanale <#1204430964948738110>\n'
-            f'5. Regulamin ligi znajdziesz na kanale #regulamin (kanał jeszcze nie ustalony)\n\n'
-            f'Powodzenia!\n'
-            f'```'
+            f'Rejestracja - KROK po KROKU\n\n'
+            f'1. Wpisz **!reg**\n'
+            f'2. Odpowiadając botowi na PRIV wiadomość którą dostałeś podaj swój obecny **MMR, STEAM_ID**, np: 2137, 12356789.\n'
+            f'3. Czekaj na zatwierdzenie przez ADMINA(jak nie ma z automatu).\n'
+            f'```\n\n'
+            f'4. Po zatwierdzeniu możesz dołączyć do kolejki na kanale <#{queue_channel}> \n'
         )
 
     async def set_name_command(self, msg, **kwargs):
@@ -1058,6 +1063,26 @@ class Command(BaseCommand):
         player.name = new_name
         player.save()
         await msg.channel.send(f'{mention} is now known as `{new_name}`')
+
+    async def rename_myself_command(self, msg, **kwargs):
+        command = msg.content
+        print(f'\n!rename command from {msg.author.name}:\n{command}')
+
+        player = Player.objects.filter(discord_id=msg.author.id).first()
+        if not player:
+            await msg.channel.send(f'I don\'t know him')
+            return
+
+        try:
+            new_name = command.split(' ', 1)[1]  # Everything after "!rename"
+        except IndexError:
+            await msg.channel.send(
+                'Usage: `!rename NewNameHere`. Example: `!rename BonzoBazooka`')
+            return
+
+        player.name = new_name
+        player.save()
+        await msg.channel.send(f'{self.player_mention(player)} is now known as `{new_name}`')
 
     async def set_mmr_command(self, msg, **kwargs):
         command = msg.content
@@ -1452,153 +1477,6 @@ class Command(BaseCommand):
                 '\n```'
             )
 
-    async def setup_poll_messages(self):
-        polls = ['Welcome', 'DraftMode', 'EliteMMR', 'Faceit']
-
-        channel = self.polls_channel
-
-        async def get_poll_message(poll):
-            try:
-                message_id = DiscordPoll.objects.get(name=poll).message_id
-                return await channel.fetch_message(message_id)
-            except (DiscordPoll.DoesNotExist, discord.NotFound):
-                return None
-
-        # remove all messages but polls
-        db_messages = DiscordPoll.objects.values_list('message_id', flat=True)
-        await channel.purge(check=lambda x: x.id not in db_messages)
-
-        # create poll messages that are not already present
-        poll_msg = {}
-        for p in polls:
-            msg = await get_poll_message(p)
-            if not msg:
-                msg = await channel.send(p)
-                DiscordPoll.objects.update_or_create(name=p, defaults={
-                    'name': p,
-                    'message_id': msg.id
-                })
-            poll_msg[p] = msg
-
-        await self.polls_welcome_show()
-        await self.draft_mode_poll_show(poll_msg['DraftMode'])
-        await self.elite_mmr_poll_show(poll_msg['EliteMMR'])
-        await self.faceit_poll_show(poll_msg['Faceit'])
-
-    async def polls_welcome_show(self):
-        text = 'Hello, friends!\n\n' + \
-               'Here you can vote for inhouse settings.\n\n' + \
-               'These polls are directly connected to our system.' + \
-               '\n\n.'
-        msg_id = DiscordPoll.objects.get(name='Welcome').message_id
-        msg = await self.polls_channel.fetch_message(msg_id)
-        await msg.edit(content=text)
-
-    async def draft_mode_poll_show(self, message):
-        mode = LadderSettings.get_solo().draft_mode
-        mode = LadderSettings.DRAFT_CHOICES[mode][1]
-
-        text = f'\n-------------------------------\n' + \
-               f'**DRAFT MODE**\n' + \
-               f'-------------------------------\n' + \
-               f'Current mode: **{mode}**\n\n' + \
-               f'This sets the default draft mode for inhouse games.\n\n' + \
-               f':man_red_haired: - player draft;\n' + \
-               f':robot: - auto balance;\n\n' + \
-               f'Players with 5+ inhouse games can vote. \n' + \
-               f'-------------------------------'
-
-        await message.edit(content=text)
-        await message.add_reaction('👨‍🦰')
-        await message.add_reaction('🤖')
-
-    async def on_draft_mode_reaction(self, message, user, player=None):
-        # if player is not eligible for voting, remove his reactions
-        if player and player.matchplayer_set.count() < 5:
-            for r in message.reactions:
-                await r.remove(user)
-            return
-
-        # refresh message
-        message = await self.polls_channel.fetch_message(message.id)
-
-        # calculate votes
-        votes_ab = discord.utils.get(message.reactions, emoji='🤖').count
-        votes_pd = discord.utils.get(message.reactions, emoji='👨‍🦰').count
-
-        # update settings
-        settings = LadderSettings.get_solo()
-        if votes_ab > votes_pd:
-            settings.draft_mode = LadderSettings.AUTO_BALANCE
-        elif votes_pd > votes_ab:
-            settings.draft_mode = LadderSettings.PLAYER_DRAFT
-        settings.save()
-
-        # redraw poll message
-        await self.draft_mode_poll_show(message)
-
-    async def elite_mmr_poll_show(self, message):
-        q_channel = QueueChannel.objects.get(name='Elite queue')
-
-        text = f'\n-------------------------------\n' + \
-               f'**ELITE QUEUE MMR**\n' + \
-               f'-------------------------------\n' + \
-               f'Current MMR floor: **{q_channel.min_mmr}**\n\n' + \
-               f'🦀 - 4000;\n' + \
-               f'👶 - 4500;\n' + \
-               f'💪 - 5000;\n\n' + \
-               f'Only 4500+ players can vote. \n' + \
-               f'-------------------------------'
-
-        await message.edit(content=text)
-        await message.add_reaction('🦀')
-        await message.add_reaction('👶')
-        await message.add_reaction('💪')
-
-    async def on_elite_mmr_reaction(self, message, user, player=None):
-        # if player is not eligible for voting, remove his reactions
-        if player and player.ladder_mmr < 4500:
-            for r in message.reactions:
-                await r.remove(user)
-            return
-
-        # refresh message
-        message = await self.polls_channel.fetch_message(message.id)
-
-        # calculate votes
-        votes_4000 = discord.utils.get(message.reactions, emoji='🦀').count
-        votes_4500 = discord.utils.get(message.reactions, emoji='👶').count
-        votes_5000 = discord.utils.get(message.reactions, emoji='💪').count
-
-        # update settings
-        q_channel = QueueChannel.objects.get(name='Elite queue')
-        if votes_4500 < votes_4000 > votes_5000:
-            q_channel.min_mmr = 4000
-        elif votes_4000 < votes_4500 > votes_5000:
-            q_channel.min_mmr = 4500
-        elif votes_4000 < votes_5000 > votes_4500:
-            q_channel.min_mmr = 5000
-        q_channel.save()
-
-        # redraw poll message
-        await self.elite_mmr_poll_show(message)
-
-    async def faceit_poll_show(self, message):
-        text = f'\n-------------------------------\n' + \
-               f'**FACEIT**\n' + \
-               f'-------------------------------\n' + \
-               f'Should we go back to Faceit?\n\n' + \
-               f'🇾 - yes;\n' + \
-               f'🇳 - no;\n\n' + \
-               f'This poll has no effect and is here to measure player sentiment. \n' + \
-               f'-------------------------------'
-
-        await message.edit(content=text)
-        await message.add_reaction('🇾')
-        await message.add_reaction('🇳')
-
-    async def on_faceit_reaction(self, message, user, player=None):
-        pass
 
     async def purge_queue_channels(self):
         channel = self.queues_channel
@@ -1608,29 +1486,26 @@ class Command(BaseCommand):
     async def setup_queue_messages(self):
         channel = self.queues_channel
 
-        # remove all messages but queues
+        # remove all Queue messages. The channel is closed, no other msgs should be around.
         db_messages = QueueChannel.objects.filter(active=True).values_list('discord_msg', flat=True)
-        await channel.purge(check=lambda x: x.id not in db_messages)
+        for msg in db_messages:
+            try:
+                msg = await channel.fetch_message(msg)
+                await msg.delete()
+            except:
+                print("No message to delete")
 
-        # create queues messages that are not already present
+        print("Purged queue messages")
+
+        # recreate queues messages
         for q_type in QueueChannel.objects.filter(active=True):
             msg, created = await self.get_or_create_message(self.queues_channel, q_type.discord_msg)
-            # await msg.add_reaction('✅')
             self.queue_messages[msg.id] = msg
             if created:
                 q_type.discord_msg = msg.id
                 q_type.save()
 
         await self.queues_show()
-
-        # create queues messages that are not already present
-        for q_type in QueueChannel.objects.filter(active=True):
-            msg, created = await self.get_or_create_message(self.queues_channel, q_type.discord_msg)
-            # await msg.add_reaction('✅')
-            self.queue_messages[msg.id] = msg
-            if created:
-                q_type.discord_msg = msg.id
-                q_type.save()
 
     async def queues_show(self):
         # remember queued players to check for changes in periodic task
@@ -1656,21 +1531,13 @@ class Command(BaseCommand):
             text = f'**{q_type.name}** {min_mmr_string} {max_mmr_string}\n' + \
                    f'{queues_text}'
 
-            await message.edit(content=text)
+            try:
+                await message.edit(content=text)
+            except Exception as e:
+                print(e)
 
             await self.attach_join_buttons_to_queue_msg(message)
-            # remove reactions of players who are no longer in this queue
-            # queue_players = QueuePlayer.objects\
-            #     .filter(queue__channel=q_type, queue__active=True) \
-            #     .values_list('player__discord_id', flat=True)
 
-            # r = discord.utils.get(message.reactions, emoji='✅')
-            # if not r:
-            #     continue  # no reactions setup yet
-            #
-            # async for user in r.users():
-            #     if not user.bot and (str(user.id) not in queue_players):
-            #         await r.remove(user)
 
     async def on_poll_reaction_add(self, message, user, payload, player):
         poll = DiscordPoll.objects.filter(message_id=message.id).first()
@@ -1750,13 +1617,13 @@ class Command(BaseCommand):
         full_queue = next((q for q in qs if q.players_in_queue == 10), None)
 
         if full_queue:
-            return f'`{player}`, you are in active game from Queue #{full_queue.queue.id}.\n'
+            return f'`{player.name}`, you are in active Game #{full_queue.queue.id}.\n'
 
         deleted, _ = qs.delete()
         if deleted > 0:
-            return f'`{player}` left the queue.\n'
+            return f'`{player.name}` left the queue.\n'
         else:
-            return f'`{player}` you are not in this queue.\n'
+            return f'`{player.name}` you are not in this qweqweqwe queue.\n'
 
     def get_help_commands(self):
         return {
@@ -1828,7 +1695,7 @@ class Command(BaseCommand):
             '!roles': self.role_command,
             '!recent': self.recent_matches_command,
             '!set-name': self.set_name_command,
-            '!rename': self.set_name_command,
+            '!rename': self.rename_myself_command,
             '!set-mmr': self.set_mmr_command,
             '!adjust': self.set_mmr_command,
             '!set-dota-id': self.set_dota_id_command,
