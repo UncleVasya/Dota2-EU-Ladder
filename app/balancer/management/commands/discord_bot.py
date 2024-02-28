@@ -205,7 +205,7 @@ class Command(BaseCommand):
 
             await self.queues_show()
 
-        @tasks.loop(seconds=10)
+        @tasks.loop(minutes=5)
         async def queue_afk_check():
             print("Queue clear")
             # TODO: it would be good to do here
@@ -462,8 +462,8 @@ class Command(BaseCommand):
         losses = len(player.matches) - wins
 
         await msg.channel.send(
+            f'**{player.name}** - {self.player_mention(player)}\n'
             f'```\n'
-            f'{self.player_mention(player)} - {self.player_mention(player)}\n'
             f'Ladder MMR: {player.ladder_mmr}\n'
             f'Dota MMR: {player.dota_mmr}\n'
             f'Dotabuff: {dotabuff}\n'
