@@ -44,6 +44,7 @@ class Command(BaseCommand):
         self.bot = None
         self.polls_channel = None
         self.queues_channel = None
+        self.chat_channel = None
         self.status_message = None  # status msg in queues channel
         self.status_responses = deque(maxlen=3)
         self.last_seen = defaultdict(timezone.now)  # to detect afk players
@@ -76,7 +77,9 @@ class Command(BaseCommand):
 
 
             queues_channel = DiscordChannels.get_solo().queues
+            chat_channel = DiscordChannels.get_solo().chat
             self.queues_channel = self.bot.get_channel(queues_channel)
+            self.chat_channel = self.bot.get_channel(chat_channel)
 
             # await self.poll_commands.setup_poll_messages()
 
@@ -119,6 +122,14 @@ class Command(BaseCommand):
             if msg.content.startswith('!'):
                 # looks like this is a bot command
                 await self.bot_cmd(msg)
+
+        @self.bot.event
+        async def on_raw_reaction_add(payload):
+            user = self.bot.get_user(payload.user_id)
+
+            self.last_seen[user.id] = timezone.now()
+            if user.bot:
+                return
 
         @self.bot.event
         async def on_button_click(interaction: discord.Interaction, button):
@@ -183,7 +194,8 @@ class Command(BaseCommand):
                     return
 
                 text = f"""Hej, {self.unregistered_mention(interaction.author)},
-                     \npodaj swój MMR, STEAM_ID w wątku do tej wiadomości"""
+                     \nKliknij ("↩️ Odpowiedz") i w odpowiedzi podaj swój MMR, FRIEND_ID,
+                     \nPrzykład: 1337, 12345678 (ważny jest przecinek)"""
 
                 await interaction.author.send(text)
 
@@ -195,6 +207,7 @@ class Command(BaseCommand):
 
         @tasks.loop(minutes=5)
         async def queue_afk_check():
+            print("Queue clear")
             # TODO: it would be good to do here
             #  .select_related(`player`, `queue`, `queue__channel`)
             #  but this messes up with itertools.groupby.
@@ -213,12 +226,12 @@ class Command(BaseCommand):
                 channel = self.bot.get_channel(channel.discord_id)
                 await self.channel_check_afk(channel, channel_players)
 
-        @tasks.loop(seconds=30)
+        @tasks.loop(seconds=15)
         async def update_queues_shown():
             queued_players = [qp for qp in QueuePlayer.objects.filter(queue__active=True)]
             queued_players = set(qp.player.discord_id for qp in queued_players)
 
-            outdated = timezone.now() - self.last_queues_update > timedelta(minutes=5)
+            outdated = timezone.now() - self.last_queues_update > timedelta(minutes=3)
             if queued_players != self.queued_players or outdated:
                 await self.queues_show()
 
@@ -390,7 +403,7 @@ class Command(BaseCommand):
         )
 
         await channel.send(
-            f"""'Witamy nowego gracza `{name}`'"""
+            f"""**Witamy nowego gracza {self.player_mention(player)} :tada: :tada:**"""
         )
 
 
@@ -449,12 +462,12 @@ class Command(BaseCommand):
         losses = len(player.matches) - wins
 
         await msg.channel.send(
+            f'**{player.name}** - {self.player_mention(player)}\n'
             f'```\n'
-            f'{player.name}\n'
-            f'MMR: {player.dota_mmr}\n'
+            f'Ladder MMR: {player.ladder_mmr}\n'
+            f'Dota MMR: {player.dota_mmr}\n'
             f'Dotabuff: {dotabuff}\n'
             f'Ladder: {player_url}\n\n'
-            f'Ladder MMR: {player.ladder_mmr}\n'
             f'Score: {player.score}\n'
             f'Rank: {player.rank_score}\n'
             f'Games: {len(player.matches)} ({wins}-{losses})\n\n'
@@ -476,7 +489,7 @@ class Command(BaseCommand):
 
         player = Command.get_player_by_name(name)
         if not player:
-            await msg.channel.send(f'`{name}`: I don\'t know him')
+            await msg.channel.send(f'`{self.unregistered_mention(msg.author)}`: I don\'t know him')
             return
 
         player.banned = Player.BAN_PLAYING
@@ -484,7 +497,7 @@ class Command(BaseCommand):
 
         await msg.channel.send(
             f'```\n'
-            f'{player.name} has been banned.\n'
+            f'{self.player_mention(player)} has been banned.\n'
             f'```'
         )
 
@@ -508,7 +521,7 @@ class Command(BaseCommand):
 
         await msg.channel.send(
             f'```\n'
-            f'{player.name} has been unbanned.\n'
+            f'{self.player_mention(player)} has been unbanned.\n'
             f'```'
         )
 
@@ -539,7 +552,7 @@ class Command(BaseCommand):
         await msg.edit(components=buttons)
     
     async def purge_buttons_from_msg(self, msg):
-        await msg.edit(components=[])
+        await self.attach_buttons_to_msg(msg, [])
 
     async def attach_help_buttons_to_msg(self, msg):
         if is_player_registered(msg, 0, "blank"):
@@ -811,7 +824,7 @@ class Command(BaseCommand):
         streaks = [list(g) for k, g in itertools.groupby(results)]
 
         if not streaks:
-            await msg.channel.send(f'`{player.name}`: You didn\'t play a thing to have streak.')
+            await msg.channel.send(f'{self.player_mention(player)}: You didn\'t play a thing to have streak.')
             return
 
         streak = streaks[0]
@@ -841,7 +854,8 @@ class Command(BaseCommand):
             await msg.channel.send('Aye aye, captain')
         else:
             await msg.channel.send(
-                f'`{player.name}`, your current mode is `{"ON" if player.queue_afk_ping else "OFF"}`. '
+                f'{self.player_mention(player)}'
+                f'\n`your current mode is `{"ON" if player.queue_afk_ping else "OFF"}`. '
                 f'Available modes: \n'
                 f'```\n'
                 f'!afk-ping ON   - will ping you before kicking for afk.\n'
@@ -903,7 +917,7 @@ class Command(BaseCommand):
         elif len(args) == 0:
             # !role command without args, show current role prefs
             await msg.channel.send(
-                f'Current roles for `{player.name}`: \n'
+                f'Current roles for player.name - {self.player_mention(player)}: \n'
                 f'```\n{Command.roles_str(roles)}\n```'
             )
             return
@@ -1023,15 +1037,15 @@ class Command(BaseCommand):
     async def registration_help_command(self, msg, **kwargs):
         print('jak command')
         queue_channel = DiscordChannels.get_solo().queues
-        # \nMożesz dołączyć do gry na kanale <#{queue_channel}>"""
         await msg.channel.send(
             f'```\n'
             f'Rejestracja - KROK po KROKU\n\n'
-            f'1. Wpisz **!reg**\n'
-            f'2. Odpowiadając botowi na PRIV wiadomość którą dostałeś podaj swój obecny **MMR, STEAM_ID**, np: 2137, 12356789.\n'
-            f'3. Czekaj na zatwierdzenie przez ADMINA(jak nie ma z automatu).\n'
-            f'```\n\n'
-            f'4. Po zatwierdzeniu możesz dołączyć do kolejki na kanale <#{queue_channel}> \n'
+            f'1. Wpisz **!reg** na tym kanale.\n'
+            f'2. Otrzymasz PRIV od bota, odpowiedz na jego wiadomość("↩️ Odpowiedz") i podaj: **MMR, FRIEND_ID**, na przykład:\n\n'
+            f'2137 , 56080147\n(ważny jest przecinek)\n\n' 
+            f'3. Czekaj na !vouch przez ADMINA(jeżeli nie nastąpił automatycznie).\n'
+            f'```\n'
+            f'4. Ciesz się wspaniałą rozgrywką na: <#{queue_channel}> \n'
         )
 
     async def set_name_command(self, msg, **kwargs):
@@ -1276,9 +1290,11 @@ class Command(BaseCommand):
                 balance_str = f'Proposed balance: \n' + \
                               Command.balance_str(queue.balance)
 
-            response += f'\nQueue is full! {balance_str} \n' + \
+            response += f'\nGra #{queue.id} jest pełna! {balance_str} \n' + \
                         f' '.join(self.player_mention(p) for p in queue.players.all()) + \
                         f'\nYou have 5 min to join the lobby.'
+
+            await self.chat_channel.send(f'**Gra #{queue.id} ruszyła!**\n{balance_str}')
 
         return queue, True, response
 
@@ -1617,13 +1633,13 @@ class Command(BaseCommand):
         full_queue = next((q for q in qs if q.players_in_queue == 10), None)
 
         if full_queue:
-            return f'`{player.name}`, you are in active Game #{full_queue.queue.id}.\n'
+            return f'{self.player_mention(player)}, you are in active Game #{full_queue.queue.id}.\n'
 
         deleted, _ = qs.delete()
         if deleted > 0:
-            return f'`{player.name}` left the queue.\n'
+            return f'{self.player_mention(player)} left the queue.\n'
         else:
-            return f'`{player.name}` you are not in this qweqweqwe queue.\n'
+            return f'{self.player_mention(player)} you are not in this queue.\n'
 
     def get_help_commands(self):
         return {
