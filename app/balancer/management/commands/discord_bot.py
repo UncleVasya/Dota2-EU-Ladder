@@ -133,6 +133,7 @@ class Command(BaseCommand):
 
         @self.bot.event
         async def on_button_click(interaction: discord.Interaction, button):
+            self.last_seen[interaction.user.id] = timezone.now()
             button_parts = button.custom_id.split('-')
             if len(button_parts) != 2:
                 print("Invalid button custom_id format.")
