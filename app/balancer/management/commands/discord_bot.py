@@ -1432,20 +1432,20 @@ class Command(BaseCommand):
         if not afk_list:
             return
 
-        deleted, _ = QueuePlayer.objects\
-            .filter(player__in=afk_list, queue__active=True)\
-            .annotate(Count('queue__players'))\
-            .filter(queue__players__count__lt=10)\
-            .delete()
-
-        if deleted > 0:
-            await self.queues_show()
-            await channel.send(
-                'Purge all heretics from the queue!\n' +
-                '```\n' +
-                ' | '.join(p.name for p in afk_list) +
-                '\n```'
-            )
+        # deleted, _ = QueuePlayer.objects\
+        #     .filter(player__in=afk_list, queue__active=True)\
+        #     .annotate(Count('queue__players'))\
+        #     .filter(queue__players__count__lt=10)\
+        #     .delete()
+        #
+        # if deleted > 0:
+        #     await self.queues_show()
+        #     await channel.send(
+        #         'Purge all heretics from the queue!\n' +
+        #         '```\n' +
+        #         ' | '.join(p.name for p in afk_list) +
+        #         '\n```'
+        #     )
 
     async def purge_queue_channels(self):
         channel = self.queues_channel
