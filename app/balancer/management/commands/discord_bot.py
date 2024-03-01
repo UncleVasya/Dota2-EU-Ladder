@@ -75,19 +75,22 @@ class Command(BaseCommand):
         async def on_ready():
             print(f'Logged in: {self.bot.user} {self.bot.user.id}')
 
-
             queues_channel = DiscordChannels.get_solo().queues
             chat_channel = DiscordChannels.get_solo().chat
             self.queues_channel = self.bot.get_channel(queues_channel)
             self.chat_channel = self.bot.get_channel(chat_channel)
 
+            # It's available in PollCommands but turned off.
             # await self.poll_commands.setup_poll_messages()
 
+            # We don't have enough privileges to do it this way
             # await self.purge_queue_channels()
+
             await self.setup_queue_messages()
 
             queue_afk_check.start()
             update_queues_shown.start()
+
             # It needs too high privileges to channel.purge() or 2FA for bot
             # clear_queues_channel.start()
 
@@ -95,7 +98,7 @@ class Command(BaseCommand):
             deactivate_queue_channels.start()
 
         async def on_register_form_answer(message):
-            # Check if the message is a response to the form
+            # Check if the message is a response to the exact form, User has invoked
             if message.author != self.bot.user and message.reference:
                 original_message = await message.channel.fetch_message(message.reference.message_id)
                 if original_message.author == self.bot.user:
@@ -120,7 +123,7 @@ class Command(BaseCommand):
 
             msg.content = " ".join(msg.content.split())
             if msg.content.startswith('!'):
-                # looks like this is a bot command
+                # Process with a bot command
                 await self.bot_cmd(msg)
 
         @self.bot.event
@@ -144,9 +147,19 @@ class Command(BaseCommand):
 
             player = Player.objects.filter(discord_id=interaction.user.id).first()
 
-            if not player and type != 'register_form':
-                # await interaction.channel.send(f'`{interaction.user.name}`: I don\'t know him')
+            if not player:
+                if type != 'register_form':
+                    await interaction.defer()
+                    return
+
+                text = f"""Hej, {self.unregistered_mention(interaction.author)},
+                         \nKliknij ("↩️ Odpowiedz") i w odpowiedzi podaj swój MMR, FRIEND_ID,
+                         \nPrzykład: 1337, 12345678 (ważny jest przecinek)"""
+
+                await interaction.author.send(text)
+
                 await interaction.defer()
+
                 return
 
             if type == 'green':
@@ -156,6 +169,7 @@ class Command(BaseCommand):
                 embed = discord.Embed(title='Zbierają się do bitwy!',
                                       description=response,
                                       color=discord.Color.green())
+                # We can also send self-hiding responses to the message via:
                 # await interaction.respond(embed=embed, allowed_mentions=None, delete_after=5)
                 await interaction.edit(embed=embed)
 
@@ -165,7 +179,6 @@ class Command(BaseCommand):
                                       description=player.name,
                                       color=discord.Color.green())
                 await interaction.edit(embed=embed)
-
 
             elif type == 'vouch':
                 vouched_player = Command.get_player_by_name(value)
@@ -187,24 +200,8 @@ class Command(BaseCommand):
                 await interaction.edit(embed=embed)
                 await self.purge_buttons_from_msg(interaction.message)
 
-
-            elif type == "register_form":
-                if player:
-                    await interaction.defer()
-
-                    return
-
-                text = f"""Hej, {self.unregistered_mention(interaction.author)},
-                     \nKliknij ("↩️ Odpowiedz") i w odpowiedzi podaj swój MMR, FRIEND_ID,
-                     \nPrzykład: 1337, 12345678 (ważny jest przecinek)"""
-
-                await interaction.author.send(text)
-
-                await interaction.defer()
-
-                return
-
-            await self.queues_show()
+            if type in ["green", "red"]:
+                await self.queues_show()
 
         @tasks.loop(minutes=5)
         async def queue_afk_check():
@@ -240,8 +237,6 @@ class Command(BaseCommand):
         @tasks.loop(minutes=1)
         async def activate_queue_channels():
             dt = timezone.localtime(timezone.now(), pytz.timezone('CET'))
-
-            # at 24:00 activate qchannels that should be active today
             if dt.hour == 0 and dt.minute == 0:
                 print('Activating queue channels.')
                 QueueChannelManager.activate_qchannels()
@@ -250,18 +245,11 @@ class Command(BaseCommand):
         @tasks.loop(minutes=1)
         async def deactivate_queue_channels():
             dt = timezone.localtime(timezone.now(), pytz.timezone('CET'))
-
-            # at 08:00 deactivate qchannels that should be inactive today
             if dt.hour == 8 and dt.minute == 0:
                 print('Deactivating queue channels')
                 QueueChannelManager.deactivate_qchannels()
                 await self.setup_queue_messages()
 
-        """
-        This task removes unnecessary messages (status and pings);
-        This is done to make channel clear and also to highlight it 
-        when new status message appears after some time.
-        """
         @tasks.loop(minutes=5)
         async def clear_queues_channel():
             channel = DiscordChannels.get_solo().queues
@@ -294,8 +282,8 @@ class Command(BaseCommand):
         chat_channel = [
             '!register', '!vouch', '!wh', '!who', '!whois', '!profile', '!stats', '!top',
             '!streak', '!bottom', '!bot', '!afk-ping', '!afkping', '!role', '!roles', '!recent',
-            '!ban', '!unban', '!votekick', '!vk', '!set-name', 'rename' '!set-mmr', '!jak', '!info',
-            'adjust', '!set-dota-id', '!record-match', '!help', '!close', '!reg', '!r', '!rename', '!list', '!q'
+            '!ban', '!unban', '!votekick', '!vk', '!set-name', 'rename', '!set-mmr', '!jak', '!info',
+            '!adjust', '!set-dota-id', '!record-match', '!help', '!close', '!reg', '!r', '!rename', '!list', '!q'
         ]
 
         # if this is a chat channel, check if command is allowed
@@ -354,24 +342,7 @@ class Command(BaseCommand):
             return
 
         if not 0 <= mmr < 12000:
-            sent_message = await msg.channel.send('Haha, very funny. :thinking:')
-
-            #TRY to set visibility to only single user - not working.
-            # Get the @everyone role
-            # everyone_role_id = msg.guild.default_role.id
-            # # Set permissions to only allow the specified user to read the message
-            # overwrite = {
-            #     str(everyone_role_id): {
-            #         'read_messages': False
-            #     },
-            #     str(msg.author.id): {
-            #         'read_messages': True
-            #     }
-            # }
-            #
-            # await sent_message.edit(overwrites=overwrite)
-
-            # await sent.edit(overwrites=overwrite)
+            await msg.channel.send('Haha, very funny. :thinking:')
 
             return
 
@@ -390,7 +361,6 @@ class Command(BaseCommand):
             discord_id=msg.author.id,
         )
 
-
         Player.objects.update_ranks()
 
         await self.player_vouched(player)
@@ -404,10 +374,8 @@ class Command(BaseCommand):
         )
 
         await channel.send(
-            f"""**Witamy nowego gracza {self.player_mention(player)} :tada: :tada:**"""
+            f"""**Witamy nowego gracza {player.name} - {self.player_mention(player)} :tada: :tada:**"""
         )
-
-
 
     async def vouch_command(self, msg, **kwargs):
         command = msg.content
@@ -563,7 +531,6 @@ class Command(BaseCommand):
         await msg.author.send(components=[
         [Button(label="!register", custom_id="register_form-"+str(msg.channel.id), style=ButtonStyle.blurple)]
     ])
-
 
     async def leave_queue_command(self, msg, **kwargs):
         command = msg.content
@@ -1002,31 +969,14 @@ class Command(BaseCommand):
             f'More on {player_url}'
         )
 
-    # async def help_command(self, msg, **kwargs):
-    #     commands_dict = self.get_available_bot_commands()
-    #     keys_as_string = ', '.join(commands_dict.keys())
-    #
-    #     await msg.channel.send(
-    #         f'```\n' +
-    #         f'Lista komend:\n\n' +
-    #         keys_as_string +
-    #         f'\n```\n'
-    #     )
-
     async def help_command(self, msg, **kwargs):
         commands_dict = self.get_help_commands()
-
-        # Create a dictionary to store aliases
-        aliases = {}
-
         master_text = ''
-        # Iterate through the commands and gather aliases
+
         for group, texts in commands_dict.items():
             master_text += f'\n\n{group}\n'
             for key, text in texts.items():
                 master_text += key + ": " + text + "\n"
-
-        # Create a string representation of commands and aliases
 
         await msg.channel.send(
             f'```\n' +
@@ -1036,7 +986,7 @@ class Command(BaseCommand):
         )
 
     async def registration_help_command(self, msg, **kwargs):
-        print('jak command')
+        print('!jak command')
         queue_channel = DiscordChannels.get_solo().queues
         await msg.channel.send(
             f'```\n'
@@ -1291,11 +1241,14 @@ class Command(BaseCommand):
                 balance_str = f'Proposed balance: \n' + \
                               Command.balance_str(queue.balance)
 
-            response += f'\nGra #{queue.id} jest pełna! {balance_str} \n' + \
-                        f' '.join(self.player_mention(p) for p in queue.players.all()) + \
+            pre_str = f'\nGra #{queue.id} jest pełna!\n'
+
+            mention_str = f' '.join(self.player_mention(p) for p in queue.players.all()) + \
                         f'\nYou have 5 min to join the lobby.'
 
-            await self.chat_channel.send(f'**Gra #{queue.id} ruszyła!**\n{balance_str}')
+            response += pre_str + balance_str + mention_str
+
+            await self.chat_channel.send(f'**Gra #{queue.id} ruszyła!**\n{mention_str}')
 
         return queue, True, response
 
@@ -1494,11 +1447,9 @@ class Command(BaseCommand):
                 '\n```'
             )
 
-
     async def purge_queue_channels(self):
         channel = self.queues_channel
         await channel.purge()
-
 
     async def setup_queue_messages(self):
         channel = self.queues_channel
@@ -1554,32 +1505,6 @@ class Command(BaseCommand):
                 print(e)
 
             await self.attach_join_buttons_to_queue_msg(message)
-
-
-    async def on_poll_reaction_add(self, message, user, payload, player):
-        poll = DiscordPoll.objects.filter(message_id=message.id).first()
-
-        # if not a poll message, ignore reaction
-        if not poll:
-            return
-
-        # remove other reactions by this user from this message
-        for r in message.reactions:
-            if r.emoji != payload.emoji.name:
-                await r.remove(user)
-
-        # call reaction processing function
-        await self.poll_reaction_funcs[poll.name](message, user, player)
-
-    async def on_poll_reaction_remove(self, message, user, payload, player):
-        poll = DiscordPoll.objects.filter(message_id=message.id).first()
-
-        # if not a poll message, ignore reaction
-        if not poll:
-            return
-
-        # call reaction processing function
-        await self.poll_reaction_funcs[poll.name](message, user)
 
     @staticmethod
     async def get_or_create_message(channel, msg_id):

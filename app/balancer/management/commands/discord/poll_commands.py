@@ -156,4 +156,25 @@ class PollService:
         # redraw poll message
         await self.draft_mode_poll_show(message)
 
+    async def on_poll_reaction_add(self, message, user, payload, player):
+        poll = DiscordPoll.objects.filter(message_id=message.id).first()
+
+        if not poll:
+            return
+
+        for r in message.reactions:
+            if r.emoji != payload.emoji.name:
+                await r.remove(user)
+
+        await self.poll_reaction_funcs[poll.name](message, user, player)
+
+    async def on_poll_reaction_remove(self, message, user, payload, player):
+        poll = DiscordPoll.objects.filter(message_id=message.id).first()
+
+        # if not a poll message, ignore reaction
+        if not poll:
+            return
+
+        # call reaction processing function
+        await self.poll_reaction_funcs[poll.name](message, user)
 

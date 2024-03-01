@@ -12,6 +12,7 @@ from app.balancer.managers import BalanceResultManager, BalanceAnswerManager
 from app.ladder.managers import MatchManager, PlayerManager
 from django.utils.datetime_safe import datetime
 from enum import IntEnum
+from collections import defaultdict
 import gevent
 from app.ladder.models import Player, LadderSettings, LadderQueue
 import dota2
@@ -20,9 +21,8 @@ import os
 from steam.client import SteamClient, SteamID
 from dota2.client import Dota2Client
 
-from dota2.enums import DOTA_GC_TEAM, EMatchOutcome, DOTAChatChannelType_t
+from dota2.enums import DOTA_GC_TEAM, EMatchOutcome, DOTAChatChannelType_t, LobbyDotaTVDelay
 from steam.client.builtins.friends import SteamFriendlist
-
 
 VERSION = '1.0.2'
 
@@ -124,12 +124,14 @@ class Command(BaseCommand):
         dota.player_draft = False
         dota.pd_votes = set()
         dota.ab_votes = set()
+        dota.start_votes = defaultdict(lambda: defaultdict(set))
 
         self.bots.append(dota)
 
         client.verbose_debug = True
         dota.verbose_debug = True
 
+        ###STEAM CLIENT LISTENERS START
         @client.on('logged_on')
         def logged_on():
             dota.launch()
@@ -159,6 +161,7 @@ class Command(BaseCommand):
         def friend_invite(user):
             client.friends.add(user.steam_id)
 
+        ###DOTA CLIENT LISTENERS START
         @dota.on('ready')
         def dota_started():
             print('Logged in: %s %s' % (dota.steam.username, dota.account_id))
@@ -268,7 +271,7 @@ class Command(BaseCommand):
             'allow_spectating': True,
             'allow_cheats': False,
             'allchat': False,
-            'dota_tv_delay': 0,  # TODO: this is LobbyDotaTV_10
+            'dota_tv_delay': LobbyDotaTVDelay.LobbyDotaTV_10,  # TODO: this is LobbyDotaTV_10
             'pause_setting': 0,  # TODO: LobbyDotaPauseSetting_Unlimited
         }
         bot.create_practice_lobby(
@@ -404,7 +407,7 @@ class Command(BaseCommand):
 
         if unregistered:
             bot.channels.lobby.send('I don\'t know these guys: %s' %
-                                   ', '.join(unregistered))
+                                    ', '.join(unregistered))
             return
 
         print(players)
@@ -423,11 +426,11 @@ class Command(BaseCommand):
 
         url = '%s%s?page=%s' % (host, url, answer_num)
 
-        bot.balance_answer = answer = result.answers.all()[answer_num-1]
+        bot.balance_answer = answer = result.answers.all()[answer_num - 1]
         for i, team in enumerate(answer.teams):
             player_names = [p[0] for p in team['players']]
             bot.channels.lobby.send('Team %d (avg. %d): %s' %
-                                   (i+1, team['mmr'], ' | '.join(player_names)))
+                                    (i + 1, team['mmr'], ' | '.join(player_names)))
         bot.channels.lobby.send(url)
 
     # TODO: get command from kwargs, so I don't have to add
@@ -444,7 +447,15 @@ class Command(BaseCommand):
             bot.channels.lobby.send('Please join slots according to balance.')
             return
 
-        bot.channels.lobby.send('Ready to start')
+        votes_needed = 2
+        bot.start_votes[msg.account_id] = True
+        if len(bot.start_votes) < votes_needed:
+            bot.channels.lobby.send('I need {} more votes to start.'.format(votes_needed - len(bot.start_votes)))
+            return
+
+        bot.channels.lobby.send('Ok, let\'s go! GL HF')
+        gevent.sleep(2)
+
         Command.start_game(bot)
 
     @staticmethod
@@ -565,7 +576,7 @@ class Command(BaseCommand):
 
         if unregistered:
             bot.channels.lobby.send('I don\'t know these guys: %s' %
-                                   ', '.join(unregistered))
+                                    ', '.join(unregistered))
         else:
             bot.channels.lobby.send('I know everybody here.')
 
@@ -685,11 +696,11 @@ class Command(BaseCommand):
         for i, team in enumerate(balance.teams):
             if team['role_score_sum']:
                 # this is balance with roles
-                player_names = [f'{i+1}. {p[0]}' for i, p in enumerate(team['players'])]
+                player_names = [f'{i + 1}. {p[0]}' for i, p in enumerate(team['players'])]
             else:
                 # balance without roles
                 player_names = [p[0] for p in team['players']]
-            team_str.append(f'Team {i+1}: ' + ' | '.join(player_names))
+            team_str.append(f'Team {i + 1}: ' + ' | '.join(player_names))
 
         ladder_mmr = [' '.join(str(p[1]) for p in team['players']) for team in balance.teams]
 
@@ -731,7 +742,7 @@ class Command(BaseCommand):
             player_names = [p[0] for p in team['players']]
             bot.channels.lobby.send(
                 'Team %d (avg. %d): %s' %
-                (i+1, team['mmr'], ' | '.join(player_names)))
+                (i + 1, team['mmr'], ' | '.join(player_names)))
 
     # creates balance record for already made-up teams
     # TODO: refactor this code to decrese repetition
@@ -778,7 +789,7 @@ class Command(BaseCommand):
             player_names = [p[0] for p in team['players']]
             bot.channels.lobby.send(
                 'Team %d (avg. %d): %s' %
-                (i+1, team['mmr'], ' | '.join(player_names)))
+                (i + 1, team['mmr'], ' | '.join(player_names)))
 
     @staticmethod
     def ban_command(bot, msg):
@@ -813,7 +824,7 @@ class Command(BaseCommand):
     @staticmethod
     def help_command(bot, msg):
         bot.channels.lobby.send(
-            '!mode, !missing, !start, !new(resets lobby), !ban, !whois, !register',)
+            '!mode, !missing, !start, !new(resets lobby), !ban, !whois, !register', )
 
     @staticmethod
     def register_command(bot, msg):
@@ -941,8 +952,8 @@ class Command(BaseCommand):
             return
 
         players_lobby = [SteamID(p.id).as_32 for p in bot.lobby.all_members]
-        missing = bot.queue.players\
-            .exclude(dota_id__in=players_lobby)\
+        missing = bot.queue.players \
+            .exclude(dota_id__in=players_lobby) \
             .values_list('name', flat=True)
 
         bot.channels.lobby.send('Missing players: ' + ' | '.join(missing))
@@ -990,7 +1001,8 @@ class Command(BaseCommand):
 
         player = Player.objects.get(dota_id=msg.account_id)
         if player != sidepick.captains[sidepick.turn]:
-            bot.channels.lobby.send(f'This is not your turn to pick. {sidepick.captains[sidepick.turn]} is picking now.')
+            bot.channels.lobby.send(
+                f'This is not your turn to pick. {sidepick.captains[sidepick.turn]} is picking now.')
             return
 
         if sidepick.fp:
@@ -1165,7 +1177,7 @@ class Command(BaseCommand):
         # TODO: make function balance_teams_to_ids(balance_answer)
         balancer_teams = [
             set(Player.objects.filter(name__in=[player[0] for player in team['players']])
-                              .values_list('dota_id', flat=True))
+                .values_list('dota_id', flat=True))
             for team in bot.balance_answer.teams
         ]
 
@@ -1202,7 +1214,6 @@ class Command(BaseCommand):
     def generate_lobby_name(bot):
         bot_number = re.search("(\d+)$", bot.steam.username).group(0)
         lobby_name = f'{LadderSettings.get_solo().dota_lobby_name} Ladder {bot_number}'
-
 
         if bot.min_mmr > 0:
             lobby_name += ' %d+' % bot.min_mmr
@@ -1299,7 +1310,7 @@ class Command(BaseCommand):
             # tell player he collides with other players
             collision = [old_players[c].name for c in collision]
             bot.channels.lobby.send('%s, you can\'t play with: %s' %
-                                   (p.name, ', '.join(collision)))
+                                    (p.name, ', '.join(collision)))
 
             bot.practice_lobby_kick_from_team(int(p.dota_id))
 
@@ -1343,8 +1354,8 @@ class Command(BaseCommand):
 
         players_balance = [player for team in bot.balance_answer.teams
                            for player in team['players']]
-        players_balance = Player.objects\
-            .filter(name__in=[player[0] for player in players_balance])\
+        players_balance = Player.objects \
+            .filter(name__in=[player[0] for player in players_balance]) \
             .values_list('dota_id', flat=True)
 
         for player in players_steam.keys():
@@ -1361,7 +1372,7 @@ class Command(BaseCommand):
 
         players_queue = []
         if bot.queue:
-            players_queue = bot.queue.players.all()\
+            players_queue = bot.queue.players.all() \
                 .values_list('dota_id', flat=True)
 
         for player in players_steam.keys():
@@ -1391,9 +1402,9 @@ class Command(BaseCommand):
         players = [player for player in members
                    if player.team in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)]
         # 2 teams with 5 slots each, None for empty slot
-        teams = [[None]*5 for _ in range(2)]
+        teams = [[None] * 5 for _ in range(2)]
         for player in players:
-            teams[player.team][player.slot-1] = cache_member(player)
+            teams[player.team][player.slot - 1] = cache_member(player)
 
         unassigned = [cache_member(member) for member in members
                       if member.team not in (DOTA_GC_TEAM.GOOD_GUYS, DOTA_GC_TEAM.BAD_GUYS)]
