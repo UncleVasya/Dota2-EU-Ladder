@@ -12,6 +12,7 @@ from discord import Button, ButtonStyle, user
 import pytz
 import timeago
 from discord.ext import tasks
+from discord.channel import TextChannel
 from django.core.management.base import BaseCommand
 import os
 
@@ -88,7 +89,9 @@ class Command(BaseCommand):
 
             await self.setup_queue_messages()
 
-            queue_afk_check.start()
+            # MAREK: Disabled checking for AFK players
+            # queue_afk_check.start()
+
             update_queues_shown.start()
 
             # It needs too high privileges to channel.purge() or 2FA for bot
@@ -175,10 +178,7 @@ class Command(BaseCommand):
 
             elif type == 'red':
                 await self.player_leave_queue(player, interaction.message)
-                embed = discord.Embed(title='Gracz opuszcza kolejkę!',
-                                      description=player.name,
-                                      color=discord.Color.green())
-                await interaction.edit(embed=embed)
+                await interaction.defer()
 
             elif type == 'vouch':
                 vouched_player = Command.get_player_by_name(value)
@@ -1229,8 +1229,7 @@ class Command(BaseCommand):
 
         queue = Command.add_player_to_queue(player, channel)
 
-        response = f'`{player}` joined inhouse queue #{queue.id}.\n' + \
-                   Command.queue_str(queue)
+        response = f'`{player}` joined inhouse queue #{queue.id}.\n'
 
         # TODO: this is a separate function
         if queue.players.count() == 10:
@@ -1395,7 +1394,7 @@ class Command(BaseCommand):
 
         return mention
 
-    async def channel_check_afk(self, channel: discord.TextChannel, players):
+    async def channel_check_afk(self, channel: TextChannel, players):
         def last_seen(p):
             return self.last_seen[int(p.discord_id or 0)]
 
