@@ -1078,19 +1078,17 @@ class Command(BaseCommand):
 
     async def set_dota_id_command(self, msg, **kwargs):
         command = msg.content
-        admin = kwargs['player']
-        print(f'\n!set-dota-id command from {admin}:\n{command}')
+        print(f'\n!set-dota-id command from {msg.author.name}:\n{command}')
 
         try:
             params = command.split(None, 1)[1]  # get params string
             dota_id = params.split()[-1]
-            name = ' '.join(params.split()[:-1])  # remove dota id, leaving only the name
         except (IndexError, ValueError):
             await msg.channel.send(
                 f'Wrong command usage. Correct example: `!set-dota-id Nappa 111886427`')
             return
 
-        player = Command.get_player_by_name(name)
+        player = Player.objects.filter(discord_id=msg.author.id).first()
         if not player:
             await msg.channel.send(f'I don\'t know him')
             return
