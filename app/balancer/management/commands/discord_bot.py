@@ -1767,7 +1767,7 @@ class Command(BaseCommand):
         try:
             # Fetch reporter and reported players based on Discord IDs (or names, depending on your setup)
             reporter = Player.objects.get(discord_id=msg.author.id)
-            reported = Player.objects.get(name=reported_name)
+            reported = Command.get_player_by_name(reported_name)
 
             if reporter == reported:
                 await msg.channel.send(CANNOT_REPORT_SELF)
