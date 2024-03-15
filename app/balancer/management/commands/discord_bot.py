@@ -286,6 +286,7 @@ class Command(BaseCommand):
             '!ban', '!unban', '!votekick', '!vk', '!set-name', '!set-mmr',
             '!adjust', '!set-dota-id', '!record-match', '!help', '!close',
             '!reg', '!r', '!rename', '!jak', '!info', '!list', '!q', 'rename', '!my-dota-id',
+            '!report', '!tip',
         ]
 
         # if this is a chat channel, check if command is allowed
