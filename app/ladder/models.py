@@ -94,6 +94,10 @@ class Player(models.Model):
         if created:
             PlayerManager.init_score(self, reset_mmr=True)
 
+    def get_last_match_id(self):
+        last_match = self.order_by('-match__date').first()
+        return last_match.match.id if last_match else None
+
 
 class Match(models.Model):
     players = models.ManyToManyField(Player, through='MatchPlayer')
@@ -233,3 +237,21 @@ class QueuePlayer(models.Model):
 
     class Meta:
         unique_together = ('player', 'queue')
+
+
+
+class PlayerReport(models.Model):
+    from_player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='report_from')
+    to_player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='report_to')
+    match = models.ForeignKey(Match, on_delete=models.CASCADE)
+    reason = models.CharField(max_length=32)
+    comment = models.CharField(max_length=255, blank=True)
+    value = models.SmallIntegerField(choices=[(1, 'Positive'), (-1, 'Negative')])
+
+    class Meta:
+        # Optionally, add some meta options, like ordering or unique constraints
+        # For example, ensuring a player can only report another player for a match once:
+        unique_together = ('from_player', 'to_player', 'match')
+
+    def __str__(self):
+        return f'Report from {self.from_player.name} to {self.to_player.name} for match {self.match.id}'

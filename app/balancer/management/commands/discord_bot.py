@@ -27,6 +27,7 @@ from app.ladder.models import Player, LadderSettings, LadderQueue, QueuePlayer, 
     RolesPreference, DiscordChannels, DiscordPoll, ScoreChange
 
 from app.balancer.management.commands.discord.poll_commands import PollService
+from app.balancer.management.commands.discord.report_tip_commands import ReportTipCommands
 
 
 def is_player_registered(msg, dota_id, name):
@@ -272,7 +273,7 @@ class Command(BaseCommand):
         command = msg.content.split(' ')[0].lower()
 
         commands = self.get_available_bot_commands()
-        free_for_all = ['!register', '!help', '!reg', '!r', '!jak', '!info', '!rename', '!list', '!q']
+        free_for_all = ['!register', '!help', '!reg', '!r', '!jak', '!info', '!list', '!q']
         staff_only = [
             '!vouch', '!add', '!kick', '!mmr', '!ban', '!unban',
             '!set-name', '!set-mmr', '!set-dota-id', '!record-match',
@@ -282,8 +283,9 @@ class Command(BaseCommand):
         chat_channel = [
             '!register', '!vouch', '!wh', '!who', '!whois', '!profile', '!stats', '!top',
             '!streak', '!bottom', '!bot', '!afk-ping', '!afkping', '!role', '!roles', '!recent',
-            '!ban', '!unban', '!votekick', '!vk', '!set-name', 'rename', '!set-mmr', '!jak', '!info',
-            '!adjust', '!set-dota-id', '!record-match', '!help', '!close', '!reg', '!r', '!rename', '!list', '!q'
+            '!ban', '!unban', '!votekick', '!vk', '!set-name', '!set-mmr',
+            '!adjust', '!set-dota-id', '!record-match', '!help', '!close',
+            '!reg', '!r', '!rename', '!jak', '!info', '!list', '!q', 'rename', '!my-dota-id',
         ]
 
         # if this is a chat channel, check if command is allowed
@@ -1049,6 +1051,35 @@ class Command(BaseCommand):
         player.save()
         await msg.channel.send(f'{self.player_mention(player)} is now known as `{new_name}`')
 
+    async def change_self_dota_id(self, msg, **kwargs):
+        command = msg.content
+        print(f'\n!my-dota-id command from {msg.author.name}:\n{command}')
+
+        player = Player.objects.filter(discord_id=str(msg.author.id)).first()
+        if not player:
+            await msg.channel.send('I don\'t know him')
+            return
+
+        try:
+            _, friend_id = command.split(' ', 1)
+        except IndexError:
+            await msg.channel.send('Usage: `!steam FRIEND_ID`. Example: `!steam 1337131338`')
+            return
+
+        if friend_id.isdigit():
+            player.dota_id = friend_id
+            player.save()  # Save the updated Player object to the database
+            await msg.channel.send('{} your Dota ID has been updated to: {}'.format(
+                self.player_mention(player),
+                friend_id)
+            )
+        else:
+            await msg.channel.send('The Dota ID provided is not valid. Please ensure it is a numeric value.')
+
+        player.dota_id = friend_id
+        player.save()
+        await msg.channel.send(f'{self.player_mention(player)} Dota ID is now: `{friend_id}`')
+
     async def set_mmr_command(self, msg, **kwargs):
         command = msg.content
         admin = kwargs['player']
@@ -1640,6 +1671,7 @@ class Command(BaseCommand):
             '!set-mmr': self.set_mmr_command,
             '!adjust': self.set_mmr_command,
             '!set-dota-id': self.set_dota_id_command,
+            '!my-dota-id': self.change_self_dota_id,
             '!record-match': self.record_match_command,
             '!help': self.help_command,
             '!close': self.close_queue_command,
@@ -1647,5 +1679,7 @@ class Command(BaseCommand):
             '!r': self.attach_help_buttons_to_msg,
             '!jak': self.registration_help_command,
             '!info': self.registration_help_command,
+            '!report': ReportTipCommands.report_player_command,
+            '!tip': ReportTipCommands.tip_player_command,
         }
 
