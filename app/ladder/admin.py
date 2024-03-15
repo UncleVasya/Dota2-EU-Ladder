@@ -2,7 +2,7 @@ from django import forms
 from django_reverse_admin import ReverseModelAdmin
 
 from app.ladder.models import Player, Match, MatchPlayer, ScoreChange, LadderSettings, LadderQueue, QueuePlayer, \
-    QueueChannel, RolesPreference, DiscordChannels, DiscordPoll
+    QueueChannel, RolesPreference, DiscordChannels, DiscordPoll, PlayerReport
 from django.contrib import admin
 from django.db.models import Prefetch
 from dal import autocomplete
@@ -40,7 +40,8 @@ class PlayerAdmin(ReverseModelAdmin):
     model = Player
 
     fieldsets = [
-        (None, {'fields': ['name', 'dota_mmr', 'dota_id', 'discord_id', 'voice_issues', 'bot_access', 'vouched', 'banned']}),
+        (None,
+         {'fields': ['name', 'dota_mmr', 'dota_id', 'discord_id', 'voice_issues', 'bot_access', 'vouched', 'banned']}),
         (None, {'fields': ['ladder_mmr', 'score']}),
         (None, {'fields': ['description', 'vouch_info']}),
         (None, {'fields': ['rank_ladder_mmr', 'rank_score']}),
@@ -57,6 +58,7 @@ class PlayerAdmin(ReverseModelAdmin):
     inline_reverse = [
         ('roles', {'fields': ['carry', 'mid', 'offlane', 'pos4', 'pos5']})
     ]
+
     # inlines = (BlacklistInline, BlacklistedByInline)
 
     def dotabuff_link(self, obj):
@@ -97,9 +99,21 @@ class MatchAdmin(admin.ModelAdmin):
     ]
     readonly_fields = ['date']
 
-    inlines = (MatchPlayerInline, )
+    inlines = (MatchPlayerInline,)
 
     list_display = ('date', 'dota_id')
+
+
+class PlayerReportAdmin(admin.ModelAdmin):
+    list_display = ('from_player', 'to_player', 'reason', 'comment', 'value', 'report_date')
+    search_fields = ('from_player__name', 'to_player__name', 'reason')
+    list_filter = ('reason', 'value')
+    date_hierarchy = 'report_date'  # Assuming you have a field `report_date` for when the report was created
+    ordering = ('-report_date',)
+
+    # Customizing the form
+    autocomplete_fields = ['from_player', 'to_player']
+    raw_id_fields = ('match',)  # Use if you have a `match` field and it has many instances to improve performance
 
 
 class ScoreChangeAdminForm(forms.ModelForm):
@@ -151,7 +165,7 @@ class LadderQueueAdmin(admin.ModelAdmin):
     ]
     readonly_fields = ['date']
 
-    inlines = (QueuePlayerInline, )
+    inlines = (QueuePlayerInline,)
 
     list_display = ('date', 'active', 'min_mmr', 'max_mmr', 'channel')
 
@@ -182,6 +196,7 @@ class DiscordPollAdmin(admin.ModelAdmin):
 admin.site.register(Player, PlayerAdmin)
 admin.site.register(ScoreChange, ScoreChangeAdmin)
 admin.site.register(Match, MatchAdmin)
+admin.site.register(PlayerReport, PlayerReportAdmin)
 
 admin.site.register(LadderSettings, SingletonModelAdmin)
 

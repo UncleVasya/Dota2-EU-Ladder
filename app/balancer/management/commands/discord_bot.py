@@ -1,3 +1,15 @@
+REPORT_SUCCESS_MESSAGE = "{} has reported {} for {} in match: {} with this comment: \n{}"
+TIP_SUCCESS_MESSAGE = "{} has tipped {} for {} in match: {} with this comment: \n{}"
+PLAYER_NOT_FOUND_MESSAGE = "Could not find one or both players."
+CANNOT_REPORT_SELF = "Cannot report/tip yourself."
+SIGNED_PLAYERS = "Signed: {}"
+
+INVALID_FORMAT_MESSAGE = ("Invalid command format. Please specify:\n"
+                          "Player Reason Match ID(skip if reporting last game) and a Comment(max 255 chars) \n"
+                          "Example: \n"
+                          "`!report SATO afk This guy is really annoying, beware of play with him!!!`")
+
+
 import asyncio
 import datetime
 import itertools
@@ -24,7 +36,7 @@ from app.balancer.managers import BalanceResultManager, BalanceAnswerManager
 from app.balancer.models import BalanceAnswer
 from app.ladder.managers import MatchManager, QueueChannelManager
 from app.ladder.models import Player, LadderSettings, LadderQueue, QueuePlayer, QueueChannel, MatchPlayer, \
-    RolesPreference, DiscordChannels, DiscordPoll, ScoreChange
+    RolesPreference, DiscordChannels, DiscordPoll, ScoreChange, PlayerReport
 
 from app.balancer.management.commands.discord.poll_commands import PollService
 from app.balancer.management.commands.discord.report_tip_commands import ReportTipCommands
@@ -47,12 +59,14 @@ class Command(BaseCommand):
         self.polls_channel = None
         self.queues_channel = None
         self.chat_channel = None
+        self.voice_channel = None
         self.status_message = None  # status msg in queues channel
         self.status_responses = deque(maxlen=3)
         self.last_seen = defaultdict(timezone.now)  # to detect afk players
         self.kick_votes = defaultdict(lambda: defaultdict(set))
         self.queued_players = set()
         self.last_queues_update = timezone.now()
+        self.report_tip_commands = ReportTipCommands()
 
         # cached discord models
         self.queue_messages = {}
@@ -79,8 +93,10 @@ class Command(BaseCommand):
 
             queues_channel = DiscordChannels.get_solo().queues
             chat_channel = DiscordChannels.get_solo().chat
+            queue_status_voice_channel = DiscordChannels.get_solo().queue_counter
             self.queues_channel = self.bot.get_channel(queues_channel)
             self.chat_channel = self.bot.get_channel(chat_channel)
+            self.voice_channel = self.bot.get_channel(queue_status_voice_channel)
 
             # It's available in PollCommands but turned off.
             # await self.poll_commands.setup_poll_messages()
@@ -94,6 +110,7 @@ class Command(BaseCommand):
             # queue_afk_check.start()
 
             update_queues_shown.start()
+            update_voice_channel.start()
 
             # It needs too high privileges to channel.purge() or 2FA for bot
             # clear_queues_channel.start()
@@ -204,6 +221,10 @@ class Command(BaseCommand):
             if type in ["green", "red"]:
                 await self.queues_show()
 
+        @tasks.loop(minutes=15)
+        async def update_voice_channel():
+            await self.voice_channel.edit(name=SIGNED_PLAYERS.format(f"{len(self.queued_players)} / 10"))
+
         @tasks.loop(minutes=5)
         async def queue_afk_check():
             print("Queue clear")
@@ -276,7 +297,7 @@ class Command(BaseCommand):
         free_for_all = ['!register', '!help', '!reg', '!r', '!jak', '!info', '!list', '!q']
         staff_only = [
             '!vouch', '!add', '!kick', '!mmr', '!ban', '!unban',
-            '!set-name', '!set-mmr', '!set-dota-id', '!record-match',
+            '!set-name', '!set-mmr', '!set-dota-id', '!record-match', '!record-queue'
             '!close',
         ]
         # TODO: do something with this, getting too big. Replace with disabled_in_chat list?
@@ -284,9 +305,9 @@ class Command(BaseCommand):
             '!register', '!vouch', '!wh', '!who', '!whois', '!profile', '!stats', '!top',
             '!streak', '!bottom', '!bot', '!afk-ping', '!afkping', '!role', '!roles', '!recent',
             '!ban', '!unban', '!votekick', '!vk', '!set-name', '!set-mmr',
-            '!adjust', '!set-dota-id', '!record-match', '!help', '!close',
+            '!adjust', '!set-dota-id', '!record-match', '!record-queue', '!help', '!close',
             '!reg', '!r', '!rename', '!jak', '!info', '!list', '!q', 'rename', '!my-dota-id',
-            '!report', '!tip',
+            '!report', '!tip', '!reports', '!tips',
         ]
 
         # if this is a chat channel, check if command is allowed
@@ -433,6 +454,12 @@ class Command(BaseCommand):
         wins = sum(1 if m.match.winner == m.team else 0 for m in player.matches)
         losses = len(player.matches) - wins
 
+        # Query for reports and tips count
+        reports_count = PlayerReport.objects.filter(to_player=player, value__lt=0).count()
+        tips_count = PlayerReport.objects.filter(to_player=player, value__gt=0).count()
+
+        # Contin
+
         await msg.channel.send(
             f'**{player.name}** - {self.player_mention(player)}\n'
             f'```\n'
@@ -442,12 +469,66 @@ class Command(BaseCommand):
             f'Ladder: {player_url}\n\n'
             f'Score: {player.score}\n'
             f'Rank: {player.rank_score}\n'
+            f"Reports Received: {reports_count}\n"
+            f"Tips Received: {tips_count}\n"
             f'Games: {len(player.matches)} ({wins}-{losses})\n\n'
             f'Vouched: {"yes" if player.vouched else "no"}\n'
             f'Roles: {Command.roles_str(player.roles)}\n\n'
             f'{player.description or ""}\n'
             f'```'
         )
+
+    async def handle_show_tips_command(self, msg, **kwargs):
+        # Extract the player name from the message
+        parts = msg.content.split(maxsplit=1)
+        if len(parts) < 2:
+            await msg.channel.send("Please specify a player name.")
+            return
+
+        player_name = parts[1]
+
+        try:
+            player = Player.objects.get(name=player_name)
+        except Player.DoesNotExist:
+            await msg.channel.send(f"Player '{player_name}' not found.")
+            return
+
+        # Fetch all tips for the player
+        tips = PlayerReport.objects.filter(to_player=player, value__gt=0).order_by('-id')
+
+        if tips.exists():
+            tips_list = '\n'.join(
+                [f"{tip.from_player.name}: {tip.comment} (Match ID: {tip.match.dota_id if tip.match else 'N/A'})" for tip in
+                 tips])
+            await msg.channel.send(f"**Tips for {player.name}:**\n```{tips_list}```")
+        else:
+            await msg.channel.send(f"No tips found for {player.name}.")
+
+    async def handle_show_reports_command(self, msg, **kwargs):
+        # Extract the player name from the message
+        parts = msg.content.split(maxsplit=1)
+        if len(parts) < 2:
+            await msg.channel.send("Please specify a player name.")
+            return
+
+        player_name = parts[1]
+
+        try:
+            player = Player.objects.get(name=player_name)
+        except Player.DoesNotExist:
+            await msg.channel.send(f"Player '{player_name}' not found.")
+            return
+
+        # Fetch all tips for the player
+        tips = PlayerReport.objects.filter(to_player=player, value__lt=0).order_by('-id')
+
+        if tips.exists():
+            tips_list = '\n'.join(
+                [f"{tip.from_player.name}: {tip.comment} (Match ID: {tip.match.dota_id if tip.match else 'N/A'})" for tip in
+                 tips])
+            await msg.channel.send(f"**Reports for {player.name}:**\n```{tips_list}```")
+        else:
+            await msg.channel.send(f"No reports found for {player.name}.")
 
     async def ban_command(self, msg, **kwargs):
         command = msg.content
@@ -1074,12 +1155,10 @@ class Command(BaseCommand):
                 self.player_mention(player),
                 friend_id)
             )
+
+            return
         else:
             await msg.channel.send('The Dota ID provided is not valid. Please ensure it is a numeric value.')
-
-        player.dota_id = friend_id
-        player.save()
-        await msg.channel.send(f'{self.player_mention(player)} Dota ID is now: `{friend_id}`')
 
     async def set_mmr_command(self, msg, **kwargs):
         command = msg.content
@@ -1189,6 +1268,73 @@ class Command(BaseCommand):
             f'\n{"Radiant" if winner == 0 else "Dire"} won.\n'
             f'\n```'
         )
+
+    async def record_match_from_queue(self, msg, **kwargs):
+        command = msg.content
+        admin = kwargs['player']
+        print(f'\n!record-queue command from {admin}:\n{command}')
+
+        try:
+            params = command.split()  # get params string
+            winner = params[1].lower()
+            queue_id = int(params[2])  # extract queue_id
+        except (IndexError, ValueError):
+            await msg.channel.send(
+                'Wrong command usage. '
+                'Correct example: `!record-queue dire 1234`')
+            return
+
+        if winner not in ['radiant', 'dire']:
+            await msg.channel.send(
+                f'Scientists are baffled. Dota has 2 teams: `radiant` and `dire`. '
+                f'You invented a third one: `{winner}`. Congratulations!')
+            return
+
+        try:
+            # Fetch the LadderQueue instance
+            queue = LadderQueue.objects.get(id=queue_id)
+            # Extract the BalanceAnswer from the queue instance
+            answer = queue.balance
+
+
+            # Extracting player identifiers for radiant and dire teams
+            radiant_team = answer.teams[0]
+            dire_team = answer.teams[1]
+
+            radiant_player_ids = [p[0] for p in radiant_team['players']]
+            dire_player_ids = [p[0] for p in dire_team['players']]
+
+            radiant = Player.objects.filter(name__in=radiant_player_ids)
+            dire = Player.objects.filter(name__in=dire_player_ids)
+
+            print(f'radiant: {radiant}')
+            print(f'dire: {dire}')
+
+            _radiant = [(p.name, p.ladder_mmr) for p in radiant]
+            _dire = [(p.name, p.ladder_mmr) for p in dire]
+            winner = 0 if winner == 'radiant' else 1
+
+            # print([_radiant, _dire])
+            balance = BalanceAnswerManager.balance_custom([_radiant, _dire])
+            MatchManager.record_balance(balance, winner)
+
+            await msg.channel.send(
+                f'```\n' +
+                f'Match recorded!\n\n' +
+                f'Radiant: {", ".join([p.name for p in radiant])}\n' +
+                f'Dire: {", ".join([p.name for p in dire])}\n' +
+                f'\n{"Radiant" if winner == 0 else "Dire"} won.\n'
+                f'\n```'
+            )
+        except LadderQueue.DoesNotExist:
+            await msg.channel.send(f'Error: Queue with ID {queue_id} does not exist.')
+            return
+        except AttributeError:
+            print('Error: Failed to extract players from balance answer.')
+            return
+
+        # Assuming players contains Discord IDs in the order they should be split into teams
+
 
     async def close_queue_command(self, msg, **kwargs):
         command = msg.content
@@ -1532,6 +1678,7 @@ class Command(BaseCommand):
 
             try:
                 await message.edit(content=text)
+
             except Exception as e:
                 print(e)
 
@@ -1597,6 +1744,65 @@ class Command(BaseCommand):
             return f'{self.player_mention(player)} left the queue.\n'
         else:
             return f'{self.player_mention(player)} you are not in this queue.\n'
+
+    async def handle_report_tip_command(self, msg, is_tip: bool, **kwargs):
+        parts = msg.content.split()
+        if len(parts) < 3:
+            await msg.channel.send(INVALID_FORMAT_MESSAGE)
+            return
+
+        # Assume the command format is "!command ReportedPlayer Reason [MatchID] Comment"
+        reported_name = parts[1]
+        reason = parts[2]
+        match_id = None
+        comment_index = 3
+
+        # If the fourth part is a digit, it's considered a MatchID, and the comment starts from the fifth part
+        if len(parts) > 3 and parts[3].isdigit():
+            match_id = parts[3]
+            comment_index = 4
+
+        comment = " ".join(parts[comment_index:])
+
+        try:
+            # Fetch reporter and reported players based on Discord IDs (or names, depending on your setup)
+            reporter = Player.objects.get(discord_id=msg.author.id)
+            reported = Player.objects.get(name=reported_name)
+
+            if reporter == reported:
+                await msg.channel.send(CANNOT_REPORT_SELF)
+                return
+
+            # Call the appropriate method from ReportTipCommands
+            if is_tip:
+                result = self.report_tip_commands.tip_player_command(reporter, reported, reason, match_id, comment)
+            else:
+                result = self.report_tip_commands.report_player_command(reporter, reported, reason, match_id, comment)
+
+            if isinstance(result, PlayerReport):
+                # Determine the message format based on the value of the result
+                if result.value > 0:
+                    message_template = TIP_SUCCESS_MESSAGE
+                else:
+                    message_template = REPORT_SUCCESS_MESSAGE
+
+                # Construct the custom success message using data from the PlayerReport instance
+                custom_message = message_template.format(
+                    self.player_mention(result.from_player),  # Reporter's or tipper's name
+                    self.player_mention(result.to_player),  # Reported or tipped player's name
+                    result.reason,  # Reason for the report or tip
+                    result.match.dota_id,  # Match ID, or indicate it's the last match
+                    f"`{result.comment}`"  # Comment"
+                )
+                await msg.channel.send(custom_message)
+            else:
+                # The result is a string containing an error message
+                await msg.channel.send(result)
+
+        except Player.DoesNotExist:
+            await msg.channel.send(PLAYER_NOT_FOUND_MESSAGE)
+        except Exception as e:
+            await msg.channel.send(f"{str(e)}")
 
     def get_help_commands(self):
         return {
@@ -1674,13 +1880,16 @@ class Command(BaseCommand):
             '!set-dota-id': self.set_dota_id_command,
             '!my-dota-id': self.change_self_dota_id,
             '!record-match': self.record_match_command,
+            '!record-queue': self.record_match_from_queue,
             '!help': self.help_command,
             '!close': self.close_queue_command,
             '!reg': self.attach_help_buttons_to_msg,
             '!r': self.attach_help_buttons_to_msg,
             '!jak': self.registration_help_command,
             '!info': self.registration_help_command,
-            '!report': ReportTipCommands.report_player_command,
-            '!tip': ReportTipCommands.tip_player_command,
+            '!report': lambda msg, **kwargs: self.handle_report_tip_command(msg, is_tip=False, **kwargs),
+            '!tip': lambda msg, **kwargs: self.handle_report_tip_command(msg, is_tip=True, **kwargs),
+            '!tips': self.handle_show_tips_command,
+            '!reports': self.handle_show_reports_command,
         }
 

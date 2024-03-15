@@ -146,5 +146,61 @@
             {% include 'ladder/player_teammates_table.html' with teammates=opponents opponents=True %}
         </article>
         </section>
+
+        <section>
+            <header>Tips for {{ player.name }}</header>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Tipped By</th>
+                            <th>Reason</th>
+                            <th>Comment</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for tip in tips %}
+                        <tr>
+                            <td>{{ tip.from_player.name }}</td>
+                            <td>{{ tip.reason }}</td>
+                            <td>{{ tip.comment }}</td>
+                            <td>{{ tip.report_date|date:"Y-m-d H:i" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="4">No tips found.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section>
+            <header>Reports for {{ player.name }}</header>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Reported By</th>
+                            <th>Reason</th>
+                            <th>Comment</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for report in reports %}
+                        <tr>
+                            <td>{{ report.from_player.name }}</td>
+                            <td>{{ report.reason }}</td>
+                            <td>{{ report.comment }}</td>
+                            <td>{{ report.report_date|date:"Y-m-d H:i" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="4">No Reports found.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
     {% endblock player-content %}
 {% endblock content %}

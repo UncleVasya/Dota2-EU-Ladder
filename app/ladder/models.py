@@ -94,9 +94,9 @@ class Player(models.Model):
         if created:
             PlayerManager.init_score(self, reset_mmr=True)
 
-    def get_last_match_id(self):
-        last_match = self.order_by('-match__date').first()
-        return last_match.match.id if last_match else None
+    def get_last_match_dota_id(self):
+        last_match = self.matchplayer_set.order_by('-match__date').first()
+        return last_match.match.dota_id if last_match else None
 
 
 class Match(models.Model):
@@ -173,6 +173,7 @@ class DiscordChannels(SingletonModel):
     polls = models.BigIntegerField(null=True, blank=True)
     queues = models.BigIntegerField(null=True, blank=True)
     chat = models.BigIntegerField(null=True, blank=True)
+    queue_counter = models.BigIntegerField(null=True, blank=True)
 
 
 class DiscordPoll(models.Model):
@@ -247,6 +248,7 @@ class PlayerReport(models.Model):
     reason = models.CharField(max_length=32)
     comment = models.CharField(max_length=255, blank=True)
     value = models.SmallIntegerField(choices=[(1, 'Positive'), (-1, 'Negative')])
+    report_date = models.DateTimeField(auto_now_add=True)  # Automatically set the field to now when the object is first created
 
     class Meta:
         # Optionally, add some meta options, like ordering or unique constraints

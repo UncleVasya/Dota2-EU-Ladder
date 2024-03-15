@@ -3,7 +3,7 @@ from decimal import Decimal
 from datetime import timedelta, timezone
 from django.core.cache import cache
 import itertools
-from app.ladder.models import Player, MatchPlayer, Match, LadderSettings
+from app.ladder.models import Player, MatchPlayer, Match, LadderSettings, PlayerReport
 from dal import autocomplete
 from django.db.models import Max, Count, Prefetch, Case, When, F, ExpressionWrapper, FloatField, Avg
 from django.utils.datetime_safe import datetime
@@ -247,10 +247,23 @@ class PlayerOverview(PlayerDetail):
     def get_context_data(self, **kwargs):
         self.add_matches_data()
         context = super(PlayerOverview, self).get_context_data(**kwargs)
+        player = self.object
+        reports = PlayerReport.objects.filter(
+            to_player=player,
+            value__lt=0
+        ).order_by('-report_date')[:10]  # Last 10 reports
+
+        tips = PlayerReport.objects.filter(
+            to_player=player,
+            value__gt=0
+        ).order_by('-report_date')[:10]  # Last 10 tips
+
         context.update({
             'score_changes': self.score_history()[:10],
             'teammates': self.teammates_stats()[:5],
             'opponents': reversed(self.teammates_stats(opponents=True)[-5:]),
+            'reports': reports,
+            'tips': tips,
         })
         return context
 
